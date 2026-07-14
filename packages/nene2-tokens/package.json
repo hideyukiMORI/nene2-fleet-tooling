@@ -13,7 +13,7 @@
     }
   },
   "bin": {
-    "nene2-tokens": "./dist/cli.js"
+    "nene2-tokens": "dist/cli.js"
   },
   "files": [
     "dist",
@@ -22,7 +22,8 @@
     "contract-freeze.json"
   ],
   "scripts": {
-    "build": "tsc --build"
+    "build": "tsc --build",
+    "prepack": "tsc --build"
   },
   "repository": {
     "type": "git",
