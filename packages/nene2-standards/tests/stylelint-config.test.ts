@@ -77,6 +77,28 @@ describe('.components 対（AM-9 全ルール @layer components 内）', () => {
   });
 });
 
+describe('canonical cascade header と @theme ブロック（#19 正例較正）', () => {
+  it('index.css の @layer 順序宣言文（legacy を含む）は manifest 制の対象外・違反 0', async () => {
+    expect(await lintFile('src/index.css')).toEqual([]);
+  });
+
+  it('ブランドテーマ（@theme 直値＋.components @import＋dark 上書き — TH-02/03・参照テーマ形）は違反 0', async () => {
+    expect(await lintFile('src/shared/ui/theme/themes/brand.css')).toEqual([]);
+  });
+
+  it('@theme ブロック内の通常プロパティは従来どおり検知する', async () => {
+    const { results } = await stylelint.lint({
+      code: '@theme {\n  --color-accent: oklch(0.5 0.1 250);\n  font-family: serif;\n}\n',
+      config,
+      codeFilename: path.join(fixtureDir, 'src/shared/ui/theme/themes/code-probe.css'),
+    });
+    const warnings = results[0]?.warnings ?? [];
+    expect(
+      warnings.some((w) => w.rule === 'nene2/themes-token-only' && w.text.includes('font-family')),
+    ).toBe(true);
+  });
+});
+
 describe('一般 CSS（テーマ外）', () => {
   it('故意 fail unlayered.css — 無レイヤ・!important・ID・hex・rgb()・[data-theme] 場所違反', async () => {
     const warnings = await lintFile('src/app/unlayered.css');
