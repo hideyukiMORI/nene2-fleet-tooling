@@ -1,6 +1,6 @@
 {
   "name": "@hideyukimori/nene2-standards",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "NeNe fleet frontend standards — distributed ESLint flat config (per-rule merged), Stylelint shared config + custom plugin, known-utility fast path, nene2 custom rules",
   "type": "module",
   "license": "MIT",
