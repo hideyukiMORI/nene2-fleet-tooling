@@ -8,11 +8,11 @@
     "packages/*"
   ],
   "scripts": {
-    "type-check": "tsc --build packages/nene2-tokens",
+    "type-check": "tsc --build packages/*",
     "lint": "eslint .",
     "format:check": "prettier --check \"packages/**/*.{ts,json,css}\"",
     "test": "vitest run",
-    "build": "tsc --build packages/nene2-tokens",
+    "build": "tsc --build packages/*",
     "check:cli": "node packages/nene2-tokens/dist/cli.js validate packages/nene2-tokens/themes/reference.css",
     "check": "npm run type-check && npm run lint && npm run format:check && npm run test && npm run check:cli"
   },
@@ -21,6 +21,8 @@
     "@types/node": "^22.20.1",
     "eslint": "^9.30.0",
     "prettier": "3.6.2",
+    "stylelint": "^16.26.1",
+    "tailwindcss": "^4.3.2",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.35.0",
     "vitest": "^3.2.4"
