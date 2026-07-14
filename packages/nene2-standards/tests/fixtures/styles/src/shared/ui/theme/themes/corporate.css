@@ -1,4 +1,4 @@
-/* @nene2-contract 1.0 @themegen 1.0.0-rc.1 */
+/* @nene2-contract 1.0 @themegen 1.0.0 */
 [data-theme='corporate'] {
   --color-accent: oklch(0.55 0.15 250);
   --color-on-accent: oklch(0.99 0 0);

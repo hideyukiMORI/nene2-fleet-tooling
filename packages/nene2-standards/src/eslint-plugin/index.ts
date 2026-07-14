@@ -7,7 +7,7 @@ import type { ESLint } from 'eslint';
 import { stylePropCssVarsOnly } from './style-prop-css-vars-only.js';
 
 export const nene2Plugin: ESLint.Plugin = {
-  meta: { name: '@hideyukimori/nene2-standards', version: '0.1.0-rc.1' },
+  meta: { name: '@hideyukimori/nene2-standards', version: '1.0.0' },
   rules: {
     'style-prop-css-vars-only': stylePropCssVarsOnly,
   },

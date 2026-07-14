@@ -1,6 +1,7 @@
 # @hideyukimori/nene2-i18n
 
 NeNe フリートの型付き i18n。**W0a 時点は骨格**（指示書どおり — フル実装は W0a 必須でない）。
+**npm publish 対象外**（`private: true`・publish workflow の選択肢にも無い）— W0b のフル実装で解除して publish する。
 
 ## W0a 骨格に含まれるもの
 

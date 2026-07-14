@@ -9,6 +9,11 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    // scripts/*.mjs は Node 実行前提（最小定義 — globals パッケージ依存を増やさない）
+    files: ['scripts/**/*.mjs'],
+    languageOptions: { globals: { console: 'readonly', process: 'readonly' } },
+  },
+  {
     rules: {
       // CLI prints via console by design.
       'no-console': 'off',

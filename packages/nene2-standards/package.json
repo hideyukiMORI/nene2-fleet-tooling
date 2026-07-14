@@ -1,9 +1,9 @@
 {
   "name": "@hideyukimori/nene2-standards",
-  "version": "0.1.0-rc.1",
+  "version": "1.0.0",
   "description": "NeNe fleet frontend standards — distributed ESLint flat config (per-rule merged), Stylelint shared config + custom plugin, known-utility fast path, nene2 custom rules",
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -50,5 +50,14 @@
   },
   "bin": {
     "nene2-check": "./dist/checks/cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hideyukiMORI/nene2-fleet-tooling.git",
+    "directory": "packages/nene2-standards"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   }
 }
