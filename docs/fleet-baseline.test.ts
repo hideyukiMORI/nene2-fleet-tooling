@@ -41,11 +41,10 @@ describe('fleet-baseline.json', () => {
     }
   });
 
-  it('発効済みは nene2-client ^1.1.0 のみ・本リポ3パッケージは publish 前につき null（誠実性ガード: 未公開版を書かない — 記入は publish 成功後の別 PR）', () => {
+  it('発効済み: client ^1.1.0・tokens/standards ^1.0.0（2026-07-14 npm 公開実測: 39/79 files）・i18n は骨格につき null', () => {
     expect(baseline.packages['@hideyukimori/nene2-client']).toBe('^1.1.0');
-    // ↓ tokens / standards の publish が成功したら、この期待値を実版数に更新する
-    expect(baseline.packages['@hideyukimori/nene2-tokens']).toBeNull();
-    expect(baseline.packages['@hideyukimori/nene2-standards']).toBeNull();
+    expect(baseline.packages['@hideyukimori/nene2-tokens']).toBe('^1.0.0');
+    expect(baseline.packages['@hideyukimori/nene2-standards']).toBe('^1.0.0');
     expect(baseline.packages['@hideyukimori/nene2-i18n']).toBeNull();
   });
 });
