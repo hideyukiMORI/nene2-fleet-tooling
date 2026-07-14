@@ -1,0 +1,26 @@
+{
+  "name": "@hideyukimori/nene2-tokens",
+  "version": "1.0.0-rc.1",
+  "description": "NeNe Core Token Contract v1 — contract types, CONTRACT_TOKENS, validate:themes CLI, themegen, codemod mapping table v1, reference theme",
+  "type": "module",
+  "license": "UNLICENSED",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "nene2-tokens": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "themes",
+    "samples"
+  ],
+  "scripts": {
+    "build": "tsc --build"
+  }
+}
