@@ -1,6 +1,6 @@
 {
   "name": "@hideyukimori/nene2-tokens",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "NeNe Core Token Contract v1 — contract types, CONTRACT_TOKENS, validate:themes CLI, themegen, codemod mapping table v1, reference theme",
   "type": "module",
   "license": "MIT",

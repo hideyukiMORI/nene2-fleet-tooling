@@ -1,0 +1,52 @@
+/*
+ * Dark theme — overrides the semantic color tokens when `data-theme="dark"` is set on a root
+ * element (the app sets it on <html>). Plain CSS custom-property overrides; every utility reads
+ * `var(--color-…)`, so the whole app re-skins with no component change. Non-color tokens (spacing,
+ * radius, fonts, …) are inherited from the light theme.
+ */
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-surface: #1d1a16;
+  --color-surface-raised: #262119;
+  --color-surface-sunken: #141210;
+  --color-primary: #f0eadf;
+  --color-muted: #a89d8c;
+  --color-border: #332d24;
+  --color-border-strong: #463f33;
+
+  --color-accent: #d57a4d;
+  --color-accent-hover: #e08a5e;
+  --color-accent-soft: #3a271c;
+  --color-accent-ink: #eaa583;
+  --color-accent-contrast: #1a1510;
+
+  --color-danger: #e3697a;
+  --color-danger-soft: #36201f;
+  --color-danger-ink: #f0a6ad;
+  --color-success: #4faf7c;
+  --color-success-soft: #16271d;
+  --color-success-ink: #92d4ae;
+  --color-warning: #d8a23e;
+  --color-warning-soft: #2c2413;
+  --color-warning-ink: #edca84;
+  --color-info: #6f9fe0;
+  --color-info-soft: #19233a;
+  --color-info-ink: #a8c5ef;
+  --color-neutral-soft: #2a251d;
+  --color-neutral-ink: #b4a895;
+
+  --color-focus-ring: rgba(
+    213,
+    122,
+    77,
+    0.85
+  ); /* ≥3:1 non-text contrast on the dark surfaces (#178) */
+  --color-accent-glow: rgba(
+    213,
+    122,
+    77,
+    0.4
+  ); /* decorative accent shadow (toast) — NOT the focus ring */
+  --color-overlay: rgba(0, 0, 0, 0.6); /* modal scrim */
+}
