@@ -3,8 +3,8 @@
   "schemaVersion": 1,
   "packages": {
     "@hideyukimori/nene2-client": "^1.1.0",
-    "@hideyukimori/nene2-tokens": null,
-    "@hideyukimori/nene2-standards": null,
+    "@hideyukimori/nene2-tokens": "^1.0.0",
+    "@hideyukimori/nene2-standards": "^1.0.0",
     "@hideyukimori/nene2-i18n": null
   }
 }
