@@ -25,7 +25,8 @@
     "registries"
   ],
   "scripts": {
-    "build": "tsc --build"
+    "build": "tsc --build",
+    "prepack": "tsc --build"
   },
   "dependencies": {
     "@eslint-community/eslint-plugin-eslint-comments": "^4.7.2",
@@ -49,7 +50,7 @@
     }
   },
   "bin": {
-    "nene2-check": "./dist/checks/cli.js"
+    "nene2-check": "dist/checks/cli.js"
   },
   "repository": {
     "type": "git",
