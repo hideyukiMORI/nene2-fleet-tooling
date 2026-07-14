@@ -1,0 +1,4 @@
+/* canonical cascade header（AM-8(a) 参照形 — @layer 順序宣言文は legacy manifest 制の対象外・#19） */
+@layer theme, base, vendor, legacy, components, utilities;
+@import 'tailwindcss' theme(static);
+@import './shared/ui/theme/active.css';

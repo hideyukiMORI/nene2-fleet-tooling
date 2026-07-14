@@ -1,0 +1,9 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-surface: #ffffff;
+  --color-border: #e5e7eb;
+  --spacing-inline-md: 1rem;
+  --spacing-stack-sm: 0.5rem;
+  --spacing-inline-sm: 0.5rem;
+}

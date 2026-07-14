@@ -31,6 +31,13 @@ export const RESTRICTED_IMPORT_PATHS: readonly RestrictedPath[] = [
   { name: 'react-intl', message: '同上。' },
   { name: '@lingui/core', message: '同上。' },
   { name: 'styled-components', message: '会議R1⑤決定: ランタイム CSS-in-JS 恒久 MUST NOT。' },
+  {
+    // paths は module 名の完全一致 — patterns（gitignore 意味論）に置くと
+    // '@/shared/ui/<component>'（R1① の正例）まで全滅する（#19 素振り実測）
+    name: '@/shared/ui',
+    message:
+      'shared/ui の集約バレルは存在しない。@/shared/ui/<component> を import する（会議R1①決定）。',
+  },
 ];
 
 /** fsd（05 §2.2.2）＋CSS-in-JS patterns（05 §2.2.3）— src/** 全域の基本 patterns。 */
@@ -40,7 +47,8 @@ export const RESTRICTED_IMPORT_PATTERNS_BASE: readonly RestrictedPattern[] = [
     message: 'スライス跨ぎの相対 import MUST NOT。スライス外は @/ 絶対形で書く（第1部 1-4）。',
   },
   {
-    group: ['@/shared/ui', '@/shared/ui/index*'],
+    // '@/shared/ui' 自体（拡張子なし集約バレル）は paths 側の完全一致で禁止（#19）
+    group: ['@/shared/ui/index*'],
     message:
       'shared/ui の集約バレルは存在しない。@/shared/ui/<component> を import する（会議R1①決定）。',
   },

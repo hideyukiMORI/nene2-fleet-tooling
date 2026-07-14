@@ -189,6 +189,9 @@ const layerLegacyManifestOnly: Rule<true, { files?: string[] }> =
     const manifestFiles = secondary?.files ?? [];
     const sourceFile = root.source?.input.file?.replaceAll('\\', '/');
     root.walkAtRules('layer', (atRule) => {
+      // ブロックを持たない @layer 文は順序宣言（canonical cascade header の必須行 — AM-8(a)）
+      // であり legacy レイヤへのルール投入ではない（#19）。@layer legacy { … } のみ manifest 制。
+      if (atRule.nodes === undefined) return;
       if (!layerParamsInclude(atRule.params, 'legacy')) return;
       // fail-closed: ファイル名が特定できない（コード断片 lint）場合も未登録扱い
       const listed = sourceFile !== undefined && manifestFiles.some((f) => sourceFile.endsWith(f));
@@ -240,6 +243,34 @@ const themesTokenOnly: Rule<true, { additionalScopeSelectors?: string[] }> =
     for (const node of topLevelNodes(root)) {
       if (node.type === 'comment') continue;
       if (node.type === 'atrule') {
+        // TH-02: 対になる .components.css の @import 行は正
+        if (node.name === 'import') continue;
+        // TH-03: ブランドテーマの @theme 直値ブロックは 0〜1 個の正（active.css から
+        // import されるテーマでは 1 個必須）。nene2-tokens 配布の参照テーマが現物（#19）。
+        // @theme inline は nene2/no-theme-inline の管轄（ここでは inline のみ badAtRule）。
+        if (node.name === 'theme' && !/^inline\b/.test(node.params.trim())) {
+          for (const child of node.nodes ?? []) {
+            if (child.type === 'comment') continue;
+            if (child.type === 'decl') {
+              if (!child.prop.startsWith('--')) {
+                report({
+                  result,
+                  ruleName: themesTokenOnlyName,
+                  node: child,
+                  message: themesTokenOnlyMessages.nonCustomProperty(child.prop),
+                });
+              }
+              continue;
+            }
+            report({
+              result,
+              ruleName: themesTokenOnlyName,
+              node: child,
+              message: themesTokenOnlyMessages.nested(),
+            });
+          }
+          continue;
+        }
         report({
           result,
           ruleName: themesTokenOnlyName,
