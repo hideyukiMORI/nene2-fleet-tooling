@@ -115,3 +115,28 @@
 | ④ | records focus-ring AA FAIL を W1 是正リストへ追加 | 承認 |
 | ⑤ | color-scheme を閉文法 allowlist に追加提案（standards patch レーン） | 承認 |
 | ⑥ | 28＋4 キーの凍結（text-faint 収載を含む） | **凍結** |
+
+---
+
+## 7. 承認記録（凍結確定 — 2026-07-14・当初予定 07-18 の前倒し）
+
+- **2026-07-14、施主 hide が本レビューを完了**（チャット裁定。07-18 予定を 4 日前倒し）。
+- 判定:
+  - §1 全キー（color 28＋shadow 4・text-faint 収載を含む）— **承認**
+  - §2 W0a 確定値（閉文法 EBNF・contrast ペア表 v1・fill 最終形・決定性・写像規律ほか）— **承認**
+  - §6 提案①〜⑥ — **すべて受け入れ（○）**
+- これをもって **Core Token Contract v1 は凍結確定**。`packages/nene2-tokens` の
+  `COLOR_KEYS`（28）／`SHADOW_KEYS`（4）／`CONTRACT_VERSION = '1.0'` が凍結された正本。
+- **以後の契約キー集合の変更は stop-the-line ADR のみ**（AM-2 契約進化規約:
+  minor=派生式同梱・major=codemod 3点セット。移行窓 W1〜W6 中はいかなる変更も stop-the-line ADR）。
+- §6 受け入れの帰結（各提案の効力）:
+  1. ① -weak 群→-soft・sidebar-*→x- の起草判断写像 = 確定（写像表 v1 収載のまま発効）
+  2. ② vault 個別表 40 行 = 確定（x- 送り名の最終調整は W1 vault PR で可）
+  3. ③ records `text-text-secondary` の是正先 = `text-text-muted` で確定
+  4. ④ records focus-ring AA FAIL（2.51／2.74 < 3:1）を W1 records 是正リストへ追加
+  5. ⑤ `color-scheme` の閉文法 allowlist 追加は standards patch レーンで提案を進める
+     （本凍結の一部ではない — 提案が通るまで現行文法どおり error）
+  6. ⑥ 28＋4 キーの凍結 = 確定
+- §5 の未確定 6 項目は台帳のまま持ち越し（凍結の対象外 — v1.1 以降の較正課題）。
+- 次工程: 承認スタンプ（本節）→ tokens／standards v1.0.0 publish → `fleet-baseline.json`
+  実版数記入 → W0.starter。
