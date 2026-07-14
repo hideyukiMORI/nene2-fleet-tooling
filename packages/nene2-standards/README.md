@@ -62,9 +62,23 @@ ESLint flat config は同一ルールの再指定が**後勝ちで全置換**に
 - Stylelint の台帳由来 secondary（`nene2/layer-components-allowlist` の allowedClasses・`nene2/layer-legacy-manifest-only` の files）は**未指定＝空集合＝全 FAIL**。実効値は fleet registries から機械生成した override をゲート導入 PR で合成する（手書き列挙 MUST NOT — AM-10/AM-13(ii)・正本は台帳 G-7）。
 - `nene2.overrides.*`（recordsCookieAuth / corpusWidgetSessionToken / vaultJsonCatalog）は現時点で **marker のみ**（緩和対象の A-7 機械検査が未実装のため）。検査実装と同時にこの named config が差し替え座席になる。
 
+## 批准の機械前提チェック（RAT-1〜RAT-3・AI-21）
+
+- `nene2-check standards-doc --docs <dir> [--out <json>] [--md <file>]` — 規約文書（README＋01〜05）の
+  タグ欠落 MUST 列挙（G-1 棚卸し）・`[E:rule-id]`/`[S:rule-id]` の配布 config 実在照合（RAT-2 —
+  照合対象は off 以外の severity で実効配布されるルール）・[P] 列挙制（G-3）・MUST 総数と
+  機械強制カバレッジ率の観測出力（G-5 補記 — 数値では FAIL しない）。`[X]` は check:exemplars へ委譲。
+- `nene2-check exemplars --docs <dir> --root <fleet-root> [--out <json>] [--md <file>]` — 全
+  `[X:file#anchor]` を実リポのアンカーコメント `[nene2-exemplar:<name>]` と突合（G-2。行番号参照は FAIL）。
+- どちらも fail-closed: 文書 6 ファイル不揃い＝実行拒否・MUST 0 本／[X] 0 件＝unknown（exit 2）。
+- 初回実測の red リスト（red が出るのが正 — 植栽未実施）: `docs/ratification-red-list-2026-07-14.md`。
+
 ## 未実施（誠実性ガード）
 
-- `nene2-check` CLI（conformance / gate-integrity / init --scan）— 後続 PR。
+- `nene2-check` の正準シーケンス駆動（type-check→eslint→…→build の 11 工程 — 05 §5.1）— W0b/W1 配線。
+- registries の dangling reason-ref 解決（05 §5.2 #18 の check:exemplars 同一機構適用）— W0b。
+- check:standards-doc / check:exemplars の CI 常設配線 — 規約文書が本リポ外（`_work/reports/`）に
+  ある間は手動実行（red リスト参照）。文書の収容先が決まり次第 fleet-tooling CI ゲート #18/#19 として配線。
 - depcruise 共有 config（05 §4）・prettier/tsconfig/vitest 配布（05 §1.1）— W0a スコープ外（Wave 表の W0a 行に含まれない）。
 - `gen:registered-classes`（AM-13(ii)）・O-6 severity 生成器・`check:tw-oracle` — W1 配線。
 - 全フリートでの known-utility 偽陽性率は未計測（O-6 のリポ単位有効化手順が吸収装置）。
