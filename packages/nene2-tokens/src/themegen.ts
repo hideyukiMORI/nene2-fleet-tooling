@@ -21,7 +21,7 @@ import { mapTokenName, type MappingTableId } from './codemod-map.js';
 export class ThemegenError extends Error {}
 
 /** パッケージ版 — プラグマ `@themegen <ver>` に焼く（dx D4）。 */
-export const THEMEGEN_VERSION = '1.0.0-rc.1';
+export const THEMEGEN_VERSION = '1.0.0';
 
 /* ------------------------------------------------------------------ */
 /* 正準順                                                                */

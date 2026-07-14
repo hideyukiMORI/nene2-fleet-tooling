@@ -1,0 +1,70 @@
+# Publish npm — nene2-js の publish.yml と同型（OIDC Trusted Publishing・provenance・
+# workflow_dispatch・dry_run 既定 true）。モノレポにつきパッケージ選択 input を追加。
+#
+# 前提（npm 側・初回のみ — docs/publish.md 参照）:
+#   各パッケージの初回 publish はローカル（Trusted Publisher は既存パッケージにしか設定できない）。
+#   その後 npm package settings で Trusted Publisher を
+#   Repository=hideyukiMORI/nene2-fleet-tooling / Workflow filename=publish.yml に設定する。
+#
+# nene2-i18n は W0a 骨格につき publish 対象外（package.json も private:true）— W0b で追加。
+name: Publish npm
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'publish するワークスペース'
+        required: true
+        type: choice
+        options:
+          - nene2-tokens
+          - nene2-standards
+      dry_run:
+        description: 'npm publish --dry-run only'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm ci
+      # check には AM-2 release gate（check:am2-gate）を含む — 契約キー集合が
+      # 凍結記録と一致しない限りここで止まる（fail-closed）
+      - run: npm run check
+      - run: npm run build
+      - name: AM-2 release gate (contract freeze)
+        run: node scripts/am2-release-gate.mjs
+      - run: npm install -g npm@latest
+      - name: Dry run
+        if: ${{ inputs.dry_run }}
+        run: npm publish --dry-run --workspace packages/${{ inputs.package }}
+      - name: Publish
+        if: ${{ !inputs.dry_run }}
+        run: npm publish --workspace packages/${{ inputs.package }}
+      - name: Create git tag and GitHub Release
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(node -p "require('./packages/${{ inputs.package }}/package.json').version")
+          TAG="${{ inputs.package }}-v${VERSION}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists; skipping GitHub Release."
+            exit 0
+          fi
+          gh release create "$TAG" --title "$TAG" --generate-notes

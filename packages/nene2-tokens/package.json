@@ -1,6 +1,6 @@
 {
   "name": "@hideyukimori/nene2-tokens",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0",
   "description": "NeNe Core Token Contract v1 — contract types, CONTRACT_TOKENS, validate:themes CLI, themegen, codemod mapping table v1, reference theme",
   "type": "module",
   "license": "UNLICENSED",
@@ -18,9 +18,19 @@
   "files": [
     "dist",
     "themes",
-    "samples"
+    "samples",
+    "contract-freeze.json"
   ],
   "scripts": {
     "build": "tsc --build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hideyukiMORI/nene2-fleet-tooling.git",
+    "directory": "packages/nene2-tokens"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   }
 }
