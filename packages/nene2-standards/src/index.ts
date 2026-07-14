@@ -54,3 +54,14 @@ export function composedConfig(): Linter.Config[] {
 
 const nene2 = { base, fsd, api, styling, i18n, testing, overrides };
 export default nene2;
+
+export {
+  CONFORMANCE_KEYS,
+  CONFORMANCE_SCHEMA_ID,
+  validateConformance,
+} from './checks/conformance.js';
+export type { ConformanceKey, ConformanceVector, KeyState } from './checks/conformance.js';
+export { checkGateIntegrity, canonicalSeverityTable } from './checks/gate-integrity.js';
+export { checkScanCoverage } from './checks/scan-coverage.js';
+export { initScan, initCheck } from './checks/init-scan.js';
+export { runConformance } from './checks/run.js';
