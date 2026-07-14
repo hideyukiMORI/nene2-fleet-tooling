@@ -7,7 +7,7 @@
  * import nene2 from '@hideyukimori/nene2-standards';
  * export default [
  *   ...nene2.base, ...nene2.fsd, ...nene2.api,
- *   ...nene2.styling, ...nene2.i18n, ...nene2.testing,
+ *   ...nene2.stylingWith(), ...nene2.i18n, ...nene2.testing,
  * ];
  * ```
  */
@@ -18,10 +18,12 @@ import { base } from './configs/base.js';
 import { fsd } from './configs/fsd.js';
 import { i18n } from './configs/i18n.js';
 import { overrides } from './configs/overrides.js';
-import { styling } from './configs/styling.js';
+import { styling, stylingWith, CANONICAL_THEME_ENTRY } from './configs/styling.js';
+import type { StylingOptions } from './configs/styling.js';
 import { testing } from './configs/testing.js';
 
-export { api, base, fsd, i18n, overrides, styling, testing };
+export { api, base, fsd, i18n, overrides, styling, stylingWith, CANONICAL_THEME_ENTRY, testing };
+export type { StylingOptions };
 export { nene2Plugin } from './eslint-plugin/index.js';
 export {
   API_FETCH_SYNTAX,
@@ -52,7 +54,7 @@ export function composedConfig(): Linter.Config[] {
   return [...base, ...fsd, ...api, ...styling, ...i18n, ...testing];
 }
 
-const nene2 = { base, fsd, api, styling, i18n, testing, overrides };
+const nene2 = { base, fsd, api, styling, stylingWith, i18n, testing, overrides };
 export default nene2;
 
 export {
