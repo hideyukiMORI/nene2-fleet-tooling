@@ -12,7 +12,7 @@ NeNe フリート・フロント統一規約の**配布物（versioned 実行可
 
 | パス | 内容 | 状態 |
 |---|---|---|
-| `packages/nene2-tokens` | Core Token Contract v1（color 28＋shadow 4）・CONTRACT_TOKENS export・validate:themes・themegen・codemod 写像表 v1 | 未実装（W0a stage1・契約凍結レビュー 07-18） |
+| `packages/nene2-tokens` | Core Token Contract v1（color 28＋shadow 4）・CONTRACT_TOKENS export・validate:themes・themegen・codemod 写像表 v1 | **v1.0.0-rc.1 実装済**（W0a stage1・凍結レビュー資料 = `docs/contract-freeze-review-2026-07-18.md`・マージ/publish は施主承認後） |
 | `packages/nene2-standards` | ESLint flat config 配布（合成規律=ルール単位1定義・plugin 同梱）・Stylelint 2枚組・known-utility lint・`nene2-check`（conformance skeleton・fail-closed）・`init --scan` | 未実装 |
 | `packages/nene2-i18n` | 型付き i18n（ja 権威カタログ・parity・同値率検査） | 未実装（W0a では骨格まで可） |
 | `registries/` | 構造レジストリ（恒久公認差異）＋負債台帳（lint-baseline / legacy-manifest）＋waiver — kind 判別ユニオン jsonc | 未実装 |
