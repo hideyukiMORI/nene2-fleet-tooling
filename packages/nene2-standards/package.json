@@ -21,7 +21,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "registries"
   ],
   "scripts": {
     "build": "tsc --build"
@@ -34,6 +35,8 @@
     "eslint-plugin-import-x": "^4.16.1",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-testing-library": "^7.6.1",
+    "postcss": "^8.5.6",
+    "prettier": "3.6.2",
     "typescript-eslint": "^8.35.0"
   },
   "peerDependencies": {
@@ -44,5 +47,8 @@
     "stylelint": {
       "optional": true
     }
+  },
+  "bin": {
+    "nene2-check": "./dist/checks/cli.js"
   }
 }

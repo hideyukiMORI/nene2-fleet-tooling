@@ -30,6 +30,22 @@ export {
   TESTING_SYNTAX,
 } from './selectors.js';
 export { I18N_JP_SYNTAX } from './configs/restrictions.js';
+export {
+  ALL_KINDS,
+  DEBT_KINDS,
+  STRUCTURAL_KINDS,
+  REGISTRIES_SCHEMA_ID,
+  WAIVER_MAX_DAYS,
+  parseRegistries,
+  stripJsonc,
+  validateRegistries,
+} from './registries/schema.js';
+export type {
+  RegistriesDocument,
+  RegistryDiagnostic,
+  RegistryEntry,
+  RegistryKind,
+} from './registries/schema.js';
 
 /** 全断片の正準合成（gate-integrity の canonical 表・パッケージテストの検出プローブが使用）。 */
 export function composedConfig(): Linter.Config[] {
@@ -38,3 +54,14 @@ export function composedConfig(): Linter.Config[] {
 
 const nene2 = { base, fsd, api, styling, i18n, testing, overrides };
 export default nene2;
+
+export {
+  CONFORMANCE_KEYS,
+  CONFORMANCE_SCHEMA_ID,
+  validateConformance,
+} from './checks/conformance.js';
+export type { ConformanceKey, ConformanceVector, KeyState } from './checks/conformance.js';
+export { checkGateIntegrity, canonicalSeverityTable } from './checks/gate-integrity.js';
+export { checkScanCoverage } from './checks/scan-coverage.js';
+export { initScan, initCheck } from './checks/init-scan.js';
+export { runConformance } from './checks/run.js';
