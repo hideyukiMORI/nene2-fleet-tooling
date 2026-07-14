@@ -1,0 +1,28 @@
+{
+  "name": "nene2-fleet-tooling",
+  "private": true,
+  "version": "0.0.0",
+  "description": "NeNe fleet frontend standards — versioned executable deliverables (tokens / standards / i18n / registries / fleet-baseline)",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "type-check": "tsc --build packages/nene2-tokens",
+    "lint": "eslint .",
+    "format:check": "prettier --check \"packages/**/*.{ts,json,css}\"",
+    "test": "vitest run",
+    "build": "tsc --build packages/nene2-tokens",
+    "check:cli": "node packages/nene2-tokens/dist/cli.js validate packages/nene2-tokens/themes/reference.css",
+    "check": "npm run type-check && npm run lint && npm run format:check && npm run test && npm run check:cli"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.30.0",
+    "@types/node": "^22.20.1",
+    "eslint": "^9.30.0",
+    "prettier": "3.6.2",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.35.0",
+    "vitest": "^3.2.4"
+  }
+}
