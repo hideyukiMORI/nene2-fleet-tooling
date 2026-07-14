@@ -1,0 +1,123 @@
+// registries/fleet.jsonc — 公認差異レジストリ（規約 v1 発効時点の登録現物）
+//
+// 正本表: 規約 README §5（= 02 §11 の運用分類）・スキーマ: src/registries/schema.ts
+// （kind 判別ユニオン — 会議R5(5)決定）。
+// 追加経路は fleet-tooling への PR のみ（REG-2 — 製品リポ側追記は gate-integrity FAIL）。
+// 負債台帳（legacy-manifest / lint-baseline）は縮小単調（REG-3）・ratchet は fleet-tooling CI。
+// waiver: v1 発効時点の登録なし（README §5）。
+// fonts / widget-entry / testid-allowlist / identical-allowlist: 各リポの init --scan 時に
+// 初期化（05 §8.2 末尾注記）— v1 発効時点のエントリなし。
+{
+  "schema": "nene2-registries/1",
+  "entries": [
+    // ---- 構造レジストリ（恒久・外部制約由来のみ・蒸し返し禁止） ----
+    {
+      "kind": "authorized-divergence",
+      "id": "records-cookie-auth",
+      "repo": "nene-records",
+      "overrides": "nene2.overrides.recordsCookieAuth",
+      // 外部制約: トークンを JS に持たせない設計（HttpOnly cookie＋X-Requested-With CSRF）
+      "reasonRef": "adr:records#cookie-csrf",
+      "review": "認証方式の全面改訂時"
+    },
+    {
+      "kind": "authorized-divergence",
+      "id": "corpus-widget-session-token",
+      "repo": "nene-corpus",
+      "overrides": "nene2.overrides.corpusWidgetSessionToken",
+      // 外部制約: 匿名利用者 widget と admin JWT の分離（#340 が正運用 exemplar — R3④A-7）
+      "reasonRef": "council:minutes#R3-4-A-7",
+      "review": "widget 認証方式の全面改訂時"
+    },
+    {
+      "kind": "authorized-divergence",
+      "id": "vault-json-catalog",
+      "repo": "nene-vault",
+      "overrides": "nene2.overrides.vaultJsonCatalog",
+      // 外部制約: バックエンドと locale カタログを JSON で共有（ADR 0005・DotPaths 型生成）
+      "reasonRef": "adr:vault#0005",
+      "review": "バックエンド locale 共有の解消時"
+    },
+    {
+      "kind": "scoped-theme",
+      "id": "corpus-widget-scoped-theme",
+      "repo": "nene-corpus",
+      "variant": "widget",
+      // テーマ・lang スコープ = マウントルート要素（<html> 非所有。I18nProvider の lang scope も
+      // 同一要素 — AM-18）。validate:themes は --container フラグで検査
+      "selector": "(widget mount root)",
+      "reasonRef": "council:minutes#R2-6-widget-scope"
+    },
+    {
+      "kind": "scoped-theme",
+      "id": "concierge-widget-scoped-theme",
+      "repo": "nene-concierge",
+      "variant": "widget",
+      "selector": "(widget mount root)",
+      "reasonRef": "council:minutes#R2-6-widget-scope"
+    },
+    {
+      "kind": "scoped-theme",
+      "id": "records-public-scoped-theme",
+      "repo": "nene-records",
+      "variant": "local",
+      // 31テーマ公開面＋テーマプレビュー。参照クロージャ検査は局所スコープとして FAIL 判定・
+      // fill 領域で充足（AM-1）
+      "selector": ".nene-public[data-theme]",
+      "reasonRef": "council:minutes#R2-6-records-local-scope"
+    },
+    {
+      "kind": "injector",
+      "id": "records-theme-injector",
+      "repo": "nene-records",
+      // DB 由来テーマのランタイム注入 —「違反者ではなく生きた exemplar」（AM-5）。
+      // 注入可能トークンは CONTRACT_TOKENS から導出（depcruise required の対象列挙元）
+      "files": [
+        "src/shared/ui/theme/theme-customization.ts",
+        "src/shared/ui/theme/theme-from-customization.ts"
+      ],
+      "reasonRef": "council:minutes#R4-AM-5"
+    },
+
+    // ---- 負債台帳（縮小単調・green にはエントリ 0 / frozenCount 0 が必要 — AM-14） ----
+    {
+      "kind": "lint-baseline",
+      "id": "concierge-jp-baseline",
+      "repo": "nene-concierge",
+      "rule": "no-restricted-syntax (noHardcodedJapanese 3ノード)",
+      // frozenCount: null = W0b ゲート導入 PR の init --scan で実測生成（T-3 — 手書き MUST NOT）
+      "frozenCount": null,
+      "initializedBy": "init --scan (W0b ゲート導入 PR)"
+    },
+    {
+      "kind": "lint-baseline",
+      "id": "corpus-jp-baseline",
+      "repo": "nene-corpus",
+      "rule": "no-restricted-syntax (noHardcodedJapanese 3ノード)",
+      "frozenCount": null,
+      "initializedBy": "init --scan (W0b ゲート導入 PR)"
+    },
+
+    // ---- 経過措置2件（kind ラベル未決 → transition 扱い・批准レビュー送り） ----
+    // 05 §8.2 #7/#8 は kind=authorized-divergence 表記（起草時ドラフト）だが、用語集
+    // 「公認差異＝恒久」・会議⑤⑨「登録理由は外部制約由来のみ」と衝突するため、運用分類の
+    // 正本（02 §11・README §5「経過措置」）に従い transition として登録する。
+    // kind ラベルの最終確定（transition 系 kind の要否）は批准レビュー（README §8 未解消リスト）。
+    {
+      "kind": "transition",
+      "id": "invoice-recover-auth-seam",
+      "repo": "nene-invoice",
+      "summary": "silent refresh（httpOnly refresh cookie＋CSRF）— 単純 sessionStorage 置換は機能後退につき禁止。recoverAuth seam＋ADR＋demo ゲートを前提に transport 移行",
+      "wave": "W2b",
+      "reasonRef": "council:minutes#R3-4-A-8"
+    },
+    {
+      "kind": "transition",
+      "id": "concierge-widget-anonymous-transport",
+      "repo": "nene-concierge",
+      "summary": "widget は匿名 transport（tokenStore を渡さない createNene2Transport({ baseUrl })）",
+      "wave": "W2a",
+      "reasonRef": "council:minutes#R3-4-A-8"
+    }
+  ]
+}

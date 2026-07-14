@@ -30,6 +30,22 @@ export {
   TESTING_SYNTAX,
 } from './selectors.js';
 export { I18N_JP_SYNTAX } from './configs/restrictions.js';
+export {
+  ALL_KINDS,
+  DEBT_KINDS,
+  STRUCTURAL_KINDS,
+  REGISTRIES_SCHEMA_ID,
+  WAIVER_MAX_DAYS,
+  parseRegistries,
+  stripJsonc,
+  validateRegistries,
+} from './registries/schema.js';
+export type {
+  RegistriesDocument,
+  RegistryDiagnostic,
+  RegistryEntry,
+  RegistryKind,
+} from './registries/schema.js';
 
 /** 全断片の正準合成（gate-integrity の canonical 表・パッケージテストの検出プローブが使用）。 */
 export function composedConfig(): Linter.Config[] {
