@@ -68,6 +68,13 @@ describe('検出プローブ — api（A-1/A-2/R1③）', () => {
     expect(restricted.some((m) => m.message.includes('集約バレル'))).toBe(true);
   });
 
+  it('per-component import（@/shared/ui/<component>）は禁止されない（#19 正例プローブ）', () => {
+    const restricted = messagesFor('src/features/probe-slice/allowed-imports-probe.ts').filter(
+      (m) => m.ruleId === 'no-restricted-imports',
+    );
+    expect(restricted).toEqual([]);
+  });
+
   it('features からの .css import を検知する（AM-8(c)）', () => {
     const msgs = messagesFor('src/features/probe-slice/css-probe.ts');
     expect(
