@@ -1,0 +1,5 @@
+@layer components {
+  .badge {
+    background: var(--color-accent-soft);
+  }
+}

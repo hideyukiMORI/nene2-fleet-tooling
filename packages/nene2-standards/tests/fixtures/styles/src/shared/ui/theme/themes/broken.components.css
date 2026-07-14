@@ -1,0 +1,4 @@
+/* 故意 fail 用: @layer components 外のルール */
+.stray {
+  color: var(--color-accent);
+}
