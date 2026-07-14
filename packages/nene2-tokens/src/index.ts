@@ -47,10 +47,19 @@ export {
   COMMON_TABLE,
   ORIGIN_TABLE,
   VAULT_TABLE,
+  SUITE_TABLE,
   REMEDIATION_V1,
+  classifyTokenName,
   mapTokenName,
+  mapTokenSet,
 } from './codemod-map.js';
-export type { MappingTableId, RemediationItem } from './codemod-map.js';
+export type {
+  MappingTableId,
+  RemediationItem,
+  TokenMapping,
+  TokenSetConflict,
+  TokenSetResult,
+} from './codemod-map.js';
 
 export { FROZEN_CONTRACT_VERSION, checkContractFreeze } from './release-gate.js';
 export type { FreezeRecord, CurrentContract, GateOptions, GateResult } from './release-gate.js';

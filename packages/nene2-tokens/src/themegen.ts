@@ -9,6 +9,7 @@
 import {
   COLOR_KEYS,
   CONTRACT_VERSION,
+  EXCLUDED_NAMESPACES,
   SHADOW_KEYS,
   isContractTokenName,
   isExtensionTokenName,
@@ -16,9 +17,22 @@ import {
 import { parseTokenValue } from './grammar.js';
 import { parseThemeFile, isRootScopeSelector, type Block } from './parser.js';
 import { transitiveDependents } from './resolve.js';
-import { mapTokenName, type MappingTableId } from './codemod-map.js';
+import { classifyTokenName, type MappingTableId } from './codemod-map.js';
 
 export class ThemegenError extends Error {}
+
+/**
+ * @theme に出してよいキーか（契約・拡張トークン、または除外 namespace の pass-through 宣言）。
+ * 除外 namespace（--breakpoint-* ・ --container-*）は Tailwind の正規 @theme トークンとして宣言は
+ * 正当 — codemod は変換対象外としてそのまま維持する（#24 point4: fatal ではない）。
+ */
+function isAllowedThemeKey(name: string): boolean {
+  return (
+    isContractTokenName(name) ||
+    isExtensionTokenName(name) ||
+    EXCLUDED_NAMESPACES.some((ns) => name.startsWith(ns))
+  );
+}
 
 /** パッケージ版 — プラグマ `@themegen <ver>` に焼く（dx D4）。 */
 export const THEMEGEN_VERSION = '1.0.0';
@@ -130,9 +144,9 @@ function renderBlock(
 export function generateTheme(doc: ThemeDocument, opts: GenerateOptions = {}): string {
   const rootEntries = sortDecls(new Map(Object.entries(doc.theme)));
   for (const [name] of rootEntries) {
-    if (!isContractTokenName(name) && !isExtensionTokenName(name)) {
+    if (!isAllowedThemeKey(name)) {
       throw new ThemegenError(
-        `unknown key '${name}' — not contract v${CONTRACT_VERSION} and not an extension token; refusing to generate (silent drop is prohibited). Map it first: nene2-tokens extract --map <table>`,
+        `unknown key '${name}' — not contract v${CONTRACT_VERSION}, not an extension token, and not an excluded namespace; refusing to generate (silent drop is prohibited). Map it first: nene2-tokens extract --map <table>`,
       );
     }
   }
@@ -147,7 +161,7 @@ export function generateTheme(doc: ThemeDocument, opts: GenerateOptions = {}): s
   for (const selector of scopeSelectors) {
     const authoredRecord = doc.scopes![selector]!;
     for (const name of Object.keys(authoredRecord)) {
-      if (!isContractTokenName(name) && !isExtensionTokenName(name)) {
+      if (!isAllowedThemeKey(name)) {
         throw new ThemegenError(
           `unknown key '${name}' in scope '${selector}' — refusing to generate (silent drop is prohibited)`,
         );
@@ -184,12 +198,15 @@ export function extractTheme(source: string, opts: ExtractOptions = {}): ThemeDo
   const mapBlock = (block: Block): Record<string, string> => {
     const out: Record<string, string> = {};
     for (const d of block.decls) {
-      const mapped = mapTokenName(d.name, table);
-      if (mapped === null) {
+      const cls = classifyTokenName(d.name, table);
+      if (cls.kind === 'reject') {
         throw new ThemegenError(
           `unknown key '${d.name}' (line ${d.line}) — not contract v${CONTRACT_VERSION}, not an extension token, and not in codemod mapping table '${table}'; refusing to extract (silent drop is prohibited)`,
         );
       }
+      // rename/contract はターゲット名、passthrough（除外 namespace）は宣言をそのまま維持する
+      // （#24 point4: fatal null にしない — breakpoint を宣言するテーマでも codemod を走らせる）。
+      const mapped = cls.name;
       const value = mapValueRefs(d.value, table);
       // 語彙統一による直エイリアスの畳み込み: 写像後に `X: var(X)` の恒等形になった宣言は
       // 同義二重名（ok/success 等）の alias が消滅した痕跡 — 決定的に除去する
@@ -233,13 +250,19 @@ export function extractTheme(source: string, opts: ExtractOptions = {}): ThemeDo
 /** 値の中の var(--旧名) も写像する（写像は名前と参照の両方に適用） */
 function mapValueRefs(value: string, table: MappingTableId): string {
   return value.replace(/var\(\s*(--[a-zA-Z0-9-]+)\s*\)/g, (_whole, name: string) => {
-    const mapped = mapTokenName(name, table);
-    if (mapped === null) {
+    const cls = classifyTokenName(name, table);
+    if (cls.kind === 'reject') {
       throw new ThemegenError(
         `unknown key '${name}' referenced in value — refusing (silent drop is prohibited)`,
       );
     }
-    return `var(${mapped})`;
+    // 除外 namespace は宣言は素通しだが var() 参照は契約 error（#24 point4 の切り分け・Case D）。
+    if (cls.kind === 'passthrough') {
+      throw new ThemegenError(
+        `var(${name}) references the excluded --breakpoint-* ・ --container-* namespace — prohibited (emits invalid CSS with no error, Case D)`,
+      );
+    }
+    return `var(${cls.name})`;
   });
 }
 

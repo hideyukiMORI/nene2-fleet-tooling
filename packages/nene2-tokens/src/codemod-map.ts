@@ -5,6 +5,9 @@
  * - 確定写像: 議事録 R2 ⑥(B)「codemod 写像表 v1」＋ AM-3 追記
  *   （accent-weak→accent-soft / brand-violet→x-brand-violet / danger-hover→x-danger-hover）。
  * - vault 個別表: AI-13（tokens 管轄で確定）— nene-vault themes/default.css の現物列挙から作成。
+ * - suite 個別表: #23（suite W1 stage1 実測）— nene-suite PR #381 の実証済み SUITE_MAP を正とする
+ *   （契約 17・x- 27・prefix-less 全名写像）。
+ * - origin 個別表: #24（origin W1 実測）— nene-origin themes/default.css+dark.css の現物全 --color- 列挙。
  * - 是正リスト: R2⑥(B) 第1波（payout dead 17・records text-text-secondary 16）＋
  *   R5 議題(3) 実弾成果（records silent no-op 群）＋ AI-18 必須収載（payout typography）。
  *
@@ -13,13 +16,40 @@
 
 import { EXCLUDED_NAMESPACES, isContractTokenName, isExtensionTokenName } from './contract.js';
 
-export const CODEMOD_MAP_VERSION = '1.0.0';
+export const CODEMOD_MAP_VERSION = '1.0.1';
 
-export type MappingTableId = 'common' | 'origin' | 'vault';
+export type MappingTableId = 'common' | 'origin' | 'vault' | 'suite';
+
+/**
+ * 写像の結果類型（#24 point5 — 「fatal null」と「pass-through」を型で区別する）。
+ * - `contract`    : 既に契約/拡張トークン — 不変（rewrite 不要）。
+ * - `rename`      : 旧語彙 → 契約/拡張ターゲットへ改名。
+ * - `passthrough` : 除外 namespace（--breakpoint-* ・ --container-*）。Tailwind の正規 @theme
+ *                   トークンとして宣言は正当 — 変換対象外・宣言はそのまま維持（fatal ではない）。
+ * - `reject`      : 未知の色トークン等 — fail-closed（silent drop 禁止・呼び出し側で error）。
+ *
+ * fail-closed の対象は「未知の色トークン」であって「既知の非対象 namespace」ではない（#24）。
+ */
+export type TokenMapping =
+  | { readonly kind: 'contract'; readonly name: string }
+  | { readonly kind: 'rename'; readonly name: string }
+  | { readonly kind: 'passthrough'; readonly name: string }
+  | { readonly kind: 'reject'; readonly reason: string };
+
+/**
+ * 同義ロール名の正規化（R2⑥(A) の synonym ban と同型）。
+ * ink 規則（`*-ink → on-*`）より **先に** 適用する — さもないと `warning-ink` が契約外の
+ * `on-warning` を吐く（#24 バグ #2: ink 規則が `warning→warn` より先に発火していた）。
+ */
+const ROLE_SYNONYMS: Readonly<Record<string, string>> = {
+  warning: 'warn',
+  ok: 'success',
+};
 
 /**
  * 共通表（records/payout 系 → 契約 v1）。キーは `--color-` を除いた部分。
- * 値が `x-` で始まるものは拡張トークン送り。
+ * 値が `x-` で始まるものは拡張トークン送り。individual 表（origin/vault）の
+ * フォールバック共通ベースでもある（TABLES[table][key] ?? COMMON_TABLE[key]）。
  */
 export const COMMON_TABLE: Readonly<Record<string, string>> = {
   // ⑥(B) 確定写像
@@ -49,15 +79,48 @@ export const COMMON_TABLE: Readonly<Record<string, string>> = {
   'sidebar-border': 'x-sidebar-border',
 };
 
-/** origin 個別表（議事録: primary・muted(origin) → text-primary・text-muted） */
+/**
+ * origin 個別表（#24 — nene-origin/frontend/src/shared/ui/theme/themes/default.css + dark.css の
+ * 現物 --color-* 全列挙）。契約名そのものの roles（surface / accent / danger / focus-ring 等）は
+ * ここに載せない — 表に無い名は契約短絡でそのまま通る。ここに載せるのは pre-contract 語彙のみ。
+ *
+ * 衝突裁定（AM-3「x- 送りは tokens の技術判断」の範囲 — AI-5 非掲載）:
+ *  - accent-contrast(#fff = accent 面上のテキスト) → on-accent（契約の「on-」ロール）
+ *  - accent-ink(#8f4322 = 別トーン・components で text-accent-ink×10 が別色として使用) → x-accent-ink
+ *    naive では両者とも on-accent に潰れ 19 usage が1色化する（#24 見た目退行）。ink を x- へ退避して衝突解消。
+ *  - neutral は契約ロール外 → on-neutral は契約に存在しない。ink 規則を使わず x- 送り。
+ */
 export const ORIGIN_TABLE: Readonly<Record<string, string>> = {
+  // 文字（origin は primary/muted を裸で使う）
   primary: 'text-primary',
   muted: 'text-muted',
+  // accent 系の余剰（現物）— 衝突裁定は上コメント参照
+  'accent-contrast': 'on-accent',
+  'accent-ink': 'x-accent-ink',
+  'accent-glow': 'x-accent-glow', // 装飾影(toast) — focus-ring ではない
+  // status ink（現物）: warning は warn へ正規化してから on- を付ける（#24 バグ #2 の明示回避）
+  'danger-ink': 'on-danger',
+  'success-ink': 'on-success',
+  'info-ink': 'on-info',
+  'warning-ink': 'on-warn',
+  // status soft（現物）: warn-soft は COMMON 未収載の契約語彙
+  warning: 'warn', // COMMON にもあるが現物列挙のため明示
+  'warning-soft': 'warn-soft',
+  // neutral（契約ロール外）→ x- 送り（on-neutral は契約に無い）
+  'neutral-soft': 'x-neutral-soft',
+  'neutral-ink': 'x-neutral-ink',
+  // 遮蔽（現物 overlay = modal scrim）→ 契約 scrim
+  overlay: 'scrim',
 };
 
 /**
  * vault 個別表（AI-13 — nene-vault/frontend/src/shared/ui/theme/themes/default.css の
  * 全 --color-* 現物 40 個の写像。凍結レビュー資料に「要確認」印付きで全行掲載）。
+ *
+ * 注意（#25）: `surface → surface-raised` のように **pre-contract 名が契約名と綴り衝突** する
+ * キーがある。mapTokenName は個別表引きを契約短絡より先に評価するため、vault の `--color-surface`
+ * は契約名として素通りせず正しく `--color-surface-raised` へ改名される（`--color-bg → --color-surface`
+ * との衝突を回避）。
  */
 export const VAULT_TABLE: Readonly<Record<string, string>> = {
   // 面（vault は bg=ページ地・surface=カード面）
@@ -110,39 +173,220 @@ export const VAULT_TABLE: Readonly<Record<string, string>> = {
   'rail-text': 'x-rail-text',
 };
 
-const TABLES: Record<MappingTableId, Readonly<Record<string, string>>> = {
+/**
+ * suite 個別表（#23 — nene-suite PR #381 `frontend/scripts/w1-stage1-token-rename.mjs` の
+ * SUITE_MAP を正とする実証済み写像）。**prefix-less 全名表**: 他表と違いキーは `--color-`/`--shadow-`
+ * を含まない裸名（`bg`/`fg-2`/`r`/`shadow`/`font-sans` …）で、**値は完全なターゲット名**（`--color-*`
+ * / `--shadow-*` / `--font-*` / `--r-*` とカテゴリを跨ぐ）。これにより suite の単一セグメント名
+ * （`--bg`/`--r` 等）が汎用 x- 送り正規表現で NULL に落ちる #23 原因3 を根本回避する。
+ *
+ * 内訳（PR #381 実測）: 契約名 rename 17（surface×4・border×2・text×3・accent 3・status 3・shadow 1
+ * ＋不変 --shadow-lg）／x- 送り 27（brand primitives 7・origin 1・dark sidebar 6・hero 5・
+ * logo-ring/dot 2・typography 3・radius 3）。値は不変（名前のみ・vault 前例と同型）。
+ */
+export const SUITE_TABLE: Readonly<Record<string, string>> = {
+  // ── surfaces (contract) ──
+  bg: '--color-surface',
+  surface: '--color-surface-raised',
+  'surface-2': '--color-surface-overlay',
+  'surface-3': '--color-surface-sunken',
+  // ── borders (contract) ──
+  border: '--color-border',
+  'border-2': '--color-border-strong',
+  // ── text (contract) ──
+  fg: '--color-text-primary',
+  'fg-2': '--color-text-muted',
+  'fg-3': '--color-text-faint',
+  // ── accent (contract — suite の意味的別名が契約座席になる) ──
+  accent: '--color-accent',
+  'accent-soft': '--color-accent-soft',
+  'on-brand': '--color-on-accent',
+  // ── brand primitives (x- 拡張; accent/*-soft はこれ由来) ──
+  brand: '--color-x-brand',
+  'brand-strong': '--color-x-brand-strong',
+  'brand-deep': '--color-x-brand-deep',
+  'brand-soft': '--color-x-brand-soft',
+  'brand-softer': '--color-x-brand-softer',
+  'side-brand': '--color-x-side-brand',
+  ink: '--color-x-ink',
+  // ── status (contract) ──
+  ok: '--color-success',
+  warn: '--color-warn',
+  danger: '--color-danger',
+  // ── product/domain color (x-) ──
+  origin: '--color-x-origin',
+  // ── dark sidebar chrome (x-) ──
+  'side-bg': '--color-x-side-bg',
+  'side-bg-2': '--color-x-side-bg-2',
+  'side-fg': '--color-x-side-fg',
+  'side-fg-mut': '--color-x-side-fg-mut',
+  'side-active': '--color-x-side-active',
+  'side-line': '--color-x-side-line',
+  // ── marketing hero gradient (x-) ──
+  'hero-1': '--color-x-hero-1',
+  'hero-2': '--color-x-hero-2',
+  'hero-3': '--color-x-hero-3',
+  'hero-accent': '--color-x-hero-accent',
+  'hero-bd': '--color-x-hero-bd',
+  // ── misc color (x-) ──
+  'logo-ring': '--color-x-logo-ring',
+  dot: '--color-x-dot',
+  // ── shadow (contract) ──
+  // NOTE: `--shadow-lg` は既に契約名（SHADOW_KEYS に lg）— 意図的に非収載・不変。
+  shadow: '--shadow-md',
+  // ── typography (v1 スコープ外 → x-) ──
+  'font-sans': '--font-x-sans',
+  'font-num': '--font-x-num',
+  'font-serif': '--font-x-serif',
+  // ── radius (v1 スコープ外 → x-) ──
+  r: '--r-x-base',
+  'r-sm': '--r-x-sm',
+  'r-pill': '--r-x-pill',
+};
+
+/** `--color-` 接尾辞で引く個別表（common 共通ベース付き）。 */
+const COLOR_SUFFIX_TABLES: Record<
+  'common' | 'origin' | 'vault',
+  Readonly<Record<string, string>>
+> = {
   common: COMMON_TABLE,
   origin: ORIGIN_TABLE,
   vault: VAULT_TABLE,
 };
 
-/**
- * CSS カスタムプロパティ名の写像。
- * 順序: 契約/拡張トークンはそのまま → 除外名前空間は null → 個別表 → common →
- * 汎用 `*-ink → on-*`（⑥(B)） → 非 color/shadow カテゴリの機械的 x- 送り → null（未知 = reject）。
- */
-export function mapTokenName(name: string, table: MappingTableId = 'common'): string | null {
-  if (isContractTokenName(name) || isExtensionTokenName(name)) return name;
-  if (EXCLUDED_NAMESPACES.some((ns) => name.startsWith(ns))) return null;
+/** prefix-less 全名で引く個別表（suite — キーは裸名・値は完全なターゲット名）。 */
+const FULLNAME_TABLES: Partial<Record<MappingTableId, Readonly<Record<string, string>>>> = {
+  suite: SUITE_TABLE,
+};
 
+/**
+ * CSS カスタムプロパティ名の写像分類（#24 point5 — 型で contract/rename/passthrough/reject を区別）。
+ *
+ * 評価順（#25 是正 — 個別表引きを契約短絡より **先** に）:
+ *  1. 個別表（全名表 suite → `--color-` 接尾辞表）。pre-contract 名が契約名と綴り衝突しても改名を優先。
+ *  2. 表に無い契約/拡張トークン → そのまま（contract）。
+ *  3. 除外 namespace（--breakpoint-* ・ --container-*）→ passthrough（宣言は素通し・fatal ではない）。
+ *  4. 表に無い `--color-*` → 汎用 `*-ink → on-*`（同義正規化を先に）→ 未知は reject。
+ *  5. `--shadow-*`（契約4键以外）→ x- 送り。
+ *  6. 非契約カテゴリ（typography/radius/spacing 等）→ 機械的 x- 送り。
+ *  7. 単一セグメント等の未知名 → reject（fail-closed・写像を発明しない）。
+ */
+export function classifyTokenName(name: string, table: MappingTableId = 'common'): TokenMapping {
+  // 1a. prefix-less 全名表（suite）— #23 原因3 の根本回避（単一セグメント名の NULL 落ち防止）
+  const wholeTable = FULLNAME_TABLES[table];
+  if (wholeTable) {
+    const whole = wholeTable[name.slice(2)]; // 先頭 `--` を除いた裸名で引く
+    if (whole !== undefined) return { kind: 'rename', name: whole };
+  }
+  // 1b. `--color-` 接尾辞表（#25: 契約短絡より先 — vault surface→surface-raised 等の衝突回避）
   if (name.startsWith('--color-')) {
     const key = name.slice('--color-'.length);
-    const specific = TABLES[table][key] ?? COMMON_TABLE[key];
-    if (specific !== undefined) return `--color-${specific}`;
+    const t = (COLOR_SUFFIX_TABLES as Record<string, Readonly<Record<string, string>>>)[table];
+    const specific = (t ? t[key] : undefined) ?? COMMON_TABLE[key];
+    if (specific !== undefined) return { kind: 'rename', name: `--color-${specific}` };
+  }
+
+  // 2. 表に無い名で契約/拡張トークンなら不変（既に移行済み）
+  if (isContractTokenName(name) || isExtensionTokenName(name)) return { kind: 'contract', name };
+
+  // 3. 除外 namespace は pass-through（fatal null ではない — #24 point5）
+  if (EXCLUDED_NAMESPACES.some((ns) => name.startsWith(ns))) return { kind: 'passthrough', name };
+
+  // 4. 表に無い `--color-*` — 汎用 ink 規則 → reject
+  if (name.startsWith('--color-')) {
+    const key = name.slice('--color-'.length);
     const ink = /^(.+)-ink$/.exec(key);
-    if (ink) return `--color-on-${ink[1]}`;
-    return null; // 未知の color キー — silent drop 禁止・呼び出し側で error
+    if (ink) {
+      const base = ROLE_SYNONYMS[ink[1]!] ?? ink[1]!; // #24: warning→warn を ink より先に
+      return { kind: 'rename', name: `--color-on-${base}` };
+    }
+    return {
+      kind: 'reject',
+      reason: `unknown color token ${name} (table='${table}') — silent drop 禁止`,
+    };
   }
+  // 5. 契約 4 键以外の shadow は x- 送り（--shadow-glow → --shadow-x-glow）
   if (name.startsWith('--shadow-')) {
-    // 契約 4 キー以外の shadow は x- 送り（--shadow-glow → --shadow-x-glow）
-    const key = name.slice('--shadow-'.length);
-    return `--shadow-x-${key}`;
+    return { kind: 'rename', name: `--shadow-x-${name.slice('--shadow-'.length)}` };
   }
-  // 非契約カテゴリ（typography/radius/spacing 等）は v1 スコープ外 — 機械的 x- 送り
-  // （AM-3 scope 宣言「x- 拡張で書き v2 で契約化を再審」の写像実装 — tokens 技術判断）
+  // 6. 非契約カテゴリ（typography/radius/spacing 等）は v1 スコープ外 — 機械的 x- 送り
+  //    （AM-3 scope 宣言「x- 拡張で書き v2 で契約化を再審」の写像実装 — tokens 技術判断）
   const m = /^--([a-z][a-z0-9]*)-(.+)$/.exec(name);
-  if (m) return `--${m[1]}-x-${m[2]}`;
-  return null;
+  if (m) return { kind: 'rename', name: `--${m[1]}-x-${m[2]}` };
+
+  // 7. 単一セグメント等の未知名 — 発明せず reject
+  return {
+    kind: 'reject',
+    reason: `unknown token ${name} — single-segment name not in table '${table}'`,
+  };
+}
+
+/**
+ * CSS カスタムプロパティ名の写像（後方互換 API）。
+ * rename/contract/passthrough はターゲット名（passthrough は不変）、reject は null（呼び出し側で error）。
+ * 注意: null は「未知＝reject」のみ。除外 namespace の pass-through は非 null で名前を返す
+ * （fatal と pass-through の区別は classifyTokenName の kind で行う — #24 point5）。
+ */
+export function mapTokenName(name: string, table: MappingTableId = 'common'): string | null {
+  const r = classifyTokenName(name, table);
+  return r.kind === 'reject' ? null : r.name;
+}
+
+/* ------------------------------------------------------------------ */
+/* 衝突検出の一般化（#24 point3 — 複数ソース→単一ターゲットは driver で明示 error）  */
+/* ------------------------------------------------------------------ */
+
+export interface TokenSetConflict {
+  /** 2 ソース以上が集中したターゲット名 */
+  readonly target: string;
+  /** そのターゲットへ写る旧名（辞書順） */
+  readonly sources: readonly string[];
+}
+
+export interface TokenSetResult {
+  readonly renames: readonly { readonly from: string; readonly to: string }[];
+  readonly passthrough: readonly string[];
+  readonly rejected: readonly { readonly from: string; readonly reason: string }[];
+  /** 同一ターゲットに 2 ソース以上（silent 上書き＝G-6 違反）。空でなければ driver は停止すべき。 */
+  readonly conflicts: readonly TokenSetConflict[];
+}
+
+/**
+ * 名前集合を一括写像し、衝突（複数ソース→単一ターゲット）を検出する（#24 point3）。
+ * silent 上書き禁止（G-6 同型）。衝突を「通す」唯一の方法は個別表で明示 disambiguation する
+ * こと（例: origin の accent-contrast→on-accent と accent-ink→x-accent-ink）。本関数に許可
+ * リストは無い — 表で別ターゲットへ振り分けた時点で衝突は消える。
+ */
+export function mapTokenSet(
+  names: readonly string[],
+  table: MappingTableId = 'common',
+): TokenSetResult {
+  const renames: { from: string; to: string }[] = [];
+  const passthrough: string[] = [];
+  const rejected: { from: string; reason: string }[] = [];
+  const byTarget = new Map<string, Set<string>>(); // ターゲット名 → それを生む相異なる旧名
+  for (const name of names) {
+    const r = classifyTokenName(name, table);
+    if (r.kind === 'reject') {
+      rejected.push({ from: name, reason: r.reason });
+      continue;
+    }
+    if (r.kind === 'passthrough') {
+      passthrough.push(name);
+      continue;
+    }
+    if (r.kind === 'rename') renames.push({ from: name, to: r.name });
+    // contract / rename はターゲット座席を占有する — 衝突判定に載せる
+    const set = byTarget.get(r.name) ?? new Set<string>();
+    set.add(name);
+    byTarget.set(r.name, set);
+  }
+  const conflicts: TokenSetConflict[] = [];
+  for (const [target, sources] of byTarget) {
+    if (sources.size > 1) conflicts.push({ target, sources: [...sources].sort() });
+  }
+  conflicts.sort((a, b) => (a.target < b.target ? -1 : a.target > b.target ? 1 : 0));
+  return { renames, passthrough, rejected, conflicts };
 }
 
 /* ------------------------------------------------------------------ */
@@ -252,6 +496,12 @@ export const REMEDIATION_V1: readonly RemediationItem[] = [
 export const CODEMOD_MAP_V1 = {
   version: CODEMOD_MAP_VERSION,
   contract: '1.0',
-  tables: TABLES,
+  tables: {
+    common: COMMON_TABLE,
+    origin: ORIGIN_TABLE,
+    vault: VAULT_TABLE,
+    // suite は prefix-less 全名表（キー＝裸名・値＝完全ターゲット名）— 他表と引き方が異なる
+    suite: SUITE_TABLE,
+  },
   remediation: REMEDIATION_V1,
 } as const;
