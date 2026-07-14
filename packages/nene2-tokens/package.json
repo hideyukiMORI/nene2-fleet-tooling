@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "NeNe Core Token Contract v1 — contract types, CONTRACT_TOKENS, validate:themes CLI, themegen, codemod mapping table v1, reference theme",
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

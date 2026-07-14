@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "NeNe fleet frontend standards — distributed ESLint flat config (per-rule merged), Stylelint shared config + custom plugin, known-utility fast path, nene2 custom rules",
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
