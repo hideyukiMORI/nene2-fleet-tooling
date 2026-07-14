@@ -1,0 +1,7 @@
+/* 故意 fail 用: 無レイヤ CSS・hex・rgb()・!important・ID・[data-theme] 場所違反 */
+#app {
+  color: #fff !important;
+}
+[data-theme='dark'] .card {
+  background: rgb(0, 0, 0);
+}

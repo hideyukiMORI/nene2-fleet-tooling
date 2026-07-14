@@ -1,0 +1,13 @@
+/* 故意 fail 用: token-only 違反3種＋@layer base 混入（vault 実測の再現） */
+[data-theme='broken'] {
+  --color-accent: oklch(0.55 0.15 250);
+  font-family: serif;
+}
+.button {
+  color: red;
+}
+@layer base {
+  body {
+    margin: 0;
+  }
+}
