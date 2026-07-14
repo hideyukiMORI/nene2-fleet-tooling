@@ -14,7 +14,8 @@
     "test": "vitest run",
     "build": "tsc --build packages/*",
     "check:cli": "node packages/nene2-tokens/dist/cli.js validate packages/nene2-tokens/themes/reference.css",
-    "check": "npm run type-check && npm run lint && npm run format:check && npm run test && npm run check:cli"
+    "check": "npm run type-check && npm run lint && npm run format:check && npm run test && npm run check:cli && npm run check:nene2-check",
+    "check:nene2-check": "cd packages/nene2-standards/tests/fixtures/check-app && node ../../../dist/checks/cli.js conformance --repo nene-check-smoke"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.0",
