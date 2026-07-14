@@ -1,0 +1,9 @@
+@import 'tailwindcss';
+@layer components {
+  .badge {
+    background: var(--color-accent-soft);
+  }
+  .data-table th {
+    text-align: left;
+  }
+}

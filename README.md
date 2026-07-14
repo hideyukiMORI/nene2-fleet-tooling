@@ -13,9 +13,9 @@ NeNe フリート・フロント統一規約の**配布物（versioned 実行可
 | パス | 内容 | 状態 |
 |---|---|---|
 | `packages/nene2-tokens` | Core Token Contract v1（color 28＋shadow 4）・CONTRACT_TOKENS export・validate:themes・themegen・codemod 写像表 v1 | **v1.0.0-rc.1 実装済**（W0a stage1・凍結レビュー資料 = `docs/contract-freeze-review-2026-07-18.md`・マージ/publish は施主承認後） |
-| `packages/nene2-standards` | ESLint flat config 配布（合成規律=ルール単位1定義・plugin 同梱）・Stylelint 2枚組・known-utility lint・`nene2-check`（conformance skeleton・fail-closed）・`init --scan` | 未実装 |
+| `packages/nene2-standards` | ESLint flat config 配布（合成規律=ルール単位1定義・plugin 同梱）・Stylelint 2枚組・known-utility lint・`nene2-check`（conformance skeleton・fail-closed）・`init --scan` | **実装済**（W0a stage2 #2/#8/#9） |
 | `packages/nene2-i18n` | 型付き i18n（ja 権威カタログ・parity・同値率検査） | **W0a 骨格 実装済**（型付きカタログ＋parity AM-17 最終形。plural/format/react/vault JSON 形は W0b — パッケージ README 参照） |
-| `registries/` | 構造レジストリ（恒久公認差異）＋負債台帳（lint-baseline / legacy-manifest）＋waiver — kind 判別ユニオン jsonc | 未実装 |
+| `packages/nene2-standards/registries/` | 構造レジストリ（恒久公認差異）＋負債台帳（lint-baseline / legacy-manifest）＋waiver — kind 判別ユニオン jsonc（スキーマ = `src/registries/schema.ts`・配置は 05 §1.1 準拠でパッケージ同梱＝製品は pinned 版で消費） | **v1 発効時点の現物 登録済**（経過措置2件は kind=transition・批准レビュー送り） |
 | `fleet-baseline.json` | 基盤4パッケージ semver の単一マニフェスト | 未作成（版が確定済みなのは nene2-client ^1.1.0 のみ） |
 
 ## 規律
