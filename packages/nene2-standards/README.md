@@ -12,7 +12,7 @@ export default [
   ...nene2.base,
   ...nene2.fsd,
   ...nene2.api,
-  ...nene2.styling,
+  ...nene2.stylingWith(),  // per-repo Tailwind entry の seam（既定 FSD 正準・下記）
   ...nene2.i18n,
   ...nene2.testing,
   // 公認差異は registries 登録済みの override のみ合成可（05 §8）
@@ -43,6 +43,21 @@ ESLint flat config は同一ルールの再指定が**後勝ちで全置換**に
 - **O-6 (MUST)**: 実効 severity は**ファイル単位**で legacy manifest から機械生成する（掲載= off・それ以外= error）。リポ単位の有効化は当該リポの語彙 codemod スタック直後の連続 PR。
 - つまり「配布値 warn」→「manifest 生成 override が error/off を上書き」が正規の姿。生成器（O-6 の severity 生成）と `check:tw-oracle` は W0a 後続（conformance / W1 配線)。**error/warn 運用の最終形は批准レビュー送り**（規約 README §8 未解消リスト）。
 - O-7: 偽陽性時のリポ側 `eslint-disable` MUST NOT（`eslint-comments/no-restricted-disable` で強制）。是正は 24h の standards patch レーン。
+
+## known-utility の entryPoint seam（fleet-tooling#21・payout#161 実弾テストで確定）
+
+`better-tailwindcss/no-unknown-classes` の `entryPoint` は「アプリ実 entry」（O-3 MUST）＝**アプリ固有**であり、単一ハードコード既定では表現できない。
+
+- **既定は FSD 正準のテーマ入口 `src/shared/ui/theme/index.css`**（init-scan の `CANONICAL_NON_LEGACY`・AM-8(a) canonical cascade header の置き場と一致）。payout など FSD 正準レイアウトの repo は `...nene2.stylingWith()` を無引数で撃てば正しく配線される。
+- **per-repo 上書き**は `stylingWith({ entryPoint })`。W0.starter レイアウト（`src/index.css`）等は `...nene2.stylingWith({ entryPoint: 'src/index.css' })`。
+- **entry 不在は fail-loud**（`stylingWith` が throw）。better-tailwindcss は entry 未発見時に既定 tailwind theme へ silent fallback し、テーマ固有ユーティリティ（`bg-surface`・`px-inline-md` 等）を全て unknown へ化けさせる（＝偽陽性洪水）。G-6（検査不能=unknown・空虚合格禁止）に従い、黙って通さず設定エラーとして即 FAIL させる。
+- **実測（payout#161・`eb5f7aa`）**: 配布既定 `'src/index.css'` では **218 件の偽陽性**（全件 entry-not-found・全テーマユーティリティが unknown）→ 実 entry `'src/shared/ui/theme/index.css'` 指定で **49 件の真陽性のみ**（entry-not-found 0）。回帰テスト `tests/styling-entrypoint.test.ts` が payout 形 fixture でこれを固定する。
+- 後方互換: `...nene2.styling`（静的配列）も残す（既定 entryPoint は同じく FSD 正準へ是正）。ただし fail-loud の存在検査は付かない（import 副作用ゼロのため）— 検査が要る配線は `stylingWith()` を使う。
+
+## 変更履歴
+
+- **1.0.1** — known-utility の `entryPoint` 既定を W0.starter 前提 `'src/index.css'` から FSD 正準 `'src/shared/ui/theme/index.css'` へ是正し、per-repo 上書き `stylingWith({ entryPoint })` seam＋entry 不在 fail-loud を追加（fleet-tooling#21・payout#161: shipped 218 偽陽性 → 実 entry で 49 真陽性）。
+- **1.0.0** — 初回公開。
 
 ## W0a 実装確定値（「実装が正本」化 — 05 §10.2 の確定送り分）
 
