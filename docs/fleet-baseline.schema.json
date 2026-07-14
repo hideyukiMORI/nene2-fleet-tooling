@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/hideyukiMORI/nene2-fleet-tooling/blob/main/docs/fleet-baseline.schema.json",
+  "title": "fleet-baseline",
+  "description": "基盤パッケージ semver の単一マニフェスト（規約 05 §1.1）。値は caret range 1本に固定。null = 未発効（当該版がまだ npm に publish されていない — 未公開版を書かない・誠実性ガード）。実版数の記入は publish 成功後の別 PR。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "packages"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "packages": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "patternProperties": {
+        "^@hideyukimori/nene2-[a-z0-9-]+$": {
+          "oneOf": [
+            {
+              "type": "null",
+              "description": "未発効（publish 前）"
+            },
+            {
+              "type": "string",
+              "pattern": "^\\^[0-9]+\\.[0-9]+\\.[0-9]+$",
+              "description": "caret range 固定形（例 ^1.0.0）"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

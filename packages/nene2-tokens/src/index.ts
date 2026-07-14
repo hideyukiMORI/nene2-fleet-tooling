@@ -52,6 +52,9 @@ export {
 } from './codemod-map.js';
 export type { MappingTableId, RemediationItem } from './codemod-map.js';
 
+export { FROZEN_CONTRACT_VERSION, checkContractFreeze } from './release-gate.js';
+export type { FreezeRecord, CurrentContract, GateOptions, GateResult } from './release-gate.js';
+
 export { parseThemeFile, isRootScopeSelector } from './parser.js';
 export type { ParsedThemeFile, Block, Decl, Pragma } from './parser.js';
 

@@ -3,6 +3,10 @@
 Core Token Contract v1 — NeNe フリートの唯一のセマンティックトークン語彙（color 28＋shadow 4）。
 **このパッケージが契約の正本**（規約 03 §0.1 — 散文は索引・注釈）。
 
+**契約は凍結済み**（2026-07-14 hide 承認 — 記録 = リポ `docs/contract-freeze-review-2026-07-18.md` §7・
+凍結スナップショット = 同梱 `contract-freeze.json`）。以後のキー集合変更は stop-the-line ADR のみ（AM-2 —
+publish は `release-gate` が拒否する）。
+
 ## 同梱物
 
 - `CONTRACT_TOKENS`（名前配列＋版）・契約 TS 型（AM-3）
