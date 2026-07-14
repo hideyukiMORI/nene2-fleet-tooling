@@ -37,10 +37,28 @@ import {
 } from '../restricted-imports.js';
 
 /**
- * JP 3ノードセレクタの座席（AI-19 — 別 PR で第4部 I18N-16 の確定文字クラスを実装）。
- * 空配列は「未実装」を意味する。実装 PR がこの export を置換する。
+ * JP lint 3ノード化（AI-19・会議R4 AM-16・R5 文字域修正）。
+ * 文字クラスは第4部 I18N-16 の確定正規表現をそのまま使用（1字も発明しない）:
+ * ひらがな・カタカナ・CJK（records 現行域）＋々（U+3005）・〆（U+3006）・半角カナ（U+FF66-FF9D）。
+ * records 現行の Literal 1本は JSXText / TemplateLiteral を素通しする実穴（AM-16 検証済み）—
+ * 3ノード必須。除外の有限列挙は I18N-16（restrictions のファイル集合設計が実装）。
  */
-export const I18N_JP_SYNTAX: readonly SyntaxSelector[] = [];
+const JP = String.raw`[々〆぀-ヿ㐀-鿿ｦ-ﾝ]`;
+
+export const I18N_JP_SYNTAX: readonly SyntaxSelector[] = [
+  {
+    selector: `Literal[value=/${JP}/]`,
+    message: 'ユーザ知覚文字列は t() 経由（会議R1⑦決定）。',
+  },
+  {
+    selector: `JSXText[value=/${JP}/]`,
+    message: '同上。',
+  },
+  {
+    selector: `TemplateElement[value.cooked=/${JP}/]`,
+    message: '同上。',
+  },
+];
 
 export const APP_GLOB = 'src/**/*.{ts,tsx}';
 export const CLIENT_TS = 'src/shared/api/client.ts';
