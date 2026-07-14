@@ -65,3 +65,22 @@ export { checkGateIntegrity, canonicalSeverityTable } from './checks/gate-integr
 export { checkScanCoverage } from './checks/scan-coverage.js';
 export { initScan, initCheck } from './checks/init-scan.js';
 export { runConformance } from './checks/run.js';
+export {
+  auditStandardsDoc,
+  enforcedEslintRuleIds,
+  enforcedStylelintRuleIds,
+  normalizeRuleId,
+  renderStandardsDocMarkdown,
+} from './checks/standards-doc.js';
+export type { StandardsDocReport, RuleIdFinding, UntaggedMust } from './checks/standards-doc.js';
+export {
+  checkExemplars,
+  collectExemplarRefs,
+  renderExemplarsMarkdown,
+} from './checks/exemplars.js';
+export type {
+  DocFile,
+  ExemplarFinding,
+  ExemplarsReport,
+  ExemplarStatus,
+} from './checks/exemplars.js';

@@ -6,17 +6,27 @@
  *   nene2-check conformance [--repo <name>] [--registries <path>] [--out <file>]
  *   nene2-check gate-integrity
  *   nene2-check init --scan [--out <file>] / init --check
+ *   nene2-check standards-doc --docs <dir> [--out <json>] [--md <file>]
+ *   nene2-check exemplars --docs <dir> [--root <dir>] [--out <json>] [--md <file>]
  *
  * 正準シーケンス（type-check → eslint → … → build — 05 §5.1）の駆動は W0b/W1 配線
  * （検査器の空虚合格を出荷しないため、未配線工程は conformance で unknown を出力する）。
  */
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { validateConformance } from './conformance.js';
+import { checkExemplars, renderExemplarsMarkdown, type DocFile } from './exemplars.js';
 import { checkGateIntegrity } from './gate-integrity.js';
 import { initCheck, initScan, ledgersAlreadyInitialized } from './init-scan.js';
 import { loadRegistries, runConformance } from './run.js';
+import {
+  auditStandardsDoc,
+  enforcedEslintRuleIds,
+  enforcedStylelintRuleIds,
+  renderStandardsDocMarkdown,
+} from './standards-doc.js';
 
 interface Args {
   command: string;
@@ -40,6 +50,40 @@ function parseArgs(argv: string[]): Args {
     }
   }
   return { command, flags };
+}
+
+/**
+ * 規約文書の走査対象を固定列挙で読む: README.md ＋ 01〜05（00 は一次資料・規範ではない）。
+ * 6 ファイル揃わない場合は null（fail-closed — 部分入力での空虚合格 MUST NOT）。
+ */
+function loadStandardsDocs(docsDir: string): { files: DocFile[]; provenance: string[] } | null {
+  if (!existsSync(docsDir)) {
+    console.error(`--docs のディレクトリが存在しない: ${docsDir}`);
+    return null;
+  }
+  const entries = readdirSync(docsDir);
+  const chapters = entries.filter((n) => /^0[1-5]-.*\.md$/.test(n)).sort();
+  const names = ['README.md', ...chapters];
+  if (!entries.includes('README.md') || chapters.length !== 5) {
+    console.error(
+      `規約文書が揃っていない（期待: README.md ＋ 01〜05 の 6 ファイル / 実測: ${names.join(', ') || 'なし'}）`,
+    );
+    return null;
+  }
+  const files: DocFile[] = [];
+  const provenance: string[] = [];
+  for (const name of names) {
+    const content = readFileSync(path.join(docsDir, name), 'utf8');
+    files.push({ path: name, content });
+    provenance.push(
+      `${name} sha256=${createHash('sha256').update(content).digest('hex').slice(0, 16)}`,
+    );
+  }
+  return { files, provenance };
+}
+
+function stateToExit(state: 'green' | 'red' | 'unknown'): number {
+  return state === 'green' ? 0 : state === 'red' ? 1 : 2;
 }
 
 function detectRepo(cwd: string): string {
@@ -143,8 +187,58 @@ async function main(): Promise<number> {
       return 0;
     }
 
+    case 'standards-doc': {
+      const docsDir = flags.get('docs');
+      if (typeof docsDir !== 'string') {
+        console.error('--docs <dir>（規約文書 README＋01〜05 のディレクトリ）は必須');
+        return 2;
+      }
+      const loaded = loadStandardsDocs(docsDir);
+      if (loaded === null) return 2; // fail-closed（unknown 相当）
+      // 照合対象の rule 集合は配布 config の実効定義（RAT-2 — 綴りの正本は配布 config）
+      const { composedConfig } = await import('../index.js');
+      const stylelintConfig = (await import('../stylelint/index.js')).default;
+      const report = auditStandardsDoc(loaded.files, {
+        eslintRuleIds: enforcedEslintRuleIds(composedConfig()),
+        stylelintRuleIds: enforcedStylelintRuleIds(stylelintConfig),
+      });
+      const json = JSON.stringify(report, null, 2);
+      const out = flags.get('out');
+      if (typeof out === 'string') writeFileSync(out, json + '\n');
+      const md = flags.get('md');
+      if (typeof md === 'string') writeFileSync(md, renderStandardsDocMarkdown(report));
+      console.log(json);
+      for (const p of loaded.provenance) console.error(`input: ${p}`);
+      for (const d of report.details) console.error(d);
+      return stateToExit(report.state);
+    }
+
+    case 'exemplars': {
+      const docsDir = flags.get('docs');
+      if (typeof docsDir !== 'string') {
+        console.error('--docs <dir>（規約文書 README＋01〜05 のディレクトリ）は必須');
+        return 2;
+      }
+      const loaded = loadStandardsDocs(docsDir);
+      if (loaded === null) return 2; // fail-closed（unknown 相当）
+      const root = flags.get('root');
+      const fleetRoot = path.resolve(typeof root === 'string' ? root : path.join(cwd, '..'));
+      const report = checkExemplars({ files: loaded.files, fleetRoot });
+      const json = JSON.stringify(report, null, 2);
+      const out = flags.get('out');
+      if (typeof out === 'string') writeFileSync(out, json + '\n');
+      const md = flags.get('md');
+      if (typeof md === 'string') writeFileSync(md, renderExemplarsMarkdown(report));
+      console.log(json);
+      for (const p of loaded.provenance) console.error(`input: ${p}`);
+      for (const d of report.details) console.error(d);
+      return stateToExit(report.state);
+    }
+
     default:
-      console.error(`未知のコマンド: ${command}（conformance / gate-integrity / init）`);
+      console.error(
+        `未知のコマンド: ${command}（conformance / gate-integrity / init / standards-doc / exemplars）`,
+      );
       return 2;
   }
 }
