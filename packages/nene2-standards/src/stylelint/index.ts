@@ -21,6 +21,7 @@ const config: Config = {
     'nene2/data-theme-selector-location': true, // [data-theme] は themes/*.css 内のみ（会議R2⑥決定）
     'nene2/layer-components-allowlist': true, // registries 許可リスト（完全一致列挙 — 会議R4 AM-10決定）
     'nene2/layer-legacy-manifest-only': true, // @layer legacy は manifest 列挙ファイルのみ（会議R3⑩M-2決定）
+    'nene2/layer-base-location': true, // @layer base ブロックは base.css 内のみ（ST-08 — base の家は1つ）
     'color-no-hex': true, // 生 hex の theme 外直書き MUST NOT（会議R1⑤決定）
     'function-disallowed-list': ['rgb', 'rgba', 'hsl', 'hsla'], // 色は oklch/color-mix（会議R1⑤決定）
   },
@@ -44,6 +45,12 @@ const config: Config = {
       // .components 対は全ルール @layer components 内（会議R4 AM-9決定）
       files: ['**/src/shared/ui/theme/themes/*.components.css'],
       rules: { 'nene2/all-rules-in-components-layer': true },
+    },
+    {
+      // base.css: @layer base の唯一の家（ST-08）。element-only 閉文法 = AM-9 token-only の双対。
+      // layer-base-location はこのファイルでは当然 green になるため null 化は不要（自己一致）。
+      files: ['**/src/shared/ui/theme/base.css'],
+      rules: { 'nene2/base-element-only': true },
     },
   ],
 };
