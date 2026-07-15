@@ -1,0 +1,30 @@
+/**
+ * Default theme — the ONLY place (with sibling theme files) where raw visual
+ * values live (frontend-standards: no magic styling). Swapping the active theme
+ * restyles the whole app without touching components.
+ */
+@theme {
+  --color-surface: oklch(99% 0.004 260);
+  --color-surface-raised: oklch(100% 0 0);
+  --color-text-primary: oklch(25% 0.02 260);
+  --color-text-muted: oklch(55% 0.02 260);
+  --color-border: oklch(90% 0.01 260);
+  --color-accent: oklch(55% 0.15 250);
+  --color-accent-contrast: oklch(99% 0 0);
+  --color-danger: oklch(55% 0.2 25);
+
+  --spacing-inline-sm: 0.5rem;
+  --spacing-inline-md: 1rem;
+  --spacing-stack-sm: 0.75rem;
+  --spacing-stack-md: 1.25rem;
+  --spacing-stack-lg: 2rem;
+
+  --font-family-sans: 'Inter', system-ui, sans-serif;
+  --font-size-body: 0.875rem;
+  --font-size-heading: 1.25rem;
+  --line-height-body: 1.5;
+  --font-weight-medium: 500;
+
+  --radius-md: 0.5rem;
+  --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.06);
+}
