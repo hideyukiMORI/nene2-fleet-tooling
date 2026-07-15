@@ -34,6 +34,46 @@ nene2-tokens codemod --theme <theme.css> [--map <table>] [--check] [--ext ts,tsx
 
 終了コード: 0 = green ／ 1 = 違反 ／ 2 = 検査不能（fail-closed — unknown は green ではない）。
 
+## generate の正準形 — **authored コメントは保存されない**（#18）
+
+`extract → generate` は**正準化**であって整形ではない。出力に現れるのは
+**プラグマ・（あれば）components import・宣言だけ**で、それ以外の CSS コメントは
+**保存されない**（仕様 — バグではない）。
+
+```css
+/* 入力 */
+/*
+ * このテーマがなぜ存在するか（authored な 5 行ヘッダ）
+ */
+@theme {
+  --color-surface: oklch(1 0 0); /* ページ地 */
+}
+
+/* generate 出力 — コメントは消える */
+/* @nene2-contract 1.0 @themegen 1.0.0 */
+@theme {
+  --color-surface: oklch(1 0 0);
+}
+```
+
+理由（決定性 MUST・R5 AM-1'「同一入力 → bit 同一出力」）:
+
+- `ThemeDocument` はコメント欄を持たない（パイプライン全体でコメントを**モデル化していない**）。
+  parser が読むコメントは `@nene2-contract` プラグマと `@nene2-fill` マーカーの 2 つだけで、
+  他は捨てる。つまり generate が落としているのではなく、**extract が最初から拾っていない**。
+- generate はキーを**正準順に並べ替える**（`canonicalCompare`）。宣言に紐づくコメントは
+  並べ替えで宿主を失い、浮いたヘッダコメントには錨が無い。位置を保存する規則を入れると
+  「与え順に依存しない」が壊れる。
+- 出力中のコメント（プラグマ・fill マーカー）は**生成器の持ち物**であって authored 入力ではない。
+
+**運用**: テーマの存在理由など人間向けの説明は、generate が触らない場所に置く
+（`README` ／ 対の `*.components.css` ／ ADR）。**M-1 のレビューで
+「codemod の diff だけ」を見たいときは、テーマ移行（`extract → generate`）の
+コミットと codemod のコミットを分ける** — コメント削除は語彙 rename ではなく
+正準化の diff として別コミットに現れる。
+
+保存が必要になった場合は `ThemeDocument` にコメント欄を足す設計変更が要る（未実施 — #18）。
+
 ## 語彙 codemod（T-4）
 
 テーマの**トークン改名**（`--spacing-inline-md → --spacing-x-inline-md`）に対応する
@@ -61,6 +101,30 @@ npx nene2-tokens codemod --check --theme src/shared/ui/theme/themes/default.css 
 `gap-inline-sm → gap-x-inline-sm → gap-x-x-inline-sm` と二重適用される（`gap-x` が Tailwind の
 実在ルートである字面衝突 — hideyukiMORI/nene2-fleet-tooling#17）。CLI は該当する再入 rename を
 `NOTE` 行で開示する。手順 2 を済ませれば計画は空になり、以後 `--check` は緑で固定される。
+
+### x- の挿入位置は v4 namespace を保存する（map v1.0.2 — #17）
+
+x- は**先頭セグメント直後ではなく v4 namespace の直後（＝キーの先頭）**に入る。
+
+| 旧トークン | v1.0.1 まで | v1.0.2（現在） | v4 での意味 |
+|---|---|---|---|
+| `--font-weight-medium` | `--font-x-weight-medium` ✗ | `--font-weight-x-medium` ✓ | ✗ は font-**family** のキーに変質していた |
+| `--inset-shadow-glow` | `--inset-x-shadow-glow` ✗ | `--inset-shadow-x-glow` ✓ | 同上（multi-segment namespace が割れる） |
+| `--spacing-inline-sm` | `--spacing-x-inline-sm` | `--spacing-x-inline-sm`（不変） | single-segment は元から正しい |
+
+実測（tailwindcss 4.3.2 の emit・テストで固定）:
+`--font-weight-x-medium → .font-x-medium { font-weight: … }` ／
+`--font-x-weight-medium → .font-x-weight-medium { font-family: … }`。
+
+字面衝突（`gap-x`/`space-x`/`inset-x`）は **v1.0.2 でも残る**（`--spacing-*` は single-segment
+なので x- の位置は変わらない）。軸ルートのクラスも独立に改名されるため、**移行を完了すれば**
+軸の意味論は保たれる（`gap-x-inline-sm → gap-x-x-inline-sm` = column-gap のまま・実測でテスト固定）。
+
+**未対応（#17 に据え置き）**: `--font-size-body` / `--line-height-body` のような
+**v4 namespace ではない legacy 綴り**を `--text-x-body` / `--leading-x-body` へ再ホームするかは
+語彙判断（namespace を跨ぐ＝機械導出できない）。現状は先頭セグメント直後に x- が入る
+（`--font-x-size-body`）。これらは v4 が utility を生成しないので**元から silent no-op**であり、
+再ホームは「効いていなかったものを効かせる」意味論変更になる — 施主/評議会の裁定待ち。
 
 ### 素の jscodeshift から叩く
 

@@ -17,7 +17,12 @@
  * T-4 が「使い捨てスクリプト化 MUST NOT」と言う以上、実行物はここ（配布物）に居るのが正しい。
  */
 
-import { CODEMOD_MAP_VERSION, mapTokenSet, type MappingTableId } from './codemod-map.js';
+import {
+  CODEMOD_MAP_VERSION,
+  mapTokenSet,
+  tailwindNamespaceOf,
+  type MappingTableId,
+} from './codemod-map.js';
 import { parseThemeFile } from './parser.js';
 
 /** ランナー名（M-1: 移行 PR 本文に「codemod 名・version」を書くための正本） */
@@ -154,42 +159,24 @@ export const NAMESPACE_UTILITY_ROOTS: Readonly<Record<string, readonly string[]>
   ],
   shadow: ['shadow', 'inset-shadow', 'text-shadow'],
   font: ['font'],
+  // v4 は `--font-weight-*` からも `font-*` utility を生成する（`--font-*` の family と同じ
+  // class ルートを共有する）。これが無いと `--font-weight-medium → --font-weight-x-medium` の
+  // 改名に対応する `font-medium → font-x-medium` が導出されず、class だけ旧名で取り残されて
+  // Tailwind 既定値へ無言フォールバックする（#17）。
+  // 実測（4.3.2）: `--font-weight-x-medium` → `.font-x-medium { font-weight: … }`。
+  // 注意: `--font-<k>` と `--font-weight-<k>` が同じキー k を持つと class が衝突する
+  //（実測では family が勝つ）。その衝突は下の classIndex が fail-closed で検出する。
+  'font-weight': ['font'],
 };
 
 /**
- * namespace 照合順。**長い namespace が短い prefix より先** でなければならない
- * （`--font-weight-medium` が `font` に食われて `font-weight-medium` を吐く事故の回避）。
- * 不変条件はテストで固定する。
+ * トークン名の namespace を返す（既知 v4 namespace を長い順に照合 → 失敗時は先頭セグメント）。
+ *
+ * 正本は写像表側の `TAILWIND_V4_NAMESPACES`（#17）。**x- 送りと class 翻訳が同じ1枚を見る**
+ * ことが不変条件 — かつてここだけが `font-weight` を知っていて写像表が知らなかったため、
+ * `--font-weight-medium` の namespace が x- 送りで割れても class 側は気づけなかった。
  */
-const NAMESPACE_ORDER: readonly string[] = [
-  'inset-shadow',
-  'text-shadow',
-  'font-weight',
-  'shadow',
-  'color',
-  'spacing',
-  'radius',
-  'font',
-  'text',
-  'leading',
-  'tracking',
-  'breakpoint',
-  'container',
-  'ease',
-  'animate',
-  'blur',
-  'perspective',
-  'aspect',
-];
-
-/** トークン名の namespace を返す（既知 namespace を長い順に照合 → 失敗時は先頭セグメント）。 */
-export function namespaceOf(token: string): string | null {
-  for (const ns of NAMESPACE_ORDER) {
-    if (token.startsWith(`--${ns}-`)) return ns;
-  }
-  const m = /^--([a-z][a-z0-9]*(?:-[a-z0-9]+)*?)-/.exec(token);
-  return m ? m[1]! : null;
-}
+export const namespaceOf = tailwindNamespaceOf;
 
 /**
  * テーマ CSS が **宣言している** カスタムプロパティ名を出現順・重複排除で集める。
@@ -277,12 +264,12 @@ export function deriveClassRenames(tokenRenames: readonly Rename[]): ClassRename
 
   for (const { from, to } of tokenRenames) {
     const ns = namespaceOf(from);
-    const roots = ns === null ? undefined : NAMESPACE_UTILITY_ROOTS[ns];
-    // v4 が utility を生成しない namespace（--line-height-* 等）— class 置換は発生しない
-    if (ns === null || roots === undefined) continue;
+    if (ns === null) continue;
+    // namespace を跨ぐ改名は機械翻訳できない — **utility ルートの有無より先に**判定して開示する。
+    // 旧実装は roots===undefined を先に見て continue していたため、`--font-weight-medium →
+    // --font-x-weight-medium`（roots['font-weight'] が未登録だった）が silent skip となり、
+    // #17 の namespace 破壊が計画にも NOTE にも出なかった（fail-closed 原則の穴）。
     if (!to.startsWith(`--${ns}-`)) {
-      // 写像表 v1.0.1 では到達しない防御枝（全 125 エントリで namespace は保存される）。
-      // 表が育って namespace を跨ぐ改名が入ったとき、silent skip ではなく開示させるための座席。
       unmapped.push({
         from,
         to,
@@ -290,6 +277,10 @@ export function deriveClassRenames(tokenRenames: readonly Rename[]): ClassRename
       });
       continue;
     }
+    // v4 が utility を生成しない namespace（--z-* 等）— namespace は保存されているので
+    // 改名漏れではない。class 置換は発生しない。
+    const roots = NAMESPACE_UTILITY_ROOTS[ns];
+    if (roots === undefined) continue;
     const oldKey = from.slice(`--${ns}-`.length);
     const newKey = to.slice(`--${ns}-`.length);
     for (const root of roots) {
