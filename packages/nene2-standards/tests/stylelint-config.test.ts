@@ -99,6 +99,99 @@ describe('canonical cascade header と @theme ブロック（#19 正例較正）
   });
 });
 
+describe('base.css — @layer base の唯一の家（ST-08・K-7 の base 経由再来の閉鎖）', () => {
+  const baseEntry = 'src/shared/ui/theme/base.css';
+
+  async function lintBaseCode(code: string) {
+    const { results } = await stylelint.lint({
+      code,
+      config,
+      codeFilename: path.join(fixtureDir, baseEntry),
+    });
+    return (results[0]?.warnings ?? []).map((w) => ({ rule: w.rule ?? '', text: w.text }));
+  }
+
+  it('正例 base.css（vault 現物の @layer base を正準の家へ移した形）は違反 0', async () => {
+    expect(await lintFile(baseEntry)).toEqual([]);
+  });
+
+  it('class セレクタは FAIL — allowlist 迂回の閉鎖（field 現物 .tnum が該当）', async () => {
+    const warnings = await lintBaseCode(
+      '@layer base {\n  .tnum {\n    font-variant-numeric: tabular-nums;\n  }\n}\n',
+    );
+    const byRule = warnings.filter((w) => w.rule === 'nene2/base-element-only');
+    expect(byRule.some((w) => w.text.includes('.tnum'))).toBe(true);
+  });
+
+  it("子孫位置の class も FAIL（全 class トークン照合 — AM-25' と同型）", async () => {
+    const warnings = await lintBaseCode(
+      '@layer base {\n  body .wrapper {\n    margin: 0;\n  }\n}\n',
+    );
+    expect(
+      warnings.some((w) => w.rule === 'nene2/base-element-only' && w.text.includes('.wrapper')),
+    ).toBe(true);
+  });
+
+  it('id / 属性セレクタも FAIL', async () => {
+    const idWarnings = await lintBaseCode('@layer base {\n  #app {\n    margin: 0;\n  }\n}\n');
+    expect(idWarnings.some((w) => w.rule === 'nene2/base-element-only')).toBe(true);
+    const attrWarnings = await lintBaseCode('@layer base {\n  a[href] {\n    margin: 0;\n  }\n}\n');
+    expect(
+      attrWarnings.some((w) => w.rule === 'nene2/base-element-only' && w.text.includes('[href]')),
+    ).toBe(true);
+  });
+
+  it('custom property 宣言は FAIL — トークンの家は themes/*.css（AM-9 の双対）', async () => {
+    const warnings = await lintBaseCode(
+      '@layer base {\n  html {\n    --color-accent: oklch(0.5 0.1 250);\n  }\n}\n',
+    );
+    expect(
+      warnings.some(
+        (w) => w.rule === 'nene2/base-element-only' && w.text.includes('--color-accent'),
+      ),
+    ).toBe(true);
+  });
+
+  it('トップレベルの @import / 無レイヤ規則 / @layer base 以外は FAIL', async () => {
+    const importWarnings = await lintBaseCode("@import './anything.css';\n");
+    expect(importWarnings.some((w) => w.rule === 'nene2/base-element-only')).toBe(true);
+    const unlayered = await lintBaseCode('body {\n  margin: 0;\n}\n');
+    expect(unlayered.some((w) => w.rule === 'nene2/base-element-only')).toBe(true);
+    const otherLayer = await lintBaseCode(
+      '@layer components {\n  body {\n    margin: 0;\n  }\n}\n',
+    );
+    expect(otherLayer.some((w) => w.rule === 'nene2/base-element-only')).toBe(true);
+  });
+
+  it('@layer base 内の @keyframes は FAIL・@media は許可', async () => {
+    const kf = await lintBaseCode(
+      '@layer base {\n  @keyframes fade {\n    0% {\n      opacity: 0;\n    }\n  }\n}\n',
+    );
+    expect(
+      kf.some((w) => w.rule === 'nene2/base-element-only' && w.text.includes('@keyframes')),
+    ).toBe(true);
+    const media = await lintBaseCode(
+      '@layer base {\n  @media (prefers-reduced-motion: reduce) {\n    * {\n      animation-duration: 0.01ms;\n    }\n  }\n}\n',
+    );
+    expect(media.some((w) => w.rule === 'nene2/base-element-only')).toBe(false);
+  });
+
+  it('base.css 以外の @layer base ブロックは FAIL（場所の閉鎖 — 閉文法の迂回不能化）', async () => {
+    const { results } = await stylelint.lint({
+      code: '@layer base {\n  .anything {\n    margin: 0;\n  }\n}\n',
+      config,
+      codeFilename: path.join(fixtureDir, 'src/app/somewhere.css'),
+    });
+    expect((results[0]?.warnings ?? []).some((w) => w.rule === 'nene2/layer-base-location')).toBe(
+      true,
+    );
+  });
+
+  it('canonical header の @layer 順序宣言文は場所違反にならない（#19 と同じ分界）', async () => {
+    expect(await lintFile('src/index.css')).toEqual([]);
+  });
+});
+
 describe('一般 CSS（テーマ外）', () => {
   it('故意 fail unlayered.css — 無レイヤ・!important・ID・hex・rgb()・[data-theme] 場所違反', async () => {
     const warnings = await lintFile('src/app/unlayered.css');

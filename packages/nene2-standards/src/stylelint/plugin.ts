@@ -317,6 +317,168 @@ themesTokenOnly.ruleName = themesTokenOnlyName;
 themesTokenOnly.messages = themesTokenOnlyMessages;
 
 // ---------------------------------------------------------------------------
+// nene2/layer-base-location — @layer base ブロックは base.css 内のみ（ST-08）
+//
+// AM-9 が themes を token-only に閉じたのと同型の**場所の閉鎖**。これが無いと ST-08 の
+// element-only 閉文法は任意の css で `@layer base { .anything {} }` と書くだけで迂回でき、
+// K-7（規約が用意したカスケード位置に任意スタイルを差し込める）が base 経由で再来する。
+// ---------------------------------------------------------------------------
+export const CANONICAL_BASE_ENTRY = 'src/shared/ui/theme/base.css';
+
+const layerBaseLocationName = ruleName('layer-base-location');
+const layerBaseLocationMessages = ruleMessages(layerBaseLocationName, {
+  rejected: (file: string) =>
+    `@layer base ブロックは ${CANONICAL_BASE_ENTRY} 内のみ（ST-08 — base の家は1つ。` +
+    `index.css は canonical header＋@import のみ〔ST-06〕・themes/*.css は token-only〔AM-9〕）: ${file}`,
+});
+const layerBaseLocation: Rule<true, { file?: string }> = (primary, secondary) => (root, result) => {
+  if (
+    !validateOptions(
+      result,
+      layerBaseLocationName,
+      { actual: primary, possible: [true] },
+      {
+        actual: secondary,
+        possible: { file: [(v: unknown) => typeof v === 'string'] },
+        optional: true,
+      },
+    )
+  ) {
+    return;
+  }
+  const baseEntry = secondary?.file ?? CANONICAL_BASE_ENTRY;
+  const sourceFile = root.source?.input.file?.replaceAll('\\', '/');
+  root.walkAtRules('layer', (atRule) => {
+    // ブロックを持たない @layer 文は順序宣言（canonical cascade header の必須行 — AM-8(a)）
+    // であり base レイヤへのルール投入ではない（#19 と同じ分界）。
+    if (atRule.nodes === undefined) return;
+    if (!layerParamsInclude(atRule.params, 'base')) return;
+    // fail-closed: ファイル名が特定できない（コード断片 lint）場合も場所違反扱い
+    const inBaseEntry = sourceFile !== undefined && sourceFile.endsWith(baseEntry);
+    if (!inBaseEntry) {
+      report({
+        result,
+        ruleName: layerBaseLocationName,
+        node: atRule,
+        message: layerBaseLocationMessages.rejected(sourceFile ?? '(unknown file)'),
+      });
+    }
+  });
+};
+layerBaseLocation.ruleName = layerBaseLocationName;
+layerBaseLocation.messages = layerBaseLocationMessages;
+
+// ---------------------------------------------------------------------------
+// nene2/base-element-only — base.css の閉文法（ST-08・AM-9 の双対）
+//
+// themes = custom property のみ・element 規則 MUST NOT（AM-9）
+// base   = element 規則のみ・custom property MUST NOT（本ルール）
+// の二領域で、両者は排他かつ網羅。class は @layer components の許可リスト制（AM-10）が
+// 唯一の家であり、base に class を書けると許可リスト完全一致列挙が迂回できる（＝K-7 再来）。
+// ---------------------------------------------------------------------------
+const baseElementOnlyName = ruleName('base-element-only');
+const baseElementOnlyMessages = ruleMessages(baseElementOnlyName, {
+  badTopLevel: (desc: string) =>
+    `base.css のトップレベルは @layer base ブロック1個とコメントのみ（ST-08 — ` +
+    `@import による任意 CSS の呼び込み・無レイヤ規則を塞ぐ）: ${desc}`,
+  badAtRule: (name: string) =>
+    `base.css の @layer base 内に @${name} MUST NOT（ST-08 — 許可は @media / @supports のみ）`,
+  badSelector: (selector: string, token: string) =>
+    `base.css は element / universal セレクタのみ・class / id / 属性セレクタ MUST NOT（ST-08 — ` +
+    `class の家は @layer components の許可リスト制〔AM-10 完全一致列挙〕。base に書けると迂回できる）: ` +
+    `"${selector}" の "${token}"`,
+  customProperty: (prop: string) =>
+    `base.css に custom property 宣言 MUST NOT（ST-08 — トークンの家は themes/*.css の @theme。` +
+    `AM-9 token-only の双対）: "${prop}"`,
+});
+
+/** element/universal 以外のセレクタ成分（class / id / 属性）を検出する。 */
+function nonElementTokens(selector: string): string[] {
+  const found: string[] = [];
+  found.push(...classTokens(selector));
+  found.push(...[...selector.matchAll(/#-?[A-Za-z_][\w-]*/g)].map((m) => m[0]));
+  found.push(...[...selector.matchAll(/\[[^\]]*\]/g)].map((m) => m[0]));
+  return found;
+}
+
+const baseElementOnly: Rule = (primary) => (root, result) => {
+  if (!validateOptions(result, baseElementOnlyName, { actual: primary, possible: [true] })) return;
+
+  // (1) トップレベルは @layer base ブロック（＋コメント）のみ
+  let layerBlocks = 0;
+  for (const node of topLevelNodes(root)) {
+    if (node.type === 'comment') continue;
+    if (node.type === 'atrule' && node.name === 'layer' && node.nodes !== undefined) {
+      if (node.params.trim() !== 'base') {
+        report({
+          result,
+          ruleName: baseElementOnlyName,
+          node,
+          message: baseElementOnlyMessages.badTopLevel(`@layer ${node.params}`),
+        });
+        continue;
+      }
+      layerBlocks++;
+      if (layerBlocks > 1) {
+        report({
+          result,
+          ruleName: baseElementOnlyName,
+          node,
+          message: baseElementOnlyMessages.badTopLevel('@layer base ブロックが2個以上'),
+        });
+      }
+      continue;
+    }
+    report({
+      result,
+      ruleName: baseElementOnlyName,
+      node,
+      message: baseElementOnlyMessages.badTopLevel(
+        node.type === 'atrule' ? `@${node.name}` : node.type === 'rule' ? node.selector : node.type,
+      ),
+    });
+  }
+
+  // (2) @layer base 内の at-rule は @media / @supports のみ（@keyframes / 入れ子 @layer / @import を塞ぐ）
+  root.walkAtRules((atRule) => {
+    if (atRule.parent?.type === 'root') return; // (1) の管轄
+    if (atRule.name === 'media' || atRule.name === 'supports') return;
+    report({
+      result,
+      ruleName: baseElementOnlyName,
+      node: atRule,
+      message: baseElementOnlyMessages.badAtRule(atRule.name),
+    });
+  });
+
+  // (3) セレクタは element / universal のみ
+  root.walkRules((rule) => {
+    for (const token of nonElementTokens(rule.selector)) {
+      report({
+        result,
+        ruleName: baseElementOnlyName,
+        node: rule,
+        message: baseElementOnlyMessages.badSelector(rule.selector, token),
+      });
+    }
+  });
+
+  // (4) custom property 宣言 MUST NOT（AM-9 の双対）
+  root.walkDecls((decl) => {
+    if (decl.prop.startsWith('--')) {
+      report({
+        result,
+        ruleName: baseElementOnlyName,
+        node: decl,
+        message: baseElementOnlyMessages.customProperty(decl.prop),
+      });
+    }
+  });
+};
+baseElementOnly.ruleName = baseElementOnlyName;
+baseElementOnly.messages = baseElementOnlyMessages;
+
+// ---------------------------------------------------------------------------
 // nene2/all-rules-in-components-layer — .components 対は全ルール @layer components 内（AM-9）
 // ---------------------------------------------------------------------------
 const allInComponentsName = ruleName('all-rules-in-components-layer');
@@ -354,6 +516,8 @@ const plugins = [
   createPlugin(dataThemeLocationName, dataThemeSelectorLocation),
   createPlugin(componentsAllowlistName, layerComponentsAllowlist),
   createPlugin(legacyManifestName, layerLegacyManifestOnly),
+  createPlugin(layerBaseLocationName, layerBaseLocation),
+  createPlugin(baseElementOnlyName, baseElementOnly),
   createPlugin(themesTokenOnlyName, themesTokenOnly),
   createPlugin(allInComponentsName, allRulesInComponentsLayer),
 ];
