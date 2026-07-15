@@ -69,12 +69,25 @@ npx jscodeshift -t node_modules/@hideyukimori/nene2-tokens/dist/codemod-transfor
   --parser=tsx --theme=src/shared/ui/theme/themes/default.css --map=common src
 ```
 
-### 出力方式
+### 出力方式（splice — 施主追認済み 2026-07-15）
 
 AST は書き換えず、jscodeshift で class 文字列の**位置**を特定して原文の該当範囲だけ差し替える
 （`toSource()` は使わない）。recast は変更した文字列リテラルを `quote` 設定で刷り直すが、
 フリートの prettier は JS 文字列 `'…'`・JSX 属性 `"…"` で**どの quote 設定でも片方が崩れる**ため。
-この方式なら入力が prettier 固定点なら出力も固定点のまま（repo ごとの prettier 設定に非依存）。
+T-4 は engine（jscodeshift）の指定であって recast printer の指定ではない、という整理。
+
+**prettier 固定点について（実測・over-claim しない）**:
+splice は引用符・空白・セミコロンに触れないので、prettier の整形判断を動かし得る要因は
+「rename で行が **+2 桁伸びる**」ことだけに限られる。
+
+- **payout 実ツリーでは固定点**（実測）: 移行前ツリー（prettier 緑）に codemod を流した
+  **41 ファイル・133 置換**の出力に対し、payout の実 `.prettierrc.json`
+  （`semi:false`・`singleQuote`・`printWidth:100`）で `prettier --check` が**緑**。
+  100 桁超の行は 20 本あるが、**折り返せない class 文字列**なので prettier は動かせない。
+- **一般には保証されない**（反例あり・テストで固定）: **折り返せる**行が rename で
+  `printWidth` を跨ぐと prettier は再整形したがる（例: 99 桁 → 101 桁の 1 行 JSX は
+  括弧で包み直される）。この形が出る repo では codemod 後に pinned prettier を流すこと。
+  codemod の diff と prettier の diff は別コミットに分けられるのでレビュー性は保たれる。
 
 契約凍結レビュー: `../../docs/contract-freeze-review-2026-07-18.md`（07-18）。
 契約進化は AM-2（minor=派生式同梱・major=codemod 3点セット・移行窓中は stop-the-line ADR のみ）。

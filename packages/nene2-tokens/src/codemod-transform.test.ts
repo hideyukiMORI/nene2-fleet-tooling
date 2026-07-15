@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import jscodeshift from 'jscodeshift';
+import * as prettier from 'prettier';
 import { describe, expect, it } from 'vitest';
 import { buildPlan, buildRenameIndex } from './codemod.js';
 import transform, { applyToSource, applyToSourceDetailed } from './codemod-transform.js';
@@ -126,6 +127,95 @@ describe('codemod transform — 実測カウント', () => {
     // 109 箇所すべてが x- 送り後の綴りになる ＝ dead 化しない
     expect(out!.text).not.toMatch(/className="(px|py|gap)-(inline|stack)-/);
     expect(out!.text).not.toContain('-x-x-');
+  });
+});
+
+/**
+ * splice 方式の眼目は「codemod 出力がそのまま pinned prettier の固定点である」こと
+ * （T-1 の themegen と同じ流儀・追認済み 2026-07-15）。主張ではなく**実証**する。
+ *
+ * 設定は nene-payout/frontend/.prettierrc.json の現物（W1 先頭走者）。
+ */
+const PAYOUT_PRETTIER: prettier.Options = {
+  semi: false,
+  singleQuote: true,
+  trailingComma: 'all',
+  printWidth: 100,
+  parser: 'typescript',
+};
+
+/**
+ * nene-payout `src/shared/ui/primitives/Button.tsx` の **移行前現物**（#159 の親 eb5f7aa）。
+ * template literal の className・object 値の class 文字列・**printWidth 100 を超える行**
+ * （114 桁）を含む。移行前ツリー全体が prettier 固定点であることは実測済み。
+ */
+const PAYOUT_BUTTON_TSX = `import type { ButtonHTMLAttributes, ReactNode } from 'react'
+
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'danger'
+  children: ReactNode
+}
+
+const VARIANT_CLASS: Record<NonNullable<ButtonProps['variant']>, string> = {
+  primary: 'bg-accent text-accent-contrast',
+  secondary: 'bg-surface-raised text-primary border border-border',
+  danger: 'bg-danger text-accent-contrast',
+}
+
+export function Button({ variant = 'primary', children, type = 'button', ...rest }: ButtonProps) {
+  return (
+    <button
+      type={type}
+      className={\`rounded-md px-inline-md py-stack-sm font-sans text-body font-medium \${VARIANT_CLASS[variant]}\`}
+      {...rest}
+    >
+      {children}
+    </button>
+  )
+}
+`;
+
+describe('codemod transform — prettier 固定点（splice 方式の眼目・実証）', () => {
+  it('前提: 移行前の payout 現物はそのものが prettier 固定点である', async () => {
+    expect(await prettier.check(PAYOUT_BUTTON_TSX, PAYOUT_PRETTIER)).toBe(true);
+  });
+
+  it('codemod 出力は pinned prettier の固定点のまま（payout 現物・実測）', async () => {
+    const out = applyToSourceDetailed(PAYOUT_BUTTON_TSX, j, index);
+    // G-6: 空虚合格禁止 — 何も置換していないのに緑、を許さない
+    expect(out).toBeDefined();
+    expect(out!.count).toBe(5);
+    expect(out!.text).toContain('px-x-inline-md');
+    expect(out!.text).toContain('text-on-accent');
+
+    expect(await prettier.check(out!.text, PAYOUT_PRETTIER)).toBe(true);
+  });
+
+  it('printWidth 100 を超える長い className 行は、伸びても固定点のまま', async () => {
+    // 折り返せない文字列を含む属性は既に自分の行にあるので、+2 桁しても prettier は動かない
+    const src = `export const B = () => (
+  <button className="rounded-md bg-accent px-inline-md py-stack-sm font-sans text-body font-medium text-accent-contrast">
+    go
+  </button>
+)
+`;
+    expect(await prettier.check(src, PAYOUT_PRETTIER)).toBe(true);
+    const out = applyToSource(src, j, index)!;
+    expect(Math.max(...out.split('\n').map((l) => l.length))).toBeGreaterThan(100);
+    expect(await prettier.check(out, PAYOUT_PRETTIER)).toBe(true);
+  });
+
+  it('既知の限界: 折り返せる行が rename で printWidth を跨ぐと固定点でなくなる', async () => {
+    // 反例（実測）。99 桁 → +2 で 101 桁。prettier は JSX を括弧で包み直したがる。
+    // payout 実ツリーでは発生しない（全 41 ファイル prettier --check 緑）が、
+    // 「splice は常に固定点」と over-claim しないために反例を固定しておく。
+    const src = `export const D = () => <div id="${'y'.repeat(38)}" className="px-inline-md" />\n`;
+    expect(src.split('\n')[0]!.length).toBe(99);
+    expect(await prettier.check(src, PAYOUT_PRETTIER)).toBe(true);
+
+    const out = applyToSource(src, j, index)!;
+    expect(out.split('\n')[0]!.length).toBe(101);
+    expect(await prettier.check(out, PAYOUT_PRETTIER)).toBe(false);
   });
 });
 

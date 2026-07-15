@@ -17,10 +17,14 @@
  *    `extra.raw` は参照されない）。recast の quote 設定は 1 つしかなく JSX 属性にも同じ物が効く。
  *  - フリートの prettier は `singleQuote: true` かつ `jsxSingleQuote` 既定 false。つまり
  *    JS 文字列は `'…'`・JSX 属性は `"…"` が正。**どの quote 設定でも片方が必ず崩れる**（実測）。
- *  - splice なら引用符・空白・セミコロンに一切触れないので、入力が prettier 固定点なら
- *    出力も prettier 固定点のまま（T-1 の themegen と同じ流儀）。repo ごとに prettier 設定が
+ *  - splice なら引用符・空白・セミコロンに一切触れないので、repo ごとに prettier 設定が
  *    割れている（payout は semi:false・本リポは semi:true）フリートで設定非依存になる。
  *  - 既マージの nene-payout#159 の diff は引用符が保存されている。splice はその diff を再現する。
+ *
+ * prettier 固定点は **payout 実ツリーでは実測で緑**（41 ファイル・133 置換）。ただし
+ * **一般には保証しない**: 整形判断を動かし得る唯一の要因＝「rename で行が +2 桁伸びる」ため、
+ * **折り返せる**行が printWidth を跨ぐと prettier は再整形したがる（反例をテストで固定）。
+ * 折り返せない class 文字列はどれだけ長くても動かないので、payout の 100 桁超 20 行は緑のまま。
  *
  * ## 走査対象
  *
