@@ -17,6 +17,7 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { validateConformance } from './conformance.js';
+import { detectRepo } from './detect-repo.js';
 import { checkExemplars, renderExemplarsMarkdown, type DocFile } from './exemplars.js';
 import { checkGateIntegrity } from './gate-integrity.js';
 import { initCheck, initScan, ledgersAlreadyInitialized } from './init-scan.js';
@@ -84,18 +85,6 @@ function loadStandardsDocs(docsDir: string): { files: DocFile[]; provenance: str
 
 function stateToExit(state: 'green' | 'red' | 'unknown'): number {
   return state === 'green' ? 0 : state === 'red' ? 1 : 2;
-}
-
-function detectRepo(cwd: string): string {
-  try {
-    const pkg = JSON.parse(readFileSync(path.join(cwd, 'package.json'), 'utf8')) as {
-      name?: string;
-    };
-    if (pkg.name) return pkg.name.replace(/^@[^/]+\//, '');
-  } catch {
-    // fall through
-  }
-  return path.basename(cwd);
 }
 
 async function main(): Promise<number> {
