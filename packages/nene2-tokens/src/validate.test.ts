@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { validateThemeSource, type Diagnostic } from './validate.js';
+import { fillSource } from './themegen.js';
 
 const REFERENCE = readFileSync(
   fileURLToPath(new URL('../themes/reference.css', import.meta.url)),
@@ -26,11 +27,23 @@ describe('validate:themes — positive', () => {
 });
 
 describe('validate:themes — negative (each check actually fires)', () => {
-  it('missing contract key = parity error with repair command', () => {
+  it('missing root contract key = parity error that does NOT claim `fill` repairs it (#16 — fill is a no-op on root, TH-03/TH-07: root keys are hand-authored)', () => {
     const broken = REFERENCE.replace(/^\s*--color-scrim:.*$\n/m, '');
     const r = validateThemeSource('t.css', broken);
     expect(rules(r.diagnostics)).toContain('parity');
-    expect(r.diagnostics.find((d) => d.rule === 'parity')!.message).toContain('nene2-tokens fill');
+    const message = r.diagnostics.find((d) => d.rule === 'parity')!.message;
+    expect(message).not.toContain('nene2-tokens fill');
+    expect(message).toContain('no mechanical repair');
+    expect(message).toContain('reference.css');
+  });
+
+  it('#16 negative control: `fill` really is a no-op on root parity errors, so the old REPAIR_FILL message was fail-open (validate still red after "repair")', () => {
+    const broken = REFERENCE.replace(/^\s*--color-scrim:.*$\n/m, '');
+    expect(validateThemeSource('t.css', broken).ok).toBe(false);
+    // running the exact repair the old message advertised does not change the file at all
+    expect(fillSource(broken)).toBe(broken);
+    // ...and validate is therefore still red after "repair"
+    expect(validateThemeSource('t.css', fillSource(broken)).ok).toBe(false);
   });
 
   it('missing pragma = error (theme files are themegen-managed — AM-1)', () => {

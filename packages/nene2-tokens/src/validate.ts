@@ -47,6 +47,21 @@ export interface ValidateResult {
 
 const REPAIR_FILL = (file: string) => `repair: npx nene2-tokens fill ${file}`;
 
+// root @theme/:root の parity（#5 below）には REPAIR_FILL を出さない: `fill` は局所スコープの
+// fill 領域（TH-06 — 上書きに追従する派生値の再計算）専用であり、root ブロックには何もしない
+// （themegen.ts generateTheme: `isRoot ? new Map() : computeFillForScope(...)` — root は常に
+// fill 領域ゼロ）。root の契約キーは TH-03/TH-07 の設計上「authored 直値」であり、fill 以前に
+// 人手で埋まっている前提（新ブランド手順①copy reference→②authored 編集→③fill）。欠けている
+// ということは、そのキーの値がどのソースにも一度も存在しなかった（例: 旧テーマに info ロールが
+// 無かった）ということであり、ツールに正当な値を発明させる手段がない（#16 — fail-open だった
+// 旧メッセージは `fill` を案内していたが exit 0・無変更で終わり、契約充足を偽装していた）。
+const NO_MECHANICAL_REPAIR_ROOT_PARITY =
+  'no mechanical repair: root @theme keys are authored by hand, not tool-derived (TH-03/TH-07) ' +
+  '— fill only recomputes derived values in local-scope overrides (TH-06), it does not invent ' +
+  'brand base colors for root. Author the missing keys directly, using the closed grammar (TK-04) ' +
+  '— see the packaged reference theme (themes/reference.css) for the expected shape and a ' +
+  'starting value per key, then replace with brand-correct colors.';
+
 function declMap(block: Block): Map<string, string> {
   const m = new Map<string, string>();
   for (const d of block.decls) m.set(d.name, d.value);
@@ -202,7 +217,7 @@ export function validateThemeSource(
     if (missing.length > 0) {
       error(
         'parity',
-        `contract v${CONTRACT_VERSION} keys missing from ${rootBlock.selector} block (${missing.length}): ${missing.join(', ')} — ${REPAIR_FILL(file)}`,
+        `contract v${CONTRACT_VERSION} keys missing from ${rootBlock.selector} block (${missing.length}): ${missing.join(', ')} — ${NO_MECHANICAL_REPAIR_ROOT_PARITY}`,
         rootBlock.line,
       );
     }
