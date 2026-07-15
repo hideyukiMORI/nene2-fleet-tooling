@@ -14,9 +14,12 @@
  * MUST `[P]`）。作業ツリー読みは参考値であり、`worktreeSource` を明示的に渡した場合のみ（#37）。
  * A-10 の根拠事故（stale なローカル grep による誤った準拠主張）を検査器が再生産していた是正。
  *
- * fail-closed（G-6・CF-1）:
+ * fail-closed（05 G-6 — 「green は『検査が走り正の証拠を得た』場合のみ」）:
  * - [X] 参照が 1 件も見つからない = 入力が規約文書でない可能性 → unknown。
  * - 参照先リポが検査不能（fetch 不能・ref 解決不能）→ unknown。red とも green とも言わない。
+ * - 参考値の源（`worktreeSource` / fetch なし）では **green を出さない** → unknown。
+ *   参考値は「正の証拠」ではないため。red はそのまま出す（枝についての主張としては正しく、
+ *   かつ合格と誤読されない fail-safe 方向）。
  *
  * 未実施（スコープ外の明記）: registries の dangling reason-ref 解決（05 §5.2 #18 の同一機構適用）は
  * W0b — 本実装は規約文書の [X] のみを対象とする。
@@ -57,7 +60,7 @@ export type ExemplarStatus =
   | 'line-number'
   | 'file-missing'
   | 'anchor-missing'
-  /** 参照先リポが検査不能（fetch 不能等）。red ではなく unknown へ寄与する（CF-1）。 */
+  /** 参照先リポが検査不能（fetch 不能等）。red ではなく unknown へ寄与する（G-6）。 */
   | 'repo-unavailable';
 
 export interface ExemplarFinding extends ExemplarRef {
@@ -232,15 +235,21 @@ export function checkExemplars(options: CheckExemplarsOptions): ExemplarsReport 
   }
   if (unavailable.length > 0) {
     details.push(
-      `検査不能 ${unavailable.length} 件 — fail-closed で unknown（CF-1。検査できていないことを ` +
+      `検査不能 ${unavailable.length} 件 — fail-closed で unknown（G-6。検査できていないことを ` +
         'red と言うと「アンカーが無い」という嘘の主張になる）',
     );
   }
   if (!source.authoritative) {
     details.push(
       `読み取り源が ${source.label} — この出力は A-10 により**参考値**であり、` +
-        '準拠判定・批准前提の主張には使えない',
+        '準拠判定・批准前提の主張には使えない（準拠判定には --ref origin/main を fetch ありで使う）',
     );
+    if (findings.length > 0 && failures.length === 0 && unavailable.length === 0) {
+      details.push(
+        '参考値のため green を出さず unknown とした（G-6 — green は「検査が走り正の証拠を得た」場合のみ。' +
+          '参考値は正の証拠ではない）',
+      );
+    }
   }
   details.push(
     `[X] ユニーク参照 ${findings.length} 件: resolved ${resolved} / ` +
@@ -248,12 +257,17 @@ export function checkExemplars(options: CheckExemplarsOptions): ExemplarsReport 
       `（placeholder スキップ ${placeholders.length}・源 ${source.label}）`,
   );
 
+  // G-6: green は「検査が走り正の証拠を得た」場合のみ。参考値の源（作業ツリー / fetch なし）は
+  // 正の証拠ではないので green を出さない。red はそのまま出す（枝についての主張としては正しく、
+  // かつ「合格」と誤読されない fail-safe 方向のため）。
   const state: ExemplarsReport['state'] =
     findings.length === 0 || unavailable.length > 0
       ? 'unknown'
       : failures.length > 0
         ? 'red'
-        : 'green';
+        : source.authoritative
+          ? 'green'
+          : 'unknown';
 
   return {
     state,
@@ -304,7 +318,7 @@ export function renderExemplarsMarkdown(report: ExemplarsReport): string {
   }
   out.push('');
   if (report.unavailable.length > 0) {
-    out.push(`### 検査不能 [X]（${report.unavailable.length} 件 — unknown 寄与・CF-1）`);
+    out.push(`### 検査不能 [X]（${report.unavailable.length} 件 — unknown 寄与・G-6）`);
     out.push('');
     for (const f of report.unavailable) {
       out.push(`- \`[X:${f.content}]\` — ${f.detail}`);

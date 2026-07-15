@@ -6,7 +6,7 @@
  * 既定は origin/main を git 経由で読む（#37）。作業ツリー読みは「その枝の事実」＝参考値であり、
  * `worktreeSource` として明示的に選んだ場合にのみ使える（`authoritative: false` で出力に明記される）。
  *
- * fail-closed（CF-1）: fetch 不能・ref 解決不能 = 検査不能 → unknown。green とも red とも言わない。
+ * fail-closed（05 G-6）: fetch 不能・ref 解決不能 = 検査不能 → unknown。green とも red とも言わない。
  *
  * AM-12 hermeticity とは衝突しない: AM-12 の禁止は「リポ CI の per-PR での npm registry 照会」
  * （02:129・minutes.md:625）であり、本検査は fleet-tooling CI で走るクロスリポ検査。同 §5.2 #17 ratchet も
@@ -16,7 +16,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 
-/** リポの検査可否。`unavailable` は red ではなく unknown へ寄与する（CF-1）。 */
+/** リポの検査可否。`unavailable` は red ではなく unknown へ寄与する（G-6）。 */
 export type RepoResolution =
   | { kind: 'ready'; sha: string }
   | { kind: 'unavailable'; reason: string };
@@ -24,7 +24,10 @@ export type RepoResolution =
 export interface ExemplarSource {
   /** provenance 表示用のラベル。 */
   readonly label: string;
-  /** origin/main ＝ A-10 の言う準拠判定の正か（false = 参考値）。 */
+  /**
+   * 「検査が走り正の証拠を得た」と言える源か（05 G-6）。false = 参考値であり verdict を出せない。
+   * origin/main を**自ら fetch して**読んだ場合のみ true。
+   */
   readonly authoritative: boolean;
   /** 検査対象リポ群の親ディレクトリ。 */
   readonly fleetRoot: string;
@@ -58,8 +61,11 @@ export interface GitRefSourceOptions {
   /** 読み取る ref（既定 `origin/main` — A-10 の「準拠判定の正」）。 */
   ref?: string;
   /**
-   * 検査前に `git fetch` するか（既定 true）。false は「ref が既に新鮮」と呼び出し側が保証する場合のみ
-   * （CI が事前 fetch 済み等）。stale な origin/main を掴む穴が開くので既定にはしない。
+   * 検査前に `git fetch` するか（既定 true）。
+   *
+   * false にすると ref の鮮度は「呼び出し側の自己申告」になり、検査器は正の証拠を持たない。
+   * よって `authoritative: false`（＝参考値・verdict なし）に落ちる — G-7「被検査者の自己申告を
+   * 正としない」と同じ理由。`--worktree` と同じ扱いで一貫させている。
    */
   fetch?: boolean;
 }
@@ -107,8 +113,11 @@ export function gitRefSource(options: GitRefSourceOptions): ExemplarSource {
   }
 
   return {
-    label: doFetch ? `${ref}（fetch 済み）` : `${ref}（fetch なし）`,
-    authoritative: true,
+    label: doFetch
+      ? `${ref}（fetch 済み）`
+      : `${ref}（fetch なし — 鮮度は呼び出し側の自己申告・参考値）`,
+    // fetch していない ref の鮮度は保証できない。green は「検査が走り正の証拠を得た」場合のみ（G-6）
+    authoritative: doFetch,
     fleetRoot,
     resolveRepo,
     readFile(repo, relPath) {

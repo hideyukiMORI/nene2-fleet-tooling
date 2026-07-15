@@ -3,7 +3,7 @@
  *
  * 中心は**回帰テスト**: 「ローカル作業ツリーが stale でも origin/main の事実を返す」こと。
  * これが壊れると A-10 の根拠事故（stale 計測による誤った準拠主張）を検査器が再生産する
- * ——実際に 2026-07-16 まで再生産しており、判明しているだけで5回踏まれた。
+ * ——実際に 2026-07-16 まで再生産しており、判明しているだけで4回踏まれた。
  */
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -70,14 +70,14 @@ describe('gitRefSource（A-10 準拠の既定源）', () => {
   it('回帰(#37): ローカル作業ツリーにアンカーが無くても origin/main の事実で resolved・green', () => {
     const report = checkExemplars({
       files: [{ path: 'doc.md', content: DOC }],
-      source: gitRefSource({ fleetRoot, fetch: false }),
+      source: gitRefSource({ fleetRoot }),
     });
     expect(report.state).toBe('green');
     expect(report.findings[0]?.status).toBe('resolved');
     expect(report.authoritative).toBe(true);
   });
 
-  it('対の証拠: 同じ入力を作業ツリーで読むと anchor-missing・red になる（これが5回踏まれた罠）', () => {
+  it('対の証拠: 同じ入力を作業ツリーで読むと anchor-missing・red になる（これが4回踏まれた罠）', () => {
     const report = checkExemplars({
       files: [{ path: 'doc.md', content: DOC }],
       source: worktreeSource(fleetRoot),
@@ -92,17 +92,17 @@ describe('gitRefSource（A-10 準拠の既定源）', () => {
   it('A-10 の SHA 併記 MUST: repos に検査対象リポの commit SHA が載る', () => {
     const report = checkExemplars({
       files: [{ path: 'doc.md', content: DOC }],
-      source: gitRefSource({ fleetRoot, fetch: false }),
+      source: gitRefSource({ fleetRoot }),
     });
     expect(report.repos).toEqual([
       { repo: 'nene-fixture', sha: originSha, unavailableReason: null },
     ]);
   });
 
-  it('fail-closed(CF-1): git リポでない参照先は repo-unavailable → red ではなく unknown', () => {
+  it('fail-closed(G-6): git リポでない参照先は repo-unavailable → red ではなく unknown', () => {
     const report = checkExemplars({
       files: [{ path: 'doc.md', content: '[X:not-a-repo/src/a.ts#nene2-exemplar:x]\n' }],
-      source: gitRefSource({ fleetRoot, fetch: false }),
+      source: gitRefSource({ fleetRoot }),
     });
     expect(report.state).toBe('unknown');
     expect(report.unavailable).toHaveLength(1);
@@ -110,10 +110,10 @@ describe('gitRefSource（A-10 準拠の既定源）', () => {
     expect(report.repos[0]?.sha).toBeNull();
   });
 
-  it('fail-closed(CF-1): 検査不能が1件でも混ざれば全体 unknown（resolved があっても green にしない）', () => {
+  it('fail-closed(G-6): 検査不能が1件でも混ざれば全体 unknown（resolved があっても green にしない）', () => {
     const report = checkExemplars({
       files: [{ path: 'doc.md', content: `${DOC}[X:not-a-repo/src/a.ts#nene2-exemplar:x]\n` }],
-      source: gitRefSource({ fleetRoot, fetch: false }),
+      source: gitRefSource({ fleetRoot }),
     });
     expect(report.resolved).toBe(1);
     expect(report.state).toBe('unknown');
@@ -122,7 +122,7 @@ describe('gitRefSource（A-10 準拠の既定源）', () => {
   it('存在しない ref は解決不能 → unknown（空虚合格 MUST NOT）', () => {
     const report = checkExemplars({
       files: [{ path: 'doc.md', content: DOC }],
-      source: gitRefSource({ fleetRoot, ref: 'origin/no-such-branch', fetch: false }),
+      source: gitRefSource({ fleetRoot, ref: 'origin/no-such-branch' }),
     });
     expect(report.state).toBe('unknown');
     expect(report.unavailable[0]?.detail).toContain('origin/no-such-branch');
@@ -131,16 +131,30 @@ describe('gitRefSource（A-10 準拠の既定源）', () => {
   it('origin/main に無いファイルは file-missing（検査不能とは別腕）', () => {
     const report = checkExemplars({
       files: [{ path: 'doc.md', content: '[X:nene-fixture/src/ghost.ts#nene2-exemplar:x]\n' }],
-      source: gitRefSource({ fleetRoot, fetch: false }),
+      source: gitRefSource({ fleetRoot }),
     });
     expect(report.state).toBe('red');
     expect(report.failures[0]?.status).toBe('file-missing');
   });
 
+  it('G-6: --no-fetch は鮮度の自己申告なので authoritative:false → resolved でも green にしない', () => {
+    const report = checkExemplars({
+      files: [{ path: 'doc.md', content: DOC }],
+      source: gitRefSource({ fleetRoot, fetch: false }),
+    });
+    // origin/main の事実としては解決している
+    expect(report.findings[0]?.status).toBe('resolved');
+    expect(report.resolved).toBe(1);
+    // が、fetch していない ref の鮮度は保証できない = 正の証拠がない
+    expect(report.authoritative).toBe(false);
+    expect(report.state).toBe('unknown');
+    expect(report.details.join('\n')).toContain('green は「検査が走り正の証拠を得た」場合のみ');
+  });
+
   it('repo/path 形式でない単一セグメントは malformed', () => {
     const report = checkExemplars({
       files: [{ path: 'doc.md', content: '[X:client.ts#nene2-exemplar:x]\n' }],
-      source: gitRefSource({ fleetRoot, fetch: false }),
+      source: gitRefSource({ fleetRoot }),
     });
     expect(report.failures[0]?.status).toBe('malformed');
   });
