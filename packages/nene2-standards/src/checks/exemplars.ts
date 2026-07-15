@@ -288,7 +288,9 @@ export function checkExemplars(options: CheckExemplarsOptions): ExemplarsReport 
 /** 初回 red リスト（docs/ratification-red-list）用の決定的 Markdown レンダラ。 */
 export function renderExemplarsMarkdown(report: ExemplarsReport): string {
   const out: string[] = [];
-  out.push('## check:exemplars（RAT-3(a) — 規約 05 G-2・§5.2 #18）');
+  // 出所は AM-15（会議R4）・満たす批准前提は RAT-3(**b**)（minutes:809「(b) check:exemplars
+  // green（アンカー全解決）」・README §6）。(a) は check:standards-doc の前提で、別物（#47）
+  out.push('## check:exemplars（AM-15・批准前提 RAT-3(b) — 規約 05 G-2・§5.2 #18）');
   out.push('');
   out.push(`- 判定: **${report.state}**`);
   out.push(`- fleet ルート: ${report.fleetRoot}`);

@@ -276,7 +276,9 @@ function pct(rate: number | null): string {
 /** 初回 red リスト（docs/ratification-red-list）用の決定的 Markdown レンダラ。 */
 export function renderStandardsDocMarkdown(report: StandardsDocReport): string {
   const out: string[] = [];
-  out.push('## check:standards-doc（RAT-1/RAT-2 — 規約 05 G-4・§5.2 #19）');
+  // 出所は RAT-1（minutes:807 — check:standards-doc MUST）＋ RAT-2（:808 — lint 対応表は
+  // rule metadata から生成）・満たす批准前提は RAT-3(a)。exemplars 節と軸を揃える（#47）
+  out.push('## check:standards-doc（RAT-1/RAT-2・批准前提 RAT-3(a) — 規約 05 G-4・§5.2 #19）');
   out.push('');
   out.push(`- 判定: **${report.state}**`);
   out.push(`- 走査ファイル: ${report.files.join(' / ')}`);
