@@ -64,6 +64,19 @@ describe('Core Token Contract v1', () => {
     expect(isExtensionTokenName('--color-x-approved')).toBe(true);
     expect(isExtensionTokenName('--shadow-x-glow')).toBe(true);
     expect(isExtensionTokenName('--color-approved')).toBe(false);
+
+    // #49 回帰: multi-segment namespace。#35 が生成側を --font-weight-x-medium へ是正した後、
+    // 検査側だけが独自 regex（cat 部 [a-z][a-z0-9]*）のままで**自分の生成物を拒否**していた
+    expect(isExtensionTokenName('--font-weight-x-medium')).toBe(true);
+    expect(isExtensionTokenName('--inset-shadow-x-glow')).toBe(true);
+    expect(isExtensionTokenName('--text-shadow-x-sm')).toBe(true);
+
+    // namespace は表の実在名のみ — color-text は v4 namespace ではない
+    expect(isExtensionTokenName('--color-text-x-foo')).toBe(false);
+
+    // font namespace の合法な拡張トークン名。codemod が今この形を生成しない（#17 で
+    // --font-weight-x-medium へ是正）だけで、「旧実装が吐いた形だから拒否」ではない
+    expect(isExtensionTokenName('--font-x-weight-medium')).toBe(true);
   });
 
   it('contrast pair table only references contract keys', () => {
@@ -71,6 +84,33 @@ describe('Core Token Contract v1', () => {
       expect(COLOR_KEYS).toContain(p.fg);
       expect(COLOR_KEYS).toContain(p.bg);
       expect([3, 4.5]).toContain(p.min);
+    }
+  });
+});
+
+describe('#49 — 生成側の出力を検査側が受理する（道具が自分の生成物を拒否しない）', () => {
+  it('mapTokenName の x- 送り出力は isExtensionTokenName を通る', async () => {
+    const { mapTokenName } = await import('./codemod-map.js');
+    for (const src of [
+      '--font-weight-medium',
+      '--font-weight-bold',
+      '--inset-shadow-glow',
+      '--text-shadow-sm',
+    ]) {
+      const mapped = mapTokenName(src);
+      const name = typeof mapped === 'string' ? mapped : (mapped?.name ?? null);
+      expect(name, `${src} が写像されない`).not.toBeNull();
+      expect(
+        isExtensionTokenName(name as string),
+        `生成側が ${src} → ${name} を出すのに検査側が拒否する`,
+      ).toBe(true);
+    }
+  });
+
+  it('EXTENSION_TOKEN_PATTERN は namespace 表から導出される（手書き regex へ戻さない）', async () => {
+    const { TAILWIND_V4_NAMESPACES } = await import('./contract.js');
+    for (const ns of TAILWIND_V4_NAMESPACES) {
+      expect(isExtensionTokenName(`--${ns}-x-probe`), `${ns} が拡張形を作れない`).toBe(true);
     }
   });
 });

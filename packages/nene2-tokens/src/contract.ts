@@ -85,15 +85,79 @@ export const CONTRACT_TOKENS = {
   names: [...COLOR_TOKEN_NAMES, ...SHADOW_TOKEN_NAMES] as readonly ContractTokenName[],
 } as const;
 
-/** 拡張トークンの登録名前空間 — カテゴリ一般形 `--<cat>-x-<name>`（AM-3） */
-export const EXTENSION_TOKEN_PATTERN = /^--([a-z][a-z0-9]*)-x-([a-z0-9]+(?:-[a-z0-9]+)*)$/;
+/**
+ * Tailwind v4 の namespace 表 — **フリート唯一の1枚**（#17・#35・#49）。
+ *
+ * x- 送り（`codemod-map.ts`）・class 翻訳（`codemod.ts namespaceOf`）・**契約検査（本ファイルの
+ * `isExtensionTokenName`）** の3つがこの1枚を正本にすることが不変条件。二重定義すると
+ * 「片方だけが `font-weight` を知っている」状態が生まれ、namespace が x- 送りで割れても
+ * もう片方が気づけない（#17 の本体）。
+ *
+ * #49 まで契約検査だけが独立の正規表現でカテゴリ形を決めており（`--<cat>-x-<name>` の
+ * cat がハイフンを含めない形）、**#35 が生成側を是正した後も追随せず、道具が自分の生成物を
+ * 拒否していた**（`--font-weight-x-medium` → false）。本ファイル（何も import しない葉）へ
+ * 表を置くことで、`codemod-map.ts` からの import で循環参照にならずに1枚を共有できる。
+ *
+ * multi-segment を先に並べる（`font-weight` が `font` より先にマッチする必要がある）。
+ */
+export const TAILWIND_V4_NAMESPACES: readonly string[] = [
+  // multi-segment（naive な「先頭セグメント直後に x-」だと割れる — #17 の本体）
+  'inset-shadow',
+  'text-shadow',
+  'drop-shadow',
+  'font-weight',
+  // single-segment
+  'shadow',
+  'color',
+  'spacing',
+  'radius',
+  'font',
+  'text',
+  'leading',
+  'tracking',
+  'breakpoint',
+  'container',
+  'ease',
+  'animate',
+  'blur',
+  'perspective',
+  'aspect',
+];
+
+/** トークン名の先頭にある v4 namespace（表に無ければ先頭セグメント群を返す — 写像表の fallback）。 */
+export function tailwindNamespaceOf(token: string): string | null {
+  for (const ns of TAILWIND_V4_NAMESPACES) {
+    if (token.startsWith(`--${ns}-`)) return ns;
+  }
+  const m = /^--([a-z][a-z0-9]*(?:-[a-z0-9]+)*?)-/.exec(token);
+  return m ? m[1]! : null;
+}
+
+/**
+ * 拡張トークンの登録名前空間 — `--<v4 namespace>-x-<key>`（AM-3）。**表から導出する**（#49）。
+ *
+ * 手書きの正規表現に戻さないこと: #49 まで cat 部を `[a-z][a-z0-9]*` と独自に決めていたため
+ * multi-segment namespace（`font-weight`）を弾き、**#35 が是正した生成側の出力 `--font-weight-x-medium`
+ * を検査側が拒否していた**（道具が自分の生成物を拒否する）。表から導出すれば構造的に追随する。
+ */
+export const EXTENSION_TOKEN_PATTERN = new RegExp(
+  `^--(${TAILWIND_V4_NAMESPACES.join('|')})-x-([a-z0-9]+(?:-[a-z0-9]+)*)$`,
+);
+
+/**
+ * 拡張トークン名か。namespace は**表の実在名のみ**
+ * （`--color-text-x-foo` は `color-text` が v4 namespace でないので false）。
+ *
+ * 逆に `--font-x-weight-medium` は `font` namespace の**合法な拡張トークン名**なので true —
+ * codemod が今それを生成しない（#17 で `--font-weight-x-medium` へ是正した）だけであり、
+ * 「旧実装が吐いた形だから拒否する」わけではない。
+ */
+export function isExtensionTokenName(name: string): boolean {
+  return EXTENSION_TOKEN_PATTERN.test(name);
+}
 
 export function isContractTokenName(name: string): name is ContractTokenName {
   return (CONTRACT_TOKENS.names as readonly string[]).includes(name);
-}
-
-export function isExtensionTokenName(name: string): boolean {
-  return EXTENSION_TOKEN_PATTERN.test(name);
 }
 
 /* ------------------------------------------------------------------ */
