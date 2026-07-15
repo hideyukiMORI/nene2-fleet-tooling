@@ -1,5 +1,5 @@
 /* @nene2-contract 1.0 @themegen 1.0.0 */
-@import './brand.components.css' layer(components);
+@import './brand.components.css';
 
 @theme {
   --color-accent: oklch(0.55 0.15 250);

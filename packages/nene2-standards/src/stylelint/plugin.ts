@@ -427,6 +427,49 @@ noReservedSublayerName.ruleName = reservedSublayerName;
 noReservedSublayerName.messages = reservedSublayerMessages;
 
 // ---------------------------------------------------------------------------
+// nene2/no-double-layer-import — 自リポ CSS の @import に layer() を付けない（ST-06）
+//
+// レイヤ指定は「@import の layer() か、ファイル内の @layer か、**どちらか一方だけ**」。
+// 自リポの css（相対パス import）は AM-9/ST-08 によりファイル内で `@layer … { … }` に
+// 包むことが MUST なので、@import 側の layer() は**二重指定**になり sub-layer
+// （`components.components` / `base.base`）へ落ちる。sub-layer は親レイヤ直下の規則に
+// **特異度と無関係に負ける**（Chromium 実測 2026-07-15: base は Tailwind preflight に負けて
+// h3 の font-weight 600→400・components は invoice の index.css 残骸に負けて移行時に silent flip）。
+//
+// 適用外（layer() が正しく必須な唯一の形）: vendor CSS の `@import url(…) layer(vendor)`
+// — 第三者 CSS はファイル内に `@layer` を持たないため layer() が唯一のレイヤ指定であり
+// 二重指定にならない【根拠: 会議 AM-8(b)（css RT-A2）— これは会議決定につき変更しない】。
+// ---------------------------------------------------------------------------
+const doubleLayerImportName = ruleName('no-double-layer-import');
+const doubleLayerImportMessages = ruleMessages(doubleLayerImportName, {
+  rejected: (params: string) =>
+    `自リポ CSS の @import に layer() を付けない（ST-06 — レイヤ指定は @import の layer() か ` +
+    `ファイル内の @layer か**どちらか一方だけ**。両方だと sub-layer に落ち、親レイヤ直下の ` +
+    `規則に特異度と無関係に負ける）: "@import ${params}"。ファイル内の @layer だけを残す ` +
+    `（vendor の @import url(…) layer(vendor) は AM-8(b) の適用外）`,
+});
+/** 相対パス（自リポ CSS）の @import か — `url(…)` 形と bare package 形は対象外。 */
+function isFirstPartyImport(params: string): boolean {
+  return /^\s*['"]\.{1,2}\//.test(params);
+}
+const noDoubleLayerImport: Rule = (primary) => (root, result) => {
+  if (!validateOptions(result, doubleLayerImportName, { actual: primary, possible: [true] }))
+    return;
+  root.walkAtRules('import', (atRule) => {
+    if (!isFirstPartyImport(atRule.params)) return;
+    if (!/\blayer\(/.test(atRule.params)) return;
+    report({
+      result,
+      ruleName: doubleLayerImportName,
+      node: atRule,
+      message: doubleLayerImportMessages.rejected(atRule.params),
+    });
+  });
+};
+noDoubleLayerImport.ruleName = doubleLayerImportName;
+noDoubleLayerImport.messages = doubleLayerImportMessages;
+
+// ---------------------------------------------------------------------------
 // nene2/base-element-only — base.css の閉文法（ST-08・AM-9 の双対）
 //
 // themes = custom property のみ・element 規則 MUST NOT（AM-9）
@@ -576,6 +619,7 @@ const plugins = [
   createPlugin(legacyManifestName, layerLegacyManifestOnly),
   createPlugin(layerBaseLocationName, layerBaseLocation),
   createPlugin(reservedSublayerName, noReservedSublayerName),
+  createPlugin(doubleLayerImportName, noDoubleLayerImport),
   createPlugin(baseElementOnlyName, baseElementOnly),
   createPlugin(themesTokenOnlyName, themesTokenOnly),
   createPlugin(allInComponentsName, allRulesInComponentsLayer),

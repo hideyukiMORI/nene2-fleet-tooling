@@ -257,6 +257,62 @@ describe('sub-layer（ST-06 — ルート名予約・nene-vault#212 実測由来
   });
 });
 
+describe('@import の二重レイヤ指定（ST-06 — components.components / base.base の閉鎖）', () => {
+  async function lintAs(code: string, rel: string) {
+    const { results } = await stylelint.lint({
+      code,
+      config,
+      codeFilename: path.join(fixtureDir, rel),
+    });
+    return (results[0]?.warnings ?? []).map((w) => ({ rule: w.rule ?? '', text: w.text }));
+  }
+
+  it('自リポ CSS の @import に layer(components) を付けると FAIL（vault themes/default.css:14 の現物形）', async () => {
+    const warnings = await lintAs(
+      "@import './default.components.css' layer(components);\n@theme {\n  --color-surface: oklch(97% 0.006 75);\n}\n",
+      'src/shared/ui/theme/themes/default.css',
+    );
+    expect(warnings.some((w) => w.rule === 'nene2/no-double-layer-import')).toBe(true);
+  });
+
+  it('layer() を落とした形は green（是正後）', async () => {
+    const warnings = await lintAs(
+      "@import './default.components.css';\n@theme {\n  --color-surface: oklch(97% 0.006 75);\n}\n",
+      'src/shared/ui/theme/themes/default.css',
+    );
+    expect(warnings.some((w) => w.rule === 'nene2/no-double-layer-import')).toBe(false);
+  });
+
+  it('index.css の components 群 @import に layer(components) を付けると FAIL', async () => {
+    const warnings = await lintAs(
+      "@import './components/data-table.css' layer(components);\n",
+      'src/shared/ui/theme/index.css',
+    );
+    expect(warnings.some((w) => w.rule === 'nene2/no-double-layer-import')).toBe(true);
+  });
+
+  it('base.css の @import に layer(base) を付けると FAIL（ST-06 是正の機械強制）', async () => {
+    const warnings = await lintAs("@import './base.css' layer(base);\n", 'src/index.css');
+    expect(warnings.some((w) => w.rule === 'nene2/no-double-layer-import')).toBe(true);
+  });
+
+  it('適用外: vendor の @import url(…) layer(vendor) は green（会議 AM-8(b) 決定）', async () => {
+    const warnings = await lintAs(
+      "@import url('../../../node_modules/katex/dist/katex.css') layer(vendor);\n",
+      'src/shared/ui/theme/index.css',
+    );
+    expect(warnings.some((w) => w.rule === 'nene2/no-double-layer-import')).toBe(false);
+  });
+
+  it("適用外: bare package の @import 'tailwindcss' theme(static) は green", async () => {
+    const warnings = await lintAs(
+      "@import 'tailwindcss' theme(static);\n@import './active.css';\n",
+      'src/shared/ui/theme/index.css',
+    );
+    expect(warnings.some((w) => w.rule === 'nene2/no-double-layer-import')).toBe(false);
+  });
+});
+
 describe('一般 CSS（テーマ外）', () => {
   it('故意 fail unlayered.css — 無レイヤ・!important・ID・hex・rgb()・[data-theme] 場所違反', async () => {
     const warnings = await lintFile('src/app/unlayered.css');
