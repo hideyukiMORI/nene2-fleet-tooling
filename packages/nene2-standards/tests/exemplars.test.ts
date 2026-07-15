@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
+import { worktreeSource } from '../src/checks/exemplar-source.js';
 import { checkExemplars, collectExemplarRefs } from '../src/checks/exemplars.js';
 
 const FLEET_ROOT = path.join(
@@ -18,7 +19,10 @@ const FLEET_ROOT = path.join(
 const OK_REF = 'nene-alpha/frontend/src/shared/api/client.ts#nene2-exemplar:api-client';
 
 function check(content: string) {
-  return checkExemplars({ files: [{ path: 'doc.md', content }], fleetRoot: FLEET_ROOT });
+  return checkExemplars({
+    files: [{ path: 'doc.md', content }],
+    source: worktreeSource(FLEET_ROOT),
+  });
 }
 
 describe('collectExemplarRefs', () => {
