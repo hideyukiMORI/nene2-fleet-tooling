@@ -7,7 +7,9 @@
  *   nene2-check gate-integrity
  *   nene2-check init --scan [--out <file>] / init --check
  *   nene2-check standards-doc --docs <dir> [--out <json>] [--md <file>]
- *   nene2-check exemplars --docs <dir> [--root <dir>] [--out <json>] [--md <file>]
+ *   nene2-check exemplars --docs <dir> [--root <dir>] [--ref <ref>|--worktree] [--no-fetch]
+ *                         [--out <json>] [--md <file>]
+ *     読み取り源の既定は origin/main（規約 02 A-10 — 準拠判定の正）。--worktree は参考値（#37）。
  *
  * 正準シーケンス（type-check → eslint → … → build — 05 §5.1）の駆動は W0b/W1 配線
  * （検査器の空虚合格を出荷しないため、未配線工程は conformance で unknown を出力する）。
@@ -18,6 +20,7 @@ import path from 'node:path';
 
 import { validateConformance } from './conformance.js';
 import { detectRepo } from './detect-repo.js';
+import { gitRefSource, worktreeSource } from './exemplar-source.js';
 import { checkExemplars, renderExemplarsMarkdown, type DocFile } from './exemplars.js';
 import { checkGateIntegrity } from './gate-integrity.js';
 import { initCheck, initScan, ledgersAlreadyInitialized } from './init-scan.js';
@@ -212,7 +215,20 @@ async function main(): Promise<number> {
       if (loaded === null) return 2; // fail-closed（unknown 相当）
       const root = flags.get('root');
       const fleetRoot = path.resolve(typeof root === 'string' ? root : path.join(cwd, '..'));
-      const report = checkExemplars({ files: loaded.files, fleetRoot });
+      // A-10: 準拠判定の正は origin/main。作業ツリー読みは --worktree を明示した場合のみ（参考値・#37）
+      const refFlag = flags.get('ref');
+      if (flags.has('worktree') && typeof refFlag === 'string') {
+        console.error('--worktree と --ref は同時に指定できない');
+        return 2;
+      }
+      const source = flags.has('worktree')
+        ? worktreeSource(fleetRoot)
+        : gitRefSource({
+            fleetRoot,
+            ...(typeof refFlag === 'string' ? { ref: refFlag } : {}),
+            fetch: !flags.has('no-fetch'),
+          });
+      const report = checkExemplars({ files: loaded.files, source });
       const json = JSON.stringify(report, null, 2);
       const out = flags.get('out');
       if (typeof out === 'string') writeFileSync(out, json + '\n');

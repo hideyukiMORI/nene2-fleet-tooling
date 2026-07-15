@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
+import { worktreeSource } from '../src/checks/exemplar-source.js';
 import { checkExemplars, collectExemplarRefs } from '../src/checks/exemplars.js';
 
 const FLEET_ROOT = path.join(
@@ -18,7 +19,10 @@ const FLEET_ROOT = path.join(
 const OK_REF = 'nene-alpha/frontend/src/shared/api/client.ts#nene2-exemplar:api-client';
 
 function check(content: string) {
-  return checkExemplars({ files: [{ path: 'doc.md', content }], fleetRoot: FLEET_ROOT });
+  return checkExemplars({
+    files: [{ path: 'doc.md', content }],
+    source: worktreeSource(FLEET_ROOT),
+  });
 }
 
 describe('collectExemplarRefs', () => {
@@ -43,13 +47,14 @@ describe('collectExemplarRefs', () => {
 });
 
 describe('checkExemplars', () => {
-  it('植栽済みアンカーは resolved・green', () => {
+  it('植栽済みアンカーは resolved（ただし源が作業ツリー＝参考値なので verdict は green にしない — G-6）', () => {
     const r = check(`exemplar: [X:${OK_REF}]\n`);
-    expect(r.state).toBe('green');
     expect(r.findings[0]?.status).toBe('resolved');
+    expect(r.authoritative).toBe(false);
+    expect(r.state).toBe('unknown');
   });
 
-  it('故意 fail: アンカー未植栽は anchor-missing で red', () => {
+  it('故意 fail: アンカー未植栽は anchor-missing で red（参考値でも red は出す — fail-safe 方向）', () => {
     const r = check(
       '[X:nene-alpha/frontend/src/entities/auth/model.ts#nene2-exemplar:auth-store]\n',
     );
