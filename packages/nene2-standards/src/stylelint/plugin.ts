@@ -325,6 +325,16 @@ themesTokenOnly.messages = themesTokenOnlyMessages;
 // ---------------------------------------------------------------------------
 export const CANONICAL_BASE_ENTRY = 'src/shared/ui/theme/base.css';
 
+/** ルート6レイヤ（ST-06 canonical header の順序宣言）。sub-layer 名への再利用は MUST NOT。 */
+export const ROOT_LAYERS = [
+  'theme',
+  'base',
+  'vendor',
+  'legacy',
+  'components',
+  'utilities',
+] as const;
+
 const layerBaseLocationName = ruleName('layer-base-location');
 const layerBaseLocationMessages = ruleMessages(layerBaseLocationName, {
   rejected: (file: string) =>
@@ -352,6 +362,11 @@ const layerBaseLocation: Rule<true, { file?: string }> = (primary, secondary) =>
     // ブロックを持たない @layer 文は順序宣言（canonical cascade header の必須行 — AM-8(a)）
     // であり base レイヤへのルール投入ではない（#19 と同じ分界）。
     if (atRule.nodes === undefined) return;
+    // 入れ子の `@layer base` は sub-layer（例 `components.base`）であって**ルート base
+    // レイヤではない** — 場所違反ではなく「ルート名の sub-layer への再利用」であり、
+    // 診断は no-reserved-sublayer-name の管轄（#33 で本ルールが誤検知し、nene-vault#212 が
+    // sub-layer を base → main へ改名させられた実害の是正）。
+    if (isInAnyLayer(atRule)) return;
     if (!layerParamsInclude(atRule.params, 'base')) return;
     // fail-closed: ファイル名が特定できない（コード断片 lint）場合も場所違反扱い
     const inBaseEntry = sourceFile !== undefined && sourceFile.endsWith(baseEntry);
@@ -367,6 +382,49 @@ const layerBaseLocation: Rule<true, { file?: string }> = (primary, secondary) =>
 };
 layerBaseLocation.ruleName = layerBaseLocationName;
 layerBaseLocation.messages = layerBaseLocationMessages;
+
+// ---------------------------------------------------------------------------
+// nene2/no-reserved-sublayer-name — sub-layer 名にルート6レイヤ名を再利用 MUST NOT（ST-06）
+//
+// 根拠は実測（2026-07-15）: 配布ルールのうち layer-components-allowlist /
+// layer-legacy-manifest-only / layer-base-location の3本は helpers の layerParamsInclude で
+// **レイヤ名を額面どおり**に解釈する。sub-layer がルート名を再利用すると、この3本が
+// 「別レイヤ」を対象レイヤと誤認する:
+//   - `@layer components { @layer base { … } }`   → layer-base-location が誤検知（実測）
+//   - `@layer components { @layer legacy { … } }` → layer-legacy-manifest-only が誤検知（実測）
+// 名前を予約すれば「@layer の param に現れる base は常にルート base」が不変条件として保て、
+// 3本とも祖先を辿らずに健全でいられる。nene-vault#212 は実際に main / responsive を採用済み。
+// ---------------------------------------------------------------------------
+const reservedSublayerName = ruleName('no-reserved-sublayer-name');
+const reservedSublayerMessages = ruleMessages(reservedSublayerName, {
+  rejected: (name: string) =>
+    `sub-layer 名にルートレイヤ名 "${name}" を再利用 MUST NOT（ST-06 — ルート6レイヤ ` +
+    `[${ROOT_LAYERS.join(', ')}] は予約語。"${name}" を sub-layer 名にすると ` +
+    `"<親>.${name}" はルート "${name}" レイヤではないのに、レイヤ名を額面どおり照合する ` +
+    `配布ルール〔layer-components-allowlist / layer-legacy-manifest-only / layer-base-location〕が` +
+    `誤検知する。意匠上の別名〔main / responsive 等〕を使う）`,
+});
+const noReservedSublayerName: Rule = (primary) => (root, result) => {
+  if (!validateOptions(result, reservedSublayerName, { actual: primary, possible: [true] })) return;
+  root.walkAtRules('layer', (atRule) => {
+    // ルート直下の @layer（順序宣言文・ルートレイヤブロック）は sub-layer ではない
+    if (!isInAnyLayer(atRule)) return;
+    // 入れ子の `@layer a, b;`（sub-layer 順序宣言）と `@layer a { … }` の両方を見る
+    for (const raw of atRule.params.split(',')) {
+      const name = raw.trim().split('.')[0]?.trim();
+      if (name !== undefined && (ROOT_LAYERS as readonly string[]).includes(name)) {
+        report({
+          result,
+          ruleName: reservedSublayerName,
+          node: atRule,
+          message: reservedSublayerMessages.rejected(name),
+        });
+      }
+    }
+  });
+};
+noReservedSublayerName.ruleName = reservedSublayerName;
+noReservedSublayerName.messages = reservedSublayerMessages;
 
 // ---------------------------------------------------------------------------
 // nene2/base-element-only — base.css の閉文法（ST-08・AM-9 の双対）
@@ -517,6 +575,7 @@ const plugins = [
   createPlugin(componentsAllowlistName, layerComponentsAllowlist),
   createPlugin(legacyManifestName, layerLegacyManifestOnly),
   createPlugin(layerBaseLocationName, layerBaseLocation),
+  createPlugin(reservedSublayerName, noReservedSublayerName),
   createPlugin(baseElementOnlyName, baseElementOnly),
   createPlugin(themesTokenOnlyName, themesTokenOnly),
   createPlugin(allInComponentsName, allRulesInComponentsLayer),

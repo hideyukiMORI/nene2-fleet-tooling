@@ -22,6 +22,7 @@ const config: Config = {
     'nene2/layer-components-allowlist': true, // registries 許可リスト（完全一致列挙 — 会議R4 AM-10決定）
     'nene2/layer-legacy-manifest-only': true, // @layer legacy は manifest 列挙ファイルのみ（会議R3⑩M-2決定）
     'nene2/layer-base-location': true, // @layer base ブロックは base.css 内のみ（ST-08 — base の家は1つ）
+    'nene2/no-reserved-sublayer-name': true, // sub-layer 名にルート6レイヤ名の再利用 MUST NOT（ST-06）
     'color-no-hex': true, // 生 hex の theme 外直書き MUST NOT（会議R1⑤決定）
     'function-disallowed-list': ['rgb', 'rgba', 'hsl', 'hsla'], // 色は oklch/color-mix（会議R1⑤決定）
   },
