@@ -86,7 +86,9 @@ ESLint flat config は同一ルールの再指定が**後勝ちで全置換**に
 - `nene2-check exemplars --docs <dir> --root <fleet-root> [--out <json>] [--md <file>]` — 全
   `[X:file#anchor]` を実リポのアンカーコメント `[nene2-exemplar:<name>]` と突合（G-2。行番号参照は FAIL）。
 - どちらも fail-closed: 文書 6 ファイル不揃い＝実行拒否・MUST 0 本／[X] 0 件＝unknown（exit 2）。
-- 初回実測の red リスト（red が出るのが正 — 植栽未実施）: `docs/ratification-red-list-2026-07-14.md`。
+- 批准前提の red リスト（red が出るのが正 — 植栽未完）: `docs/ratification-red-list-2026-07-16.md`。
+  読み取り源は origin/main・対象リポの commit SHA 併記（A-10）。
+  前版 `docs/ratification-red-list-2026-07-14.md` は **A-10 違反の方法で作られており失効**（#37）— 数字を引用しないこと。
 
 ## 未実施（誠実性ガード）
 
