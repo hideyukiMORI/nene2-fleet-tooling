@@ -427,6 +427,68 @@ noReservedSublayerName.ruleName = reservedSublayerName;
 noReservedSublayerName.messages = reservedSublayerMessages;
 
 // ---------------------------------------------------------------------------
+// nene2/no-double-layer-import — 自リポ CSS の @import に layer() を付けない（ST-06）
+//
+// レイヤ指定は「@import の layer() か、ファイル内の @layer か、**どちらか一方だけ**」。
+// 自リポの css（相対パス import）は AM-9/ST-08 によりファイル内で `@layer … { … }` に
+// 包むことが MUST なので、@import 側の layer() は**二重指定**になり sub-layer
+// （`components.components` / `base.base`）へ落ちる。sub-layer は親レイヤ直下の規則に
+// **特異度と無関係に負ける**（Chromium 実測 2026-07-15: base は Tailwind preflight に負けて
+// h3 の font-weight 600→400・components は invoice の index.css 残骸に負けて移行時に silent flip）。
+//
+// 適用外（layer() が正しく必須な唯一の形）: vendor CSS の `@import url(…) layer(vendor)`
+// — 第三者 CSS はファイル内に `@layer` を持たないため layer() が唯一のレイヤ指定であり
+// 二重指定にならない【根拠: 会議 AM-8(b)（css RT-A2）— これは会議決定につき変更しない】。
+//
+// 自リポ／vendor の判別は **パスが相対か**で行う（`url()` で包まれているかでは行わない）。
+// 規約 03 §196-199 の表が「ファイル内に @layer が**ある**（自リポ）→ layer() なし」/
+// 「**ない**（第三者 CSS）→ layer() 必須」で分けており、判別の実体は**中身の自己ラップの有無**
+// ＝ 自リポか否か。`url()` はその代理指標にすぎず、`@import url("./x.css") layer(components)` は
+// 自リポなのに vendor 扱いで素通りする（nene-vault リナの指摘 2026-07-16 で発覚。
+// origin/main 全リポ実測では該当 0 件＝実害はなかったが、代理指標のままでは取りこぼす）。
+// ---------------------------------------------------------------------------
+const doubleLayerImportName = ruleName('no-double-layer-import');
+const doubleLayerImportMessages = ruleMessages(doubleLayerImportName, {
+  rejected: (params: string) =>
+    `自リポ CSS の @import に layer() を付けない（ST-06 — レイヤ指定は @import の layer() か ` +
+    `ファイル内の @layer か**どちらか一方だけ**。両方だと sub-layer に落ち、親レイヤ直下の ` +
+    `規則に特異度と無関係に負ける）: "@import ${params}"。ファイル内の @layer だけを残す ` +
+    `（vendor の @import url(…) layer(vendor) は AM-8(b) の適用外）`,
+});
+/**
+ * 自リポ CSS（＝ファイル内で自己ラップしている側）の @import か。
+ *
+ * 判別は **`url()` の有無ではなくパス**で行う: `url("./x.css")` も `"./x.css"` も同じ自リポ CSS で、
+ * `url()` を vendor の代理指標にすると前者が素通りする。ただし `node_modules` への相対パス
+ * （`url('../../node_modules/katex/dist/katex.css')`）は**相対だが第三者 CSS** なので除外する
+ * — 代理指標を素朴に捨てると、今度は正当な vendor を落とす。
+ *
+ * 対象外: bare package（`'tailwindcss'`）・絶対 URL・`node_modules` 配下。
+ */
+function isFirstPartyImport(params: string): boolean {
+  const specifier = /^\s*url\(\s*(.*?)\s*\)/is.exec(params)?.[1] ?? params.trim();
+  const path = specifier.replace(/^\s*['"]|['"]\s*$/g, '');
+  if (!/^\.{1,2}\//.test(path)) return false;
+  return !/(^|\/)node_modules\//.test(path);
+}
+const noDoubleLayerImport: Rule = (primary) => (root, result) => {
+  if (!validateOptions(result, doubleLayerImportName, { actual: primary, possible: [true] }))
+    return;
+  root.walkAtRules('import', (atRule) => {
+    if (!isFirstPartyImport(atRule.params)) return;
+    if (!/\blayer\(/.test(atRule.params)) return;
+    report({
+      result,
+      ruleName: doubleLayerImportName,
+      node: atRule,
+      message: doubleLayerImportMessages.rejected(atRule.params),
+    });
+  });
+};
+noDoubleLayerImport.ruleName = doubleLayerImportName;
+noDoubleLayerImport.messages = doubleLayerImportMessages;
+
+// ---------------------------------------------------------------------------
 // nene2/base-element-only — base.css の閉文法（ST-08・AM-9 の双対）
 //
 // themes = custom property のみ・element 規則 MUST NOT（AM-9）
@@ -576,6 +638,7 @@ const plugins = [
   createPlugin(legacyManifestName, layerLegacyManifestOnly),
   createPlugin(layerBaseLocationName, layerBaseLocation),
   createPlugin(reservedSublayerName, noReservedSublayerName),
+  createPlugin(doubleLayerImportName, noDoubleLayerImport),
   createPlugin(baseElementOnlyName, baseElementOnly),
   createPlugin(themesTokenOnlyName, themesTokenOnly),
   createPlugin(allInComponentsName, allRulesInComponentsLayer),

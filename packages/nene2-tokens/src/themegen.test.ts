@@ -172,3 +172,27 @@ describe('fill (AM-1 — 局所スコープの充足はツール維持)', () => 
     expect(filled).toContain('@nene2-fill:start');
   });
 });
+
+describe('.components.css の @import — layer() 二重指定の是正（TH-02・2026-07-15）', () => {
+  const OLD = `/* @nene2-contract 1.0 @themegen 1.0.0 */
+@import './default.components.css' layer(components);
+@theme {
+  --color-surface: oklch(97% 0.006 75);
+}
+`;
+  const NEW = OLD.replace("' layer(components)", "'");
+
+  it('寛容な reader: 旧形（layer(components) 付き・移行前の現物）を読める', () => {
+    expect(extractTheme(OLD).componentsImport).toBe('./default.components.css');
+  });
+
+  it('寛容な reader: 新形（layer() 無し）も読める', () => {
+    expect(extractTheme(NEW).componentsImport).toBe('./default.components.css');
+  });
+
+  it('厳格な writer: generate は常に layer() 無しで書く（旧形は再生成で自動是正）', () => {
+    const out = generateTheme(extractTheme(OLD));
+    expect(out).toContain("@import './default.components.css';");
+    expect(out).not.toContain('layer(components)');
+  });
+});

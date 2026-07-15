@@ -152,7 +152,12 @@ export function generateTheme(doc: ThemeDocument, opts: GenerateOptions = {}): s
   }
   const parts: string[] = [`/* @nene2-contract ${doc.contract} @themegen ${THEMEGEN_VERSION} */`];
   if (doc.componentsImport !== undefined) {
-    parts.push(`@import '${doc.componentsImport}' layer(components);`);
+    // `layer(components)` を**付けない**（TH-02 是正・2026-07-15）。.components.css は
+    // ファイル内で全ルールを `@layer components { … }` に包む（AM-9）ため、@import 側にも
+    // layer() を付けると sub-layer `components.components` に入り、root `components` 直下の
+    // 規則に**特異度と無関係に負ける**（Chromium 実測）。レイヤ指定は「@import の layer() か
+    // ファイル内の @layer か、**どちらか一方だけ**」— ST-06 が base で是正したのと同じ形。
+    parts.push(`@import '${doc.componentsImport}';`);
   }
   parts.push(renderBlock(opts.plain ? ':root' : '@theme', rootEntries, []));
 
@@ -239,7 +244,13 @@ export function extractTheme(source: string, opts: ExtractOptions = {}): ThemeDo
     scopes[block.selector] = mapBlock(authoredOnly);
   }
   if (Object.keys(scopes).length > 0) doc.scopes = scopes;
-  const componentsImport = parsed.imports.find((imp) => /layer\(components\)/.test(imp.text));
+  // 寛容な reader / 厳格な writer: 是正前の現物（`… layer(components)` 付き — nene-vault
+  // themes/default.css 等）と是正後（layer() 無し）の**両方**を読む。判別は「対になる
+  // .components.css を指す @import」— TH-02/TH-03 の定義そのもの（layer() の有無に依存しない）。
+  // 生成は常に是正後の形（generateTheme）— 読めた現物は再生成で自動的に是正される。
+  const componentsImport = parsed.imports.find((imp) =>
+    /\.components\.css'\s*(?:layer\()?/.test(imp.text),
+  );
   if (componentsImport) {
     const m = /@import\s+'([^']+)'/.exec(componentsImport.text);
     if (m) doc.componentsImport = m[1]!;
