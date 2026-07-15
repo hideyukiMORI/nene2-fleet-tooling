@@ -16,7 +16,16 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc --build"
+    "build": "tsc --build",
+    "prepack": "tsc --build"
   },
-  "private": true
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hideyukiMORI/nene2-fleet-tooling.git",
+    "directory": "packages/nene2-i18n"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
 }
