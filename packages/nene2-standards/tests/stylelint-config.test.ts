@@ -192,6 +192,71 @@ describe('base.css — @layer base の唯一の家（ST-08・K-7 の base 経由
   });
 });
 
+describe('sub-layer（ST-06 — ルート名予約・nene-vault#212 実測由来）', () => {
+  async function lintAs(code: string, rel: string) {
+    const { results } = await stylelint.lint({
+      code,
+      config,
+      codeFilename: path.join(fixtureDir, rel),
+    });
+    return (results[0]?.warnings ?? []).map((w) => ({ rule: w.rule ?? '', text: w.text }));
+  }
+
+  const COMPONENTS_FILE = 'src/shared/ui/theme/themes/corporate.components.css';
+
+  it('vault 現物の sub-layer 形（main / responsive）は sub-layer 系の違反 0', async () => {
+    const warnings = await lintAs(
+      '@layer components {\n  @layer main, responsive;\n  @layer main { .badge { color: red } }\n' +
+        '  @layer responsive { @media (max-width: 640px) { .badge { color: blue } } }\n}\n',
+      COMPONENTS_FILE,
+    );
+    expect(warnings.some((w) => w.rule === 'nene2/no-reserved-sublayer-name')).toBe(false);
+    expect(warnings.some((w) => w.rule === 'nene2/layer-base-location')).toBe(false);
+  });
+
+  it('sub-layer 名 base は no-reserved-sublayer-name で落ちる（layer-base-location の誤検知ではなく）', async () => {
+    const warnings = await lintAs(
+      '@layer components {\n  @layer base { .badge { color: red } }\n}\n',
+      COMPONENTS_FILE,
+    );
+    expect(
+      warnings.some((w) => w.rule === 'nene2/no-reserved-sublayer-name' && w.text.includes('base')),
+    ).toBe(true);
+    // #33 の誤検知回帰: 入れ子 base は components.base であってルート base ではない
+    expect(warnings.some((w) => w.rule === 'nene2/layer-base-location')).toBe(false);
+  });
+
+  it('sub-layer 名 legacy も予約語として落ちる（layer-legacy-manifest-only の誤検知も同時に説明）', async () => {
+    const warnings = await lintAs(
+      '@layer components {\n  @layer legacy { .badge { color: red } }\n}\n',
+      COMPONENTS_FILE,
+    );
+    expect(warnings.some((w) => w.rule === 'nene2/no-reserved-sublayer-name')).toBe(true);
+  });
+
+  it('入れ子の sub-layer 順序宣言文でも予約語を検知する', async () => {
+    const warnings = await lintAs(
+      '@layer components {\n  @layer base, responsive;\n  @layer responsive { .badge { color: red } }\n}\n',
+      COMPONENTS_FILE,
+    );
+    expect(warnings.some((w) => w.rule === 'nene2/no-reserved-sublayer-name')).toBe(true);
+  });
+
+  it('回帰: base.css 以外のトップレベル @layer base は従来どおり layer-base-location で落ちる', async () => {
+    const warnings = await lintAs(
+      '@layer base {\n  body { margin: 0 }\n}\n',
+      'src/app/somewhere.css',
+    );
+    expect(warnings.some((w) => w.rule === 'nene2/layer-base-location')).toBe(true);
+    expect(warnings.some((w) => w.rule === 'nene2/no-reserved-sublayer-name')).toBe(false);
+  });
+
+  it('回帰: base.css 正例と canonical header 順序宣言文は違反 0 のまま', async () => {
+    expect(await lintFile('src/shared/ui/theme/base.css')).toEqual([]);
+    expect(await lintFile('src/index.css')).toEqual([]);
+  });
+});
+
 describe('一般 CSS（テーマ外）', () => {
   it('故意 fail unlayered.css — 無レイヤ・!important・ID・hex・rgb()・[data-theme] 場所違反', async () => {
     const warnings = await lintFile('src/app/unlayered.css');
