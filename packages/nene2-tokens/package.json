@@ -1,7 +1,7 @@
 {
   "name": "@hideyukimori/nene2-tokens",
   "version": "1.0.1",
-  "description": "NeNe Core Token Contract v1 — contract types, CONTRACT_TOKENS, validate:themes CLI, themegen, codemod mapping table v1, reference theme",
+  "description": "NeNe Core Token Contract v1 — contract types, CONTRACT_TOKENS, validate:themes CLI, themegen, codemod mapping table v1 + jscodeshift codemod runner, reference theme",
   "type": "module",
   "license": "MIT",
   "main": "./dist/index.js",
@@ -10,6 +10,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./codemod-transform": {
+      "types": "./dist/codemod-transform.d.ts",
+      "default": "./dist/codemod-transform.js"
     }
   },
   "bin": {
@@ -33,5 +37,11 @@
   "publishConfig": {
     "access": "public",
     "provenance": true
+  },
+  "dependencies": {
+    "jscodeshift": "^17.3.0"
+  },
+  "devDependencies": {
+    "@types/jscodeshift": "^17.3.0"
   }
 }

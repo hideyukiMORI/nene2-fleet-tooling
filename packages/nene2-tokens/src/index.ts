@@ -61,6 +61,35 @@ export type {
   TokenSetResult,
 } from './codemod-map.js';
 
+export {
+  CODEMOD_NAME,
+  CODEMOD_VERSION,
+  NAMESPACE_UTILITY_ROOTS,
+  CodemodError,
+  applyRenames,
+  buildPlan,
+  buildRenameIndex,
+  buildRenameRegex,
+  collectDeclaredTokenNames,
+  deriveClassRenames,
+  namespaceOf,
+  reentrantRenames,
+} from './codemod.js';
+export type {
+  ApplyResult,
+  ClassRenameResult,
+  CodemodPlan,
+  Rename,
+  UnmappedRename,
+} from './codemod.js';
+
+export {
+  applyToSource,
+  applyToSourceDetailed,
+  default as codemodTransform,
+} from './codemod-transform.js';
+export type { CodemodTransformOptions, TransformResult } from './codemod-transform.js';
+
 export { FROZEN_CONTRACT_VERSION, checkContractFreeze } from './release-gate.js';
 export type { FreezeRecord, CurrentContract, GateOptions, GateResult } from './release-gate.js';
 
