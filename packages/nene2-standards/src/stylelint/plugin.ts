@@ -439,6 +439,13 @@ noReservedSublayerName.messages = reservedSublayerMessages;
 // 適用外（layer() が正しく必須な唯一の形）: vendor CSS の `@import url(…) layer(vendor)`
 // — 第三者 CSS はファイル内に `@layer` を持たないため layer() が唯一のレイヤ指定であり
 // 二重指定にならない【根拠: 会議 AM-8(b)（css RT-A2）— これは会議決定につき変更しない】。
+//
+// 自リポ／vendor の判別は **パスが相対か**で行う（`url()` で包まれているかでは行わない）。
+// 規約 03 §196-199 の表が「ファイル内に @layer が**ある**（自リポ）→ layer() なし」/
+// 「**ない**（第三者 CSS）→ layer() 必須」で分けており、判別の実体は**中身の自己ラップの有無**
+// ＝ 自リポか否か。`url()` はその代理指標にすぎず、`@import url("./x.css") layer(components)` は
+// 自リポなのに vendor 扱いで素通りする（nene-vault リナの指摘 2026-07-16 で発覚。
+// origin/main 全リポ実測では該当 0 件＝実害はなかったが、代理指標のままでは取りこぼす）。
 // ---------------------------------------------------------------------------
 const doubleLayerImportName = ruleName('no-double-layer-import');
 const doubleLayerImportMessages = ruleMessages(doubleLayerImportName, {
@@ -448,9 +455,21 @@ const doubleLayerImportMessages = ruleMessages(doubleLayerImportName, {
     `規則に特異度と無関係に負ける）: "@import ${params}"。ファイル内の @layer だけを残す ` +
     `（vendor の @import url(…) layer(vendor) は AM-8(b) の適用外）`,
 });
-/** 相対パス（自リポ CSS）の @import か — `url(…)` 形と bare package 形は対象外。 */
+/**
+ * 自リポ CSS（＝ファイル内で自己ラップしている側）の @import か。
+ *
+ * 判別は **`url()` の有無ではなくパス**で行う: `url("./x.css")` も `"./x.css"` も同じ自リポ CSS で、
+ * `url()` を vendor の代理指標にすると前者が素通りする。ただし `node_modules` への相対パス
+ * （`url('../../node_modules/katex/dist/katex.css')`）は**相対だが第三者 CSS** なので除外する
+ * — 代理指標を素朴に捨てると、今度は正当な vendor を落とす。
+ *
+ * 対象外: bare package（`'tailwindcss'`）・絶対 URL・`node_modules` 配下。
+ */
 function isFirstPartyImport(params: string): boolean {
-  return /^\s*['"]\.{1,2}\//.test(params);
+  const specifier = /^\s*url\(\s*(.*?)\s*\)/is.exec(params)?.[1] ?? params.trim();
+  const path = specifier.replace(/^\s*['"]|['"]\s*$/g, '');
+  if (!/^\.{1,2}\//.test(path)) return false;
+  return !/(^|\/)node_modules\//.test(path);
 }
 const noDoubleLayerImport: Rule = (primary) => (root, result) => {
   if (!validateOptions(result, doubleLayerImportName, { actual: primary, possible: [true] }))

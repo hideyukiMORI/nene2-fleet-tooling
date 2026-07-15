@@ -311,6 +311,33 @@ describe('@import の二重レイヤ指定（ST-06 — components.components / b
     );
     expect(warnings.some((w) => w.rule === 'nene2/no-double-layer-import')).toBe(false);
   });
+
+  // 判別は url() の有無でなくパス — url() を vendor の代理指標にすると自リポが素通りする
+  // （nene-vault リナの指摘 2026-07-16。origin/main 全リポ実測では該当 0 件＝実害はなかった）
+  it('url() で包んだ自リポ CSS も FAIL — url() は vendor の代理指標にならない', async () => {
+    for (const params of [
+      'url("./default.components.css") layer(components)',
+      "url('./default.components.css') layer(components)",
+      'url(./default.components.css) layer(components)', // 引用符なし url() も CSS 上は有効
+    ]) {
+      const warnings = await lintAs(
+        `@import ${params};\n`,
+        'src/shared/ui/theme/themes/default.css',
+      );
+      expect(
+        warnings.some((w) => w.rule === 'nene2/no-double-layer-import'),
+        `素通りした: @import ${params}`,
+      ).toBe(true);
+    }
+  });
+
+  it('対の証拠: node_modules への相対 url() は vendor なので green（正当な vendor を落とさない）', async () => {
+    const warnings = await lintAs(
+      "@import url('../../../node_modules/katex/dist/katex.css') layer(vendor);\n",
+      'src/shared/ui/theme/index.css',
+    );
+    expect(warnings.some((w) => w.rule === 'nene2/no-double-layer-import')).toBe(false);
+  });
 });
 
 describe('一般 CSS（テーマ外）', () => {
