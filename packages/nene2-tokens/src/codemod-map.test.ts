@@ -14,7 +14,7 @@ import {
 
 describe('codemod mapping table v1 (versioned)', () => {
   it('is versioned (M-1: 使い捨てスクリプト化 MUST NOT)', () => {
-    expect(CODEMOD_MAP_V1.version).toBe('1.0.1');
+    expect(CODEMOD_MAP_V1.version).toBe('1.0.2');
     expect(CODEMOD_MAP_V1.contract).toBe('1.0');
   });
 

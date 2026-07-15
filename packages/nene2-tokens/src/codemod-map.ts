@@ -16,7 +16,59 @@
 
 import { EXCLUDED_NAMESPACES, isContractTokenName, isExtensionTokenName } from './contract.js';
 
-export const CODEMOD_MAP_VERSION = '1.0.1';
+export const CODEMOD_MAP_VERSION = '1.0.2';
+
+/**
+ * Tailwind v4 の theme variable namespace（**長い namespace が短い prefix より先**）。
+ *
+ * **これは Tailwind の規則であって NeNe 語彙の写像判断ではない**（codemod.ts の
+ * NAMESPACE_UTILITY_ROOTS と同じ責務分界）。x- 送り（rule 6）と utility class 翻訳
+ * （codemod.ts `namespaceOf`）の**両方がこの1枚を正本にする** — 二重定義すると
+ * 「表は font-weight を知っているが x- 送りは知らない」という #17 の食い違いが再発する。
+ *
+ * 順序の不変条件（テストで固定）: multi-segment namespace は、その prefix になる
+ * 短い namespace より **必ず前**（`font-weight` は `font` より前・`inset-shadow`/
+ * `text-shadow`/`drop-shadow` は `shadow` より前）。
+ *
+ * 実測（tailwindcss 4.3.2 の emit — #17）:
+ *  - `--font-weight-x-medium` → `.font-x-medium { font-weight: … }`（意味論 保存）
+ *  - `--font-x-weight-medium` → `.font-x-weight-medium { font-family: … }`（意味論 破壊）
+ */
+export const TAILWIND_V4_NAMESPACES: readonly string[] = [
+  // multi-segment（naive な「先頭セグメント直後に x-」だと割れる — #17 の本体）
+  'inset-shadow',
+  'text-shadow',
+  'drop-shadow',
+  'font-weight',
+  // single-segment
+  'shadow',
+  'color',
+  'spacing',
+  'radius',
+  'font',
+  'text',
+  'leading',
+  'tracking',
+  'breakpoint',
+  'container',
+  'ease',
+  'animate',
+  'blur',
+  'perspective',
+  'aspect',
+];
+
+/**
+ * トークン名の namespace を返す（既知 v4 namespace を長い順に照合 → 失敗時は先頭セグメント）。
+ * 未知 namespace（`--z-*` 等）は先頭セグメントを返す＝従来挙動を保存する。
+ */
+export function tailwindNamespaceOf(token: string): string | null {
+  for (const ns of TAILWIND_V4_NAMESPACES) {
+    if (token.startsWith(`--${ns}-`)) return ns;
+  }
+  const m = /^--([a-z][a-z0-9]*(?:-[a-z0-9]+)*?)-/.exec(token);
+  return m ? m[1]! : null;
+}
 
 export type MappingTableId = 'common' | 'origin' | 'vault' | 'suite';
 
@@ -311,8 +363,19 @@ export function classifyTokenName(name: string, table: MappingTableId = 'common'
   }
   // 6. 非契約カテゴリ（typography/radius/spacing 等）は v1 スコープ外 — 機械的 x- 送り
   //    （AM-3 scope 宣言「x- 拡張で書き v2 で契約化を再審」の写像実装 — tokens 技術判断）
-  const m = /^--([a-z][a-z0-9]*)-(.+)$/.exec(name);
-  if (m) return { kind: 'rename', name: `--${m[1]}-x-${m[2]}` };
+  //
+  //    x- は **v4 namespace の直後＝キーの先頭** に挿す（#17）。旧実装は先頭セグメント直後に
+  //    挿していたため multi-segment namespace が割れ、`--font-weight-medium` が
+  //    `--font-x-weight-medium`（= font-family の キー x-weight-medium）へ変質していた。
+  //    実測（tailwindcss 4.3.2）: 旧 → `.font-x-weight-medium { font-family: … }` /
+  //    新 → `.font-x-medium { font-weight: … }`。namespace は常に保存される。
+  const ns = tailwindNamespaceOf(name);
+  if (ns !== null) {
+    const key = name.slice(`--${ns}-`.length);
+    // キーが空（`--font-` のような末尾ハイフン名）は写像を発明せず reject へ落とす。
+    // 旧実装の `(.+)` が担っていた非空要件をここで保つ（fail-closed の維持）。
+    if (key !== '') return { kind: 'rename', name: `--${ns}-x-${key}` };
+  }
 
   // 7. 単一セグメント等の未知名 — 発明せず reject
   return {

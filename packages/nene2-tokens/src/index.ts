@@ -49,9 +49,11 @@ export {
   VAULT_TABLE,
   SUITE_TABLE,
   REMEDIATION_V1,
+  TAILWIND_V4_NAMESPACES,
   classifyTokenName,
   mapTokenName,
   mapTokenSet,
+  tailwindNamespaceOf,
 } from './codemod-map.js';
 export type {
   MappingTableId,
