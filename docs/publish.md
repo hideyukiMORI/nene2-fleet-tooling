@@ -1,4 +1,4 @@
-# Publish 手順 — nene2-tokens / nene2-standards
+# Publish 手順 — nene2-tokens / nene2-standards / nene2-i18n
 
 `nene2-js` の release flow と同型（[nene2-js docs/development/publish.md](https://github.com/hideyukiMORI/nene2-js/blob/main/docs/development/publish.md)）。
 CI は [Trusted Publishing](https://docs.npmjs.com/trusted-publishers/)（OIDC）— 長命 `NPM_TOKEN` は使わない。
@@ -10,7 +10,7 @@ publish の実行は施主（hide）。担当リナは準備と検証まで。
 | --- | --- | --- |
 | `@hideyukimori/nene2-tokens` | 1.0.0 | 契約凍結済み（2026-07-14 hide 承認）・publish 待ち |
 | `@hideyukimori/nene2-standards` | 1.0.0 | known-utility warn プレースホルダ等の暫定は README 明記のまま（規約の設計 — O-5/O-6）・publish 待ち |
-| `@hideyukimori/nene2-i18n` | — | **W0a 骨格につき publish 対象外**（`private: true`）。W0b で解除 |
+| `@hideyukimori/nene2-i18n` | 0.1.0-rc.1 | `private` 解除済み（#44 — 施主 hide 2026-07-15「パブリックにするべき」）。**版・API 面は施主判断待ち**: 規約 04 §51-55 が要求する `translate` / `/testing` サブパスが実装に存在しない（実装は `.` から `createTranslator` / `expectCatalogParity` を export）。**初回 publish 前に #44 の判断を要する** |
 
 ## 初回 publish（パッケージごとに1回・hide のローカル操作）
 

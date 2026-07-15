@@ -6,7 +6,9 @@
 #   その後 npm package settings で Trusted Publisher を
 #   Repository=hideyukiMORI/nene2-fleet-tooling / Workflow filename=publish.yml に設定する。
 #
-# nene2-i18n は W0a 骨格につき publish 対象外（package.json も private:true）— W0b で追加。
+# nene2-i18n は W0a 骨格（catalog+parity のみ・translate/plural/format/react は W0b）だが、
+# 実装済みの expectCatalogParity が配られず消費側が手書きテストを量産していたため public 化する
+# （施主 hide 2026-07-15 指示・#44）。API 面が規約 04 §51-55 と食い違う点は同 issue の施主判断待ち。
 name: Publish npm
 
 on:
@@ -19,6 +21,7 @@ on:
         options:
           - nene2-tokens
           - nene2-standards
+          - nene2-i18n
       dry_run:
         description: 'npm publish --dry-run only'
         required: false
