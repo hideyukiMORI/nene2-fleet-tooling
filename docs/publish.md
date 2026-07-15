@@ -10,7 +10,7 @@ publish の実行は施主（hide）。担当リナは準備と検証まで。
 | --- | --- | --- |
 | `@hideyukimori/nene2-tokens` | 1.0.0 | 契約凍結済み（2026-07-14 hide 承認）・publish 待ち |
 | `@hideyukimori/nene2-standards` | 1.0.0 | known-utility warn プレースホルダ等の暫定は README 明記のまま（規約の設計 — O-5/O-6）・publish 待ち |
-| `@hideyukimori/nene2-i18n` | 0.1.0-rc.1 | `private` 解除済み（#44 — 施主 hide 2026-07-15「パブリックにするべき」）。**版・API 面は施主判断待ち**: 規約 04 §51-55 が要求する `translate` / `/testing` サブパスが実装に存在しない（実装は `.` から `createTranslator` / `expectCatalogParity` を export）。**初回 publish 前に #44 の判断を要する** |
+| `@hideyukimori/nene2-i18n` | 0.1.0 | `private` 解除済み・**publish 待ち**（#44 — 施主 hide 2026-07-16 裁定: 0.1.0 で publish）。W0a 実体は catalog+parity（`/format` `/react` `/testing` は W0b — 規約 04 §0 の API 表が状態を明記） |
 
 ## 初回 publish（パッケージごとに1回・hide のローカル操作）
 

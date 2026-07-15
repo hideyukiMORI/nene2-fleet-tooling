@@ -1,6 +1,6 @@
 {
   "name": "@hideyukimori/nene2-i18n",
-  "version": "0.1.0-rc.1",
+  "version": "0.1.0",
   "description": "NeNe fleet typed i18n — typed catalog + parity (AM-17 final form). W0a skeleton: translate/plural/format/react are W0b.",
   "type": "module",
   "license": "MIT",

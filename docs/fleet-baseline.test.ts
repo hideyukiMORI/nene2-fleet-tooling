@@ -41,10 +41,12 @@ describe('fleet-baseline.json', () => {
     }
   });
 
-  it('発効済み: client ^1.1.0・tokens/standards ^1.0.0（2026-07-14 npm 公開実測: 39/79 files）・i18n は骨格につき null', () => {
+  it('発効済み: client ^1.1.0・tokens/standards ^1.0.0（2026-07-14 npm 公開実測: 39/79 files）・i18n ^0.1.0（2026-07-16 施主裁定・publish 待ち）', () => {
     expect(baseline.packages['@hideyukimori/nene2-client']).toBe('^1.1.0');
     expect(baseline.packages['@hideyukimori/nene2-tokens']).toBe('^1.0.0');
     expect(baseline.packages['@hideyukimori/nene2-standards']).toBe('^1.0.0');
-    expect(baseline.packages['@hideyukimori/nene2-i18n']).toBeNull();
+    // null（座席のみ）→ ^0.1.0。rc で出すと範囲が ^0.1.0-rc.1 になり、それは 0.1.0 も 0.1.1 も
+    // 拾う（semver 実測）ため、版が進んでも全消費リポに prerelease 範囲が残り続ける（#44）
+    expect(baseline.packages['@hideyukimori/nene2-i18n']).toBe('^0.1.0');
   });
 });
