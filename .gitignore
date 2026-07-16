@@ -2,3 +2,7 @@ node_modules/
 dist/
 coverage/
 *.tsbuildinfo
+
+# agent の作業ツリー（このリポの checkout が丸ごと入る — `git add .` での混入を防ぐ）。
+# .claude/settings.local.json は意図的に追跡可能なまま残す（permission 設定の共有）。
+.claude/worktrees/
