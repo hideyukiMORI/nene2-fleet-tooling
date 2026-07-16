@@ -5,7 +5,10 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/node_modules/**', '**/*.d.ts'] },
+  // .claude/worktrees は agent の作業ツリー（このリポの checkout が丸ごと入る）。
+  // flat config は dot ディレクトリを既定で除外しないため、明示しないと自分自身を
+  // 二重に lint し、しかも files: ['scripts/**'] 等の相対パターンが当たらず誤検知する。
+  { ignores: ['**/dist/**', '**/node_modules/**', '**/*.d.ts', '.claude/worktrees/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
