@@ -26,6 +26,84 @@ function audit(content: string, options = ids) {
   return auditStandardsDoc([{ path: 'doc.md', content }], options);
 }
 
+/**
+ * #61 の較正プローブ（AM-16「lint の昇格には検出プローブ〔正例・負例〕添付 MUST —
+ * ルールの存在確認と機能確認は別物」）。
+ *
+ * 較正前の検出器は「行に MUST の語があるか」だけを見ており、規約文書の実物で
+ * **機械強制済みの A-1 をタグ欠落2件として計上していた**（02-data-flow.md:47/:49 実測）。
+ * 過検出も AM-16 が名指しした穴（records noHardcodedJapanese の素通し）の裏返しである。
+ *
+ * 負例＝「red にしてはいけない形」。正例＝「red にしなければいけない形」。
+ * **空虚合格の負例**（兄弟 bullet へタグが伝染しないこと）も同時に固定する — G-6。
+ */
+describe('auditStandardsDoc — #61 較正プローブ（規範ブロック判定）', () => {
+  it('負例1: タグが次行にある規範ブロックは強制済み＝red にしない（現物 = 02-data-flow.md A-1）', () => {
+    const r = audit(
+      '生 `fetch()` / axios 等の HTTP クライアント導入は MUST NOT。\n' +
+        '`[E:no-restricted-syntax]`【会議R3④A-1】\n',
+    );
+    expect(r.untaggedMusts).toHaveLength(0);
+    expect(r.state).toBe('green');
+    expect(r.mustTagged).toBe(1);
+  });
+
+  it('負例2: 見出しの MUST は監査対象外（規範の名前であって本体ではない）＋件数は報告する', () => {
+    const r = audit('### A-1 HTTP 境界は createNene2Transport ただ1つ (MUST)\n');
+    expect(r.untaggedMusts).toHaveLength(0);
+    expect(r.headingMustsSkipped).toBe(1);
+    // MUST 行が 1 本も無い＝入力が規約文書でない可能性 → fail-closed で unknown（G-6）。
+    expect(r.state).toBe('unknown');
+  });
+
+  it('負例3: 空行を挟んだ別段落のタグは効かない（ブロックを跨いで伝染させない）', () => {
+    const r = audit('`[E:no-restricted-syntax]` を配布する。\n\n生 fetch は MUST NOT。\n');
+    expect(r.untaggedMusts).toHaveLength(1);
+    expect(r.untaggedMusts[0]).toMatchObject({ line: 3 });
+  });
+
+  it('🔴 空虚合格の負例: 兄弟 bullet はタグを共有しない（G-6 — 較正が fail-open を作らないこと）', () => {
+    const r = audit('- 規則A は MUST NOT。`[E:no-restricted-syntax]`\n- 規則B は MUST NOT。\n');
+    expect(r.untaggedMusts).toHaveLength(1);
+    expect(r.untaggedMusts[0]).toMatchObject({ line: 2 });
+    expect(r.state).toBe('red');
+  });
+
+  it('🔴 空虚合格の負例: 表の行はタグを共有しない', () => {
+    const r = audit(
+      '| `app/` | ロジック MUST NOT | `[E:no-restricted-syntax]` |\n' +
+        '| `pages/` | 直 import MUST NOT | — |\n',
+    );
+    expect(r.untaggedMusts).toHaveLength(1);
+    expect(r.untaggedMusts[0]).toMatchObject({ line: 2 });
+  });
+
+  it('正例: 継続行にもタグが無い規範ブロックは red のまま（較正が検出力を落としていない）', () => {
+    const r = audit('生 fetch は MUST NOT。\n理由は hermeticity である。\n');
+    expect(r.state).toBe('red');
+    expect(r.untaggedMusts).toHaveLength(1);
+  });
+
+  it('🔴 回帰: 見出しを MUST 監査から外しても rule-id 実在照合（RAT-2）は生きる（軸が独立していること）', () => {
+    // 較正の初版は heading で continue しており、見出しに付いた [E:rule-id] の照合が消えていた
+    // （規約文書の実測で不存在 rule-id が 15 → 14 に減って発覚）。
+    const r = audit(
+      '### A-9 何か (MUST) `[E:no-such-rule-does-not-exist]`\n生 fetch は MUST NOT。\n',
+    );
+    expect(r.headingMustsSkipped).toBe(1);
+    expect(r.ruleIdFailures).toHaveLength(1);
+    expect(r.ruleIdFailures[0]).toMatchObject({ candidate: 'no-such-rule-does-not-exist' });
+    expect(r.state).toBe('red');
+  });
+
+  it('正例: fence 内の MUST は従来どおり対象外（条文の引用であって規範の定義ではない）', () => {
+    const r = audit('```ts\n// これは MUST NOT の例\n```\n生 fetch は MUST NOT。\n');
+    expect(r.mustTotal).toBe(1);
+    expect(r.untaggedMusts).toHaveLength(1);
+    expect(r.untaggedMusts[0]).toMatchObject({ line: 4 });
+  });
+});
+
 describe('auditStandardsDoc — (i) タグ欠落 MUST の検出', () => {
   it('故意 fail: タグの無い MUST 行を red で列挙する', () => {
     const r = audit('- **A-1 (MUST)** 生 fetch 禁止。\n');
