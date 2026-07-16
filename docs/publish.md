@@ -9,7 +9,7 @@ publish の実行は施主（hide）。担当リナは準備と検証まで。
 | パッケージ | 版 | 状態 |
 | --- | --- | --- |
 | `@hideyukimori/nene2-tokens` | ローカル **1.0.2** / npm **1.0.1** | 契約凍結済み（2026-07-14 hide 承認）。**1.0.0・1.0.1 は publish 済み**（2026-07-14T14:24:27Z / 18:51:15Z）。**1.0.2 は未 publish**（`21ce902` #17/#18 の是正）＝ 2回目以降の手順（下記）で出す |
-| `@hideyukimori/nene2-standards` | ローカル **1.0.1** / npm **1.0.1** | known-utility warn プレースホルダ等の暫定は README 明記のまま（規約の設計 — O-5/O-6）。**1.0.0・1.0.1 は publish 済み**（2026-07-14T14:24:56Z / 18:51:18Z）＝ **未 publish の差分なし** |
+| `@hideyukimori/nene2-standards` | ローカル **1.1.0** / npm **1.1.0** | known-utility warn プレースホルダ等の暫定は README 明記のまま（規約の設計 — O-5/O-6）。**1.0.0・1.0.1・1.1.0 は publish 済み**（1.1.0 = 2026-07-17・A1 hooks→model codemod 同梱で minor bump・`shasum 080230a1a7db87e74d5e6619117b79d4574baa1d`・新 bin `nene2-a1-hooks-to-model`）＝ **未 publish の差分なし** |
 | `@hideyukimori/nene2-i18n` | ローカル **0.1.0** / npm **0.1.0** | `private` 解除済み（#44 — 施主 hide 2026-07-16 裁定: 0.1.0 で publish）。**0.1.0 は publish 済み**（2026-07-16T05:46:12Z・`dist-tags latest=0.1.0`・`shasum 36d06bcd65854543c8af1ef971b36eccc1dcb3db`）＝ **未 publish の差分なし**。W0a 実体は catalog+parity（`/format` `/react` `/testing` は W0b — 規約 04 §0 の API 表が状態を明記） |
 
 ## 初回 publish（パッケージごとに1回・hide のローカル操作）
