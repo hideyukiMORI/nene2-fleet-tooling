@@ -1,7 +1,7 @@
 {
   "name": "@hideyukimori/nene2-standards",
-  "version": "1.0.1",
-  "description": "NeNe fleet frontend standards — distributed ESLint flat config (per-rule merged), Stylelint shared config + custom plugin, known-utility fast path, nene2 custom rules",
+  "version": "1.1.0",
+  "description": "NeNe fleet frontend standards — distributed ESLint flat config (per-rule merged), Stylelint shared config + custom plugin, known-utility fast path, nene2 custom rules, A1 hooks→model migration codemod",
   "type": "module",
   "license": "MIT",
   "main": "./dist/index.js",
@@ -18,6 +18,10 @@
     "./stylelint-plugin": {
       "types": "./dist/stylelint/plugin.d.ts",
       "default": "./dist/stylelint/plugin.js"
+    },
+    "./migrations/hooks-to-model": {
+      "types": "./dist/migrations/hooks-to-model/index.d.ts",
+      "default": "./dist/migrations/hooks-to-model/index.js"
     }
   },
   "files": [
@@ -36,9 +40,13 @@
     "eslint-plugin-import-x": "^4.16.1",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-testing-library": "^7.6.1",
+    "jscodeshift": "^17.3.0",
     "postcss": "^8.5.6",
     "prettier": "3.6.2",
     "typescript-eslint": "^8.35.0"
+  },
+  "devDependencies": {
+    "@types/jscodeshift": "^17.3.0"
   },
   "peerDependencies": {
     "eslint": ">=9",
@@ -50,7 +58,8 @@
     }
   },
   "bin": {
-    "nene2-check": "dist/checks/cli.js"
+    "nene2-check": "dist/checks/cli.js",
+    "nene2-a1-hooks-to-model": "dist/migrations/hooks-to-model/cli.js"
   },
   "repository": {
     "type": "git",
