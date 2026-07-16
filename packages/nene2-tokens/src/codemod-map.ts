@@ -14,7 +14,16 @@
  * x- 送りの個別名は tokens の技術判断（AM-3 の brand-violet 前例と同型 — AI-5 に載せない）。
  */
 
-import { EXCLUDED_NAMESPACES, isContractTokenName, isExtensionTokenName } from './contract.js';
+import {
+  EXCLUDED_NAMESPACES,
+  isContractTokenName,
+  isExtensionTokenName,
+  TAILWIND_V4_NAMESPACES,
+  tailwindNamespaceOf,
+} from './contract.js';
+
+// 表と照合関数の正本は contract.ts（葉）— ここは再輸出のみ（#49。1枚を3つが見る不変条件）
+export { TAILWIND_V4_NAMESPACES, tailwindNamespaceOf };
 
 export const CODEMOD_MAP_VERSION = '1.0.2';
 
@@ -34,41 +43,11 @@ export const CODEMOD_MAP_VERSION = '1.0.2';
  *  - `--font-weight-x-medium` → `.font-x-medium { font-weight: … }`（意味論 保存）
  *  - `--font-x-weight-medium` → `.font-x-weight-medium { font-family: … }`（意味論 破壊）
  */
-export const TAILWIND_V4_NAMESPACES: readonly string[] = [
-  // multi-segment（naive な「先頭セグメント直後に x-」だと割れる — #17 の本体）
-  'inset-shadow',
-  'text-shadow',
-  'drop-shadow',
-  'font-weight',
-  // single-segment
-  'shadow',
-  'color',
-  'spacing',
-  'radius',
-  'font',
-  'text',
-  'leading',
-  'tracking',
-  'breakpoint',
-  'container',
-  'ease',
-  'animate',
-  'blur',
-  'perspective',
-  'aspect',
-];
 
 /**
  * トークン名の namespace を返す（既知 v4 namespace を長い順に照合 → 失敗時は先頭セグメント）。
  * 未知 namespace（`--z-*` 等）は先頭セグメントを返す＝従来挙動を保存する。
  */
-export function tailwindNamespaceOf(token: string): string | null {
-  for (const ns of TAILWIND_V4_NAMESPACES) {
-    if (token.startsWith(`--${ns}-`)) return ns;
-  }
-  const m = /^--([a-z][a-z0-9]*(?:-[a-z0-9]+)*?)-/.exec(token);
-  return m ? m[1]! : null;
-}
 
 export type MappingTableId = 'common' | 'origin' | 'vault' | 'suite';
 
