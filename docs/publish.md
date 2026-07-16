@@ -8,25 +8,26 @@ publish の実行は施主（hide）。担当リナは準備と検証まで。
 
 | パッケージ | 版 | 状態 |
 | --- | --- | --- |
-| `@hideyukimori/nene2-tokens` | 1.0.0 | 契約凍結済み（2026-07-14 hide 承認）・publish 待ち |
-| `@hideyukimori/nene2-standards` | 1.0.0 | known-utility warn プレースホルダ等の暫定は README 明記のまま（規約の設計 — O-5/O-6）・publish 待ち |
-| `@hideyukimori/nene2-i18n` | 0.1.0 | `private` 解除済み・**publish 待ち**（#44 — 施主 hide 2026-07-16 裁定: 0.1.0 で publish）。W0a 実体は catalog+parity（`/format` `/react` `/testing` は W0b — 規約 04 §0 の API 表が状態を明記） |
+| `@hideyukimori/nene2-tokens` | ローカル **1.0.2** / npm **1.0.1** | 契約凍結済み（2026-07-14 hide 承認）。**1.0.0・1.0.1 は publish 済み**（2026-07-14T14:24:27Z / 18:51:15Z）。**1.0.2 は未 publish**（`21ce902` #17/#18 の是正）＝ 2回目以降の手順（下記）で出す |
+| `@hideyukimori/nene2-standards` | ローカル **1.0.1** / npm **1.0.1** | known-utility warn プレースホルダ等の暫定は README 明記のまま（規約の設計 — O-5/O-6）。**1.0.0・1.0.1 は publish 済み**（2026-07-14T14:24:56Z / 18:51:18Z）＝ **未 publish の差分なし** |
+| `@hideyukimori/nene2-i18n` | ローカル **0.1.0** / npm **0.1.0** | `private` 解除済み（#44 — 施主 hide 2026-07-16 裁定: 0.1.0 で publish）。**0.1.0 は publish 済み**（2026-07-16T05:46:12Z・`dist-tags latest=0.1.0`・`shasum 36d06bcd65854543c8af1ef971b36eccc1dcb3db`）＝ **未 publish の差分なし**。W0a 実体は catalog+parity（`/format` `/react` `/testing` は W0b — 規約 04 §0 の API 表が状態を明記） |
 
 ## 初回 publish（パッケージごとに1回・hide のローカル操作）
 
+> ✅ **基盤3パッケージとも初回 publish 済み＝残る初回はない**（tokens / standards = 2026-07-14・i18n = 2026-07-16）。
+> 以後の版上げは全て「2回目以降（GitHub Actions）」の手順。本節は**来歴の記録**として残す。
+
 Trusted Publisher は **既存パッケージにしか設定できない**（npm の package settings 画面が
-初回 publish 後にしか存在しない）ため、初回はローカルから account 2FA で publish する:
+初回 publish 後にしか存在しない）ため、初回はローカルから account 2FA で publish した:
 
 ```bash
 cd nene2-fleet-tooling
 npm ci && npm run check   # AM-2 release gate 含む全緑を確認
-npm publish --dry-run --workspace packages/nene2-tokens   # pack 内容の最終確認
-npm publish --workspace packages/nene2-tokens             # 2FA: --otp=<code>
-npm publish --dry-run --workspace packages/nene2-standards
-npm publish --workspace packages/nene2-standards
+npm publish --dry-run --workspace packages/<pkg>   # pack 内容の最終確認
+npm publish --workspace packages/<pkg>             # 2FA: --otp=<code>
 ```
 
-確認: `npm view @hideyukimori/nene2-tokens version` / `npm view @hideyukimori/nene2-standards version`
+確認: `npm view @hideyukimori/<pkg> version`
 
 注: ローカル publish でも provenance は生成されない（provenance は CI の OIDC 経由のみ）。
 `publishConfig.provenance: true` はローカルでは警告になる場合があるが、その際は
@@ -43,8 +44,8 @@ Settings → Trusted Publisher）:
 | Repository        | `hideyukiMORI/nene2-fleet-tooling` |
 | Workflow filename | `publish.yml`                      |
 
-`nene2-standards` も同じ値で設定する（Workflow filename は共通 — パッケージ選択は
-workflow_dispatch の input で行う）。
+`nene2-standards` と `nene2-i18n` も同じ値で設定する（Workflow filename は共通 — パッケージ選択は
+workflow_dispatch の input で行う）。**3パッケージとも初回 publish 済み＝npm 側の settings 画面は既に存在する。**
 
 ## 2回目以降（GitHub Actions）
 
