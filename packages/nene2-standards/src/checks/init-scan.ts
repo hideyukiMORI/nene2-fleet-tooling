@@ -13,7 +13,11 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { classTokens, layerParamsInclude } from '../stylelint/helpers.js';
-import type { RegistriesDocument } from '../registries/schema.js';
+import type {
+  ComponentsAllowlistEntry,
+  RegistriesDocument,
+  RegistryEntry,
+} from '../registries/schema.js';
 import { enumerateStyleSources } from './scan-coverage.js';
 
 export interface InitScanResult {
@@ -81,13 +85,48 @@ export async function initScan(cwd: string): Promise<InitScanResult> {
   };
 }
 
+/**
+ * 走査結果を **registries エントリ**（貼れる正本形）に変換する（#65 Piece 3 — components-allowlist
+ * kind の emit）。id を付与し `validateRegistries` を通る形にする（CLI が loose に吐いていた
+ * `allowedClasses`/`legacyManifest` は id 欠落で registries-invalid だった）。
+ * - components-allowlist: repo 単位で1エントリ（classes が非空のときのみ — 空なら entry を持たない）。
+ * - legacy-manifest: ファイルごと1エントリ。
+ * 値は走査実測（手書き列挙 MUST NOT — AM-10/G-7）。
+ */
+export function initScanEntries(scan: InitScanResult, repo: string): RegistryEntry[] {
+  const slug = (s: string): string => s.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const entries: RegistryEntry[] = [];
+  if (scan.allowedClasses.length > 0) {
+    entries.push({
+      kind: 'components-allowlist',
+      id: `${repo}-components-allowlist`,
+      repo,
+      classes: scan.allowedClasses,
+    });
+  }
+  for (const e of scan.legacyManifest) {
+    entries.push({
+      kind: 'legacy-manifest',
+      id: `${repo}-legacy-${slug(e.path)}`,
+      repo,
+      path: e.path,
+      maxLines: e.maxLines,
+      maxBytes: e.maxBytes,
+    });
+  }
+  return entries;
+}
+
 /** 対象台帳が既存かどうか（既存なら init --scan は実行拒否 — T-3/R5）。 */
 export function ledgersAlreadyInitialized(
   registries: RegistriesDocument,
   repo: string,
-): { legacyManifest: boolean } {
+): { legacyManifest: boolean; componentsAllowlist: boolean } {
   return {
     legacyManifest: registries.entries.some((e) => e.kind === 'legacy-manifest' && e.repo === repo),
+    componentsAllowlist: registries.entries.some(
+      (e) => e.kind === 'components-allowlist' && e.repo === repo,
+    ),
   };
 }
 
@@ -108,10 +147,17 @@ export async function initCheck(
       .filter((e) => e.kind === 'legacy-manifest' && e.repo === repo)
       .map((e) => (e as { path: string }).path),
   );
-  // 許可リストの正本台帳は W1 配線（gen:registered-classes と同一系）— skeleton では
-  // testid 同様の中央台帳が未定義のため、@layer components トークンは全て「要分類」として報告
+  // components-allowlist kind（#65）が正本台帳。登録済みクラスを引いた差分＝「未分類 selector」
+  // （styling green 条件 = 未分類 0）。未登録 repo は台帳空＝全 class が未分類（fail-closed）。
+  const registeredClasses = new Set(
+    registries.entries
+      .filter(
+        (e): e is ComponentsAllowlistEntry => e.kind === 'components-allowlist' && e.repo === repo,
+      )
+      .flatMap((e) => e.classes),
+  );
   return {
-    unregisteredClasses: scan.allowedClasses,
+    unregisteredClasses: scan.allowedClasses.filter((c) => !registeredClasses.has(c)),
     unregisteredLegacyFiles: scan.legacyManifest
       .map((e) => e.path)
       .filter((p) => !manifestPaths.has(p)),
