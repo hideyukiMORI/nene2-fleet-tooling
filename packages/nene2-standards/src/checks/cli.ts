@@ -23,7 +23,8 @@ import { detectRepo } from './detect-repo.js';
 import { gitRefSource, worktreeSource } from './exemplar-source.js';
 import { checkExemplars, renderExemplarsMarkdown, type DocFile } from './exemplars.js';
 import { checkGateIntegrity } from './gate-integrity.js';
-import { initCheck, initScan, ledgersAlreadyInitialized } from './init-scan.js';
+import { initCheck, initScan, initScanEntries, ledgersAlreadyInitialized } from './init-scan.js';
+import { REGISTRIES_SCHEMA_ID } from '../registries/schema.js';
 import { loadRegistries, runConformance } from './run.js';
 import {
   auditStandardsDoc,
@@ -144,11 +145,18 @@ async function main(): Promise<number> {
         console.error('init は --scan（生成）か --check（読み取り専用再走査）を指定する');
         return 2;
       }
-      // T-3: 対象台帳が既存なら実行拒否（生成はゲート導入 PR の一度きり）
+      // T-3: 対象台帳が既存なら実行拒否（生成はゲート導入 PR の一度きり）。
+      // components-allowlist / legacy-manifest のどちらか既存でも拒否（#65 — kind 追加で穴を塞ぐ）。
       const already = ledgersAlreadyInitialized(registries, repo);
-      if (already.legacyManifest) {
+      if (already.legacyManifest || already.componentsAllowlist) {
+        const existing = [
+          already.legacyManifest ? 'legacy-manifest' : null,
+          already.componentsAllowlist ? 'components-allowlist' : null,
+        ]
+          .filter(Boolean)
+          .join(' / ');
         console.error(
-          `実行拒否: repo "${repo}" の legacy-manifest は台帳に既存（T-3 — 再走査は --check 読み取り専用のみ。` +
+          `実行拒否: repo "${repo}" の ${existing} は台帳に既存（T-3 — 再走査は --check 読み取り専用のみ。` +
             'ラチェット一周リセット MUST NOT）',
         );
         return 2;
@@ -159,16 +167,14 @@ async function main(): Promise<number> {
         return 2;
       }
       const result = await initScan(cwd);
+      // 貼れる正本形（registries-valid・id 付き）で吐く — REG-2 登録 PR が entries を fleet.jsonc へ
+      // 貼る（手書き列挙 MUST NOT＝走査実測をそのまま）。schema 併記で validateRegistries を通る。
       const payload = JSON.stringify(
         {
-          repo,
+          schema: REGISTRIES_SCHEMA_ID,
           generatedBy: 'nene2-check init --scan',
-          allowedClasses: result.allowedClasses,
-          legacyManifest: result.legacyManifest.map((e) => ({
-            kind: 'legacy-manifest',
-            repo,
-            ...e,
-          })),
+          repo,
+          entries: initScanEntries(result, repo),
         },
         null,
         2,
