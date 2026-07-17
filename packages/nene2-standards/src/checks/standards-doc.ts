@@ -35,6 +35,15 @@ const MACHINE_TAG_KINDS: readonly TagKind[] = ['E', 'S', 'T', 'G', 'C', 'X'];
 /** タグ文法説明のプレースホルダ綴り（rule-id 照合をスキップ）。 */
 const RULE_ID_PLACEHOLDERS: ReadonlySet<string> = new Set(['rule-id', 'rule', '…', '...']);
 
+/**
+ * 未配布注記（`[E:<rule>（未配布——…）]`）。配布 config に未有効化のルールを著者が
+ * **明示注記**したもの＝意図的な W0b 送りであり、綴り誤り（missing）とは意味が違う。
+ * placeholder と同種の「照合対象外」として deferred 扱いにし件数を報告する（skip は green の
+ * 根拠にしない）。注記の無い不存在 rule-id は従来どおり missing（fail-open にしない）。
+ * 綴りは正規化前の raw id に対して照合する（normalizeRuleId が `（…）` を落とすため）。
+ */
+const RULE_ID_DEFERRED_MARKER = '未配布';
+
 const TAG_RE = /\[([ESTGCXP])(?::([^\]]*))?\]/g;
 const MUST_RE = /\bMUST(?:\s+NOT)?\b/;
 const FENCE_RE = /^\s*(```|~~~)/;
@@ -113,7 +122,7 @@ export interface UntaggedMust {
   text: string;
 }
 
-export type RuleIdStatus = 'ok' | 'missing' | 'placeholder' | 'malformed';
+export type RuleIdStatus = 'ok' | 'missing' | 'placeholder' | 'malformed' | 'deferred';
 
 export interface RuleIdFinding {
   file: string;
@@ -292,7 +301,10 @@ export function auditStandardsDoc(
           const kind = tag.kind;
           const candidate = normalizeRuleId(tag.id);
           const base = { file: tag.file, line: tag.line, raw: tag.raw, kind, candidate };
-          if (RULE_ID_PLACEHOLDERS.has(candidate)) {
+          if (tag.id.includes(RULE_ID_DEFERRED_MARKER)) {
+            // 著者が「未配布」と明示注記＝意図的な W0b 送り（missing ではない）。raw id で照合。
+            ruleIdFindings.push({ ...base, status: 'deferred' });
+          } else if (RULE_ID_PLACEHOLDERS.has(candidate)) {
             ruleIdFindings.push({ ...base, status: 'placeholder' });
           } else if (candidate === '') {
             ruleIdFindings.push({ ...base, status: 'malformed' });
@@ -332,7 +344,8 @@ export function auditStandardsDoc(
     `MUST 総数 ${mustTotal}（タグ付き ${mustTagged}・機械強制タグ付き ${mustMachineTagged}・タグ欠落 ${untaggedMusts.length}）`,
     `見出しの MUST ${headingMustsSkipped} 件は監査対象外（規範の名前であって本体ではない — skip は green の根拠にしない）`,
     `rule-id 照合: ok ${ruleIdFindings.filter((f) => f.status === 'ok').length} / ` +
-      `missing+malformed ${ruleIdFailures.length} / placeholder スキップ ${ruleIdFindings.filter((f) => f.status === 'placeholder').length}`,
+      `missing+malformed ${ruleIdFailures.length} / placeholder スキップ ${ruleIdFindings.filter((f) => f.status === 'placeholder').length}` +
+      ` / 未配布 deferred ${ruleIdFindings.filter((f) => f.status === 'deferred').length}`,
     `[P] 列挙外 ${pEnumerationFailures.length}・[X] 委譲 ${refs.length} 参照（解決は check:exemplars）`,
   );
 
@@ -428,7 +441,8 @@ export function renderStandardsDocMarkdown(report: StandardsDocReport): string {
   out.push(
     `補足: rule-id 照合 ok ${report.ruleIdFindings.filter((f) => f.status === 'ok').length} 件` +
       `（うち prefix 補完解決 ${report.ruleIdFindings.filter((f) => f.resolvedTo !== undefined).length} 件）・` +
-      `構文プレースホルダのスキップ ${report.ruleIdFindings.filter((f) => f.status === 'placeholder').length} 件。` +
+      `構文プレースホルダのスキップ ${report.ruleIdFindings.filter((f) => f.status === 'placeholder').length} 件・` +
+      `未配布注記の deferred ${report.ruleIdFindings.filter((f) => f.status === 'deferred').length} 件。` +
       `[X:file#anchor] は ${report.exemplarRefsDelegated} 参照を check:exemplars へ委譲（G-2）。`,
   );
   out.push('');
