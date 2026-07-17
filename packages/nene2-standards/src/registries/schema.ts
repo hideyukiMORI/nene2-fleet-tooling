@@ -15,7 +15,7 @@
 export const REGISTRIES_SCHEMA_ID = 'nene2-registries/1';
 
 /** 負債台帳 kind（縮小単調 — 追加・変更 FAIL・削除のみ可。green にはエントリ 0 が必要） */
-export const DEBT_KINDS = ['legacy-manifest', 'lint-baseline'] as const;
+export const DEBT_KINDS = ['legacy-manifest', 'lint-baseline', 'components-allowlist'] as const;
 
 /** 構造レジストリ kind（恒久・中央 PR＋reason-ref で追加可・蒸し返し禁止） */
 export const STRUCTURAL_KINDS = [
@@ -72,6 +72,18 @@ export interface LegacyManifestEntry extends EntryBase {
   /** pinned prettier 整形後の行数（AM-25': 初期値は init --scan 実測値・0 プレースホルダ MUST NOT） */
   maxLines: number;
   maxBytes: number;
+}
+
+export interface ComponentsAllowlistEntry extends EntryBase {
+  kind: 'components-allowlist';
+  /**
+   * `@layer components` の grandfather 済みクラス（完全一致列挙 — 会議R4 AM-10決定）。
+   * 初期値は `init --scan` 実測（手書き列挙 MUST NOT — G-7/AM-13(ii)）。縮小単調（REG-3 DEBT）＝
+   * 新規クラスの追加 FAIL・削除のみ可（green は 0＝legacy 債務の完済）。repo 単位で1エントリ。
+   * リポごとに統べる機構が違う: components-allowlist（vault/invoice）と legacy-manifest（deal）は
+   * 兄弟 registry（deal は @layer legacy 包込のため本 kind のエントリを持たない・hub 裁定 2026-07-17）。
+   */
+  classes: string[];
 }
 
 export interface LintBaselineEntry extends EntryBase {
@@ -134,6 +146,7 @@ export type RegistryEntry =
   | AuthorizedDivergenceEntry
   | WaiverEntry
   | LegacyManifestEntry
+  | ComponentsAllowlistEntry
   | LintBaselineEntry
   | InjectorEntry
   | ScopedThemeEntry
@@ -323,6 +336,11 @@ export function validateRegistries(source: string, now = new Date()): RegistryDi
         }
         break;
       }
+      case 'components-allowlist':
+        // grandfather 済みクラスの完全一致列挙（init --scan 実測）。空エントリは無意味＝FAIL
+        // （0 クラスなら entry を持たない＝payout/deal 型。green は entry 0）。
+        requireStringArray(raw, 'classes', id, diags);
+        break;
       case 'lint-baseline': {
         requireString(raw, 'rule', id, diags);
         requireString(raw, 'initializedBy', id, diags);

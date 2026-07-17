@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   ALL_KINDS,
+  DEBT_KINDS,
   parseRegistries,
   REGISTRIES_SCHEMA_ID,
   stripJsonc,
@@ -172,7 +173,39 @@ describe('stripJsonc', () => {
     expect(JSON.parse(stripJsonc(src))).toEqual({ a: 'http://example.com', b: [1, 2] });
   });
 
-  it('kind 列挙は 9種＋scoped-theme＋transition＋waiver', () => {
-    expect(ALL_KINDS).toHaveLength(11);
+  it('kind 列挙は 9種＋scoped-theme＋transition＋waiver＋components-allowlist', () => {
+    expect(ALL_KINDS).toHaveLength(12);
+    expect(ALL_KINDS).toContain('components-allowlist');
+  });
+});
+
+describe('components-allowlist kind（#65 — DEBT・縮小単調）', () => {
+  it('有効な components-allowlist エントリは green', () => {
+    const ok = validateRegistries(
+      doc([
+        {
+          kind: 'components-allowlist',
+          id: 'vault-components',
+          repo: 'nene-vault',
+          classes: ['tbl', 'audit-row', 'rail-link'],
+        },
+      ]),
+      NOW,
+    );
+    expect(ok).toEqual([]);
+  });
+
+  it('classes 欠落・空配列・非文字列要素は FAIL（fail-closed）', () => {
+    for (const bad of [{}, { classes: [] }, { classes: ['ok', 3] }]) {
+      const diags = validateRegistries(
+        doc([{ kind: 'components-allowlist', id: 'x', repo: 'nene-x', ...bad }]),
+        NOW,
+      );
+      expect(diags.some((d) => d.message.includes('classes'))).toBe(true);
+    }
+  });
+
+  it('DEBT_KIND に含まれる（縮小単調の対象 — REG-3）', () => {
+    expect(DEBT_KINDS).toContain('components-allowlist');
   });
 });
