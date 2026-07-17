@@ -96,9 +96,32 @@ describe('stylelintConfigFromRegistries — 台帳由来 secondary の合成', (
 });
 
 describe('stylelintConfigFor — 同梱中央 registries を読む', () => {
-  it('現行 fleet.jsonc は components-allowlist 未登録＝どの repo も base（fail-closed）で返る・throw しない', () => {
-    const r = stylelintConfigFor('nene-vault');
+  it('REG-2 登録済み（#65）: vault/invoice は allowlist・deal は legacy-manifest を焼いて返す', () => {
+    const vault = stylelintConfigFor('nene-vault');
+    const vaultRule = vault.rules?.['nene2/layer-components-allowlist'];
+    expect(Array.isArray(vaultRule)).toBe(true);
+    expect((vaultRule as [true, { allowedClasses: string[] }])[1].allowedClasses).toHaveLength(156);
+    expect(vault.plugins).toEqual(config.plugins);
+
+    const invoice = stylelintConfigFor('nene-invoice');
+    const invoiceRule = invoice.rules?.['nene2/layer-components-allowlist'];
+    expect((invoiceRule as [true, { allowedClasses: string[] }])[1].allowedClasses).toHaveLength(
+      381,
+    );
+
+    const deal = stylelintConfigFor('nene-deal');
+    expect(deal.rules?.['nene2/layer-legacy-manifest-only']).toEqual([
+      true,
+      { files: ['src/app/design/designs.css', 'src/app/design/styles.css'] },
+    ]);
+    // deal は components-allowlist 0 件＝base のまま（fail-closed）
+    expect(deal.rules?.['nene2/layer-components-allowlist']).toBe(true);
+  });
+
+  it('未登録 repo は base（fail-closed）で返る・throw しない', () => {
+    const r = stylelintConfigFor('nene-payout');
     expect(r.rules?.['nene2/layer-components-allowlist']).toBe(true);
+    expect(r.rules?.['nene2/layer-legacy-manifest-only']).toBe(true);
     expect(r.plugins).toEqual(config.plugins);
   });
 });
