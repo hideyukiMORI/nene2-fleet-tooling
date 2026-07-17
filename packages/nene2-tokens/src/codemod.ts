@@ -264,6 +264,10 @@ export function deriveClassRenames(tokenRenames: readonly Rename[]): ClassRename
 
   for (const { from, to } of tokenRenames) {
     const ns = namespaceOf(from);
+    // ns=null は「from が v4 namespace 外」＝v4 はそこから utility を生成しない＝翻訳すべき
+    // class が存在しない（skip は fail-open ではない）。buildPlan 経由では未知 namespace は
+    // 写像段で reject 済み（C part-1 #92）だが、直接 API 入力には表決定の prefix-less rename
+    // （suite の `--bg → --color-surface` 等）が正当に到達する。
     if (ns === null) continue;
     // namespace を跨ぐ改名は機械翻訳できない — **utility ルートの有無より先に**判定して開示する。
     // 旧実装は roots===undefined を先に見て continue していたため、`--font-weight-medium →

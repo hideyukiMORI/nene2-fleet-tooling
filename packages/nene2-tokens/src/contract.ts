@@ -124,13 +124,20 @@ export const TAILWIND_V4_NAMESPACES: readonly string[] = [
   'aspect',
 ];
 
-/** トークン名の先頭にある v4 namespace（表に無ければ先頭セグメント群を返す — 写像表の fallback）。 */
+/**
+ * トークン名の先頭にある v4 namespace（**表の実在名のみ**・longest-match は表順）。表に無ければ null。
+ *
+ * regex fallback（先頭セグメントから namespace を発明する枝）は C part-1（#92）で除去した。
+ * 復活させないこと: fallback は `--line-height-body` に 'line' を発明して dead token
+ * `--line-x-height-body` を生成し（#17）、さらに re-run でそれに再度 x- を送って
+ * `--line-x-x-height-body` へ silent 二重送りしていた（#90 実測）。未知 namespace は
+ * null を返し、呼び出し側（classifyTokenName step 7）が loud reject する — (i)reject。
+ */
 export function tailwindNamespaceOf(token: string): string | null {
   for (const ns of TAILWIND_V4_NAMESPACES) {
     if (token.startsWith(`--${ns}-`)) return ns;
   }
-  const m = /^--([a-z][a-z0-9]*(?:-[a-z0-9]+)*?)-/.exec(token);
-  return m ? m[1]! : null;
+  return null;
 }
 
 /**

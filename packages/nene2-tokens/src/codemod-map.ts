@@ -25,7 +25,8 @@ import {
 // 表と照合関数の正本は contract.ts（葉）— ここは再輸出のみ（#49。1枚を3つが見る不変条件）
 export { TAILWIND_V4_NAMESPACES, tailwindNamespaceOf };
 
-export const CODEMOD_MAP_VERSION = '1.0.2';
+// 1.1.0: C part-1（#92）— 未知 namespace の x-送り（fallback 発明）を廃し reject へ。
+export const CODEMOD_MAP_VERSION = '1.1.0';
 
 /**
  * Tailwind v4 の theme variable namespace（**長い namespace が短い prefix より先**）。
@@ -45,8 +46,8 @@ export const CODEMOD_MAP_VERSION = '1.0.2';
  */
 
 /**
- * トークン名の namespace を返す（既知 v4 namespace を長い順に照合 → 失敗時は先頭セグメント）。
- * 未知 namespace（`--z-*` 等）は先頭セグメントを返す＝従来挙動を保存する。
+ * トークン名の namespace を返す（既知 v4 namespace を長い順に照合・**表に無ければ null**）。
+ * 未知 namespace（`--z-*` 等）は C part-1（#92）で reject へ落ちる — namespace を発明しない。
  */
 
 export type MappingTableId = 'common' | 'origin' | 'vault' | 'suite';
@@ -348,6 +349,10 @@ export function classifyTokenName(name: string, table: MappingTableId = 'common'
   //    `--font-x-weight-medium`（= font-family の キー x-weight-medium）へ変質していた。
   //    実測（tailwindcss 4.3.2）: 旧 → `.font-x-weight-medium { font-family: … }` /
   //    新 → `.font-x-medium { font-weight: … }`。namespace は常に保存される。
+  //
+  //    x- 送りは **表の実在 namespace のみ**（C part-1 #92 — tailwindNamespaceOf は未知で null）。
+  //    かつては fallback が namespace を発明して `--line-height-body → --line-x-height-body` を
+  //    生成し（dead token・#17）、re-run では x-送り済みのそれへ再度 x- を送っていた（#90 実測）。
   const ns = tailwindNamespaceOf(name);
   if (ns !== null) {
     const key = name.slice(`--${ns}-`.length);
@@ -356,10 +361,13 @@ export function classifyTokenName(name: string, table: MappingTableId = 'common'
     if (key !== '') return { kind: 'rename', name: `--${ns}-x-${key}` };
   }
 
-  // 7. 単一セグメント等の未知名 — 発明せず reject
+  // 7. 未知 namespace・単一セグメント等の未知名 — 発明せず reject（(i)reject・C part-1 #92）
   return {
     kind: 'reject',
-    reason: `unknown token ${name} — single-segment name not in table '${table}'`,
+    reason:
+      `unknown token ${name} — namespace is not in the Tailwind v4 table ` +
+      `and no entry in mapping table '${table}' (no invented namespaces; ` +
+      `add a table entry or re-home the token — C part-2)`,
   };
 }
 
