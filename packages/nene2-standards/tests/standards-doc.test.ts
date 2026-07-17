@@ -201,6 +201,39 @@ describe('auditStandardsDoc — (ii) rule-id 実在照合（RAT-2）', () => {
   });
 });
 
+describe('auditStandardsDoc — (ii) 未配布注記つき rule-id は deferred（#72）', () => {
+  it('現物: 未配布注記つき [E:rule] は deferred＝red にしない・件数を報告する', () => {
+    // 04-i18n.md:348 / 02-data-flow.md:739 等の現物形（配布 config 未有効化を著者が明示）
+    const r = audit(
+      'View は網羅 switch MUST `[E:@typescript-eslint/switch-exhaustiveness-check（未配布——配布 config 未設定の空隙）]` [T]\n',
+    );
+    expect(r.ruleIdFailures).toHaveLength(0);
+    expect(r.ruleIdFindings.filter((f) => f.status === 'deferred')).toHaveLength(1);
+    expect(r.state).toBe('green');
+  });
+
+  it('未配布でも [T] 等の裏付けタグがあれば MUST 自体はタグ済み（untagged にしない）', () => {
+    const r = audit(
+      'export は named のみ MUST `[E:import-x/no-default-export（未配布——W0b）]` [T]\n',
+    );
+    expect(r.untaggedMusts).toHaveLength(0);
+  });
+
+  it('🔴 fail-open の負例: 未配布注記の無い不存在 rule-id は従来どおり missing（deferred が漏れない）', () => {
+    const r = audit('境界は zones で強制 MUST `[E:zones]`\n');
+    expect(r.ruleIdFailures).toHaveLength(1);
+    expect(r.ruleIdFailures[0]?.status).toBe('missing');
+    expect(r.ruleIdFindings.filter((f) => f.status === 'deferred')).toHaveLength(0);
+  });
+
+  it('未配布は raw id で判定する（normalize が注記を落としても deferred を取りこぼさない）', () => {
+    // 実在ルール + 未配布注記 → 著者が「未配布」と言う以上 deferred（missing でも ok でもない）
+    const r = audit('MUST `[E:no-restricted-imports（未配布——W0b 追加候補）]`\n');
+    expect(r.ruleIdFindings[0]?.status).toBe('deferred');
+    expect(r.ruleIdFailures).toHaveLength(0);
+  });
+});
+
 describe('auditStandardsDoc — [P] 列挙制（G-3）と (iv) カバレッジ', () => {
   it('故意 fail: [P:process] 以外の id 付き [P] は red', () => {
     const r = audit('MUST [P:review]\n');
