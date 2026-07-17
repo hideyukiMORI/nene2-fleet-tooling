@@ -8,7 +8,17 @@
  * ここでは**未指定＝fail-closed（空集合）**。実効値は registries から機械生成した override を
  * ゲート導入 PR（W1）で合成する — 手書き列挙 MUST NOT（会議R4 AM-10/AM-13(ii)決定・G-7）。
  */
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 import type { Config } from 'stylelint';
+
+import {
+  parseRegistries,
+  type ComponentsAllowlistEntry,
+  type LegacyManifestEntry,
+  type RegistriesDocument,
+} from '../registries/schema.js';
 
 const config: Config = {
   plugins: ['@hideyukimori/nene2-standards/stylelint-plugin'],
@@ -58,3 +68,53 @@ const config: Config = {
 };
 
 export default config;
+
+/**
+ * 台帳由来 secondary を焼いた stylelint config を合成する（#65 — 供給経路の欠落の根治）。
+ *
+ * base config は `layer-components-allowlist` / `layer-legacy-manifest-only` を fail-closed（空集合）
+ * で持つ。本関数は**中央 registries の当該 repo エントリ**から実効値を焼く:
+ * - components-allowlist（vault/invoice 型）→ `allowedClasses`
+ * - legacy-manifest（deal 型）→ `files`
+ * どちらのエントリも持たない repo（payout 型・未登録）は base のまま＝fail-closed（G-6）。
+ *
+ * **供給元は中央 registries のみ**（被検査者=product が書けるファイルは読まない）。これにより
+ * 「合成そのものを被検査者の手から取り上げる」＝G-7 を API で強制する（手書き列挙 MUST NOT）。
+ */
+export function stylelintConfigFromRegistries(doc: RegistriesDocument, repo: string): Config {
+  const forRepo = doc.entries.filter((e) => e.repo === repo);
+  const classes = forRepo
+    .filter((e): e is ComponentsAllowlistEntry => e.kind === 'components-allowlist')
+    .flatMap((e) => e.classes);
+  const files = forRepo
+    .filter((e): e is LegacyManifestEntry => e.kind === 'legacy-manifest')
+    .map((e) => e.path);
+  const rules: NonNullable<Config['rules']> = { ...config.rules };
+  if (classes.length > 0) {
+    rules['nene2/layer-components-allowlist'] = [true, { allowedClasses: [...classes].sort() }];
+  }
+  if (files.length > 0) {
+    rules['nene2/layer-legacy-manifest-only'] = [true, { files: [...files].sort() }];
+  }
+  return { ...config, rules };
+}
+
+/**
+ * 製品側 stylelint.config.js のコピペ正本（#65 arm の実効部）:
+ * `import { stylelintConfigFor } from '@hideyukimori/nene2-standards/stylelint';`
+ * `export default stylelintConfigFor('nene-vault');`
+ *
+ * 同梱の中央 registries（fleet.jsonc）を読み、`repo` の台帳を焼いて返す。
+ *
+ * ⚠️ `repo` は**自己申告**である。理論上、別リポ名を渡して他リポの allowlist を借用する迂回が
+ * ありうる（例: invoice が 'nene-vault' を渡すと vault の許可クラスを借りる）。現実には config 1行の
+ * diff レビューで可視＋故意でしか起きないが、**将来の gate-integrity 拡張で「引数 repo ↔ 実リポの
+ * 同一性」を照合する**（それまでは中央 PR レビューが担保）。
+ */
+export function stylelintConfigFor(repo: string): Config {
+  const source = readFileSync(
+    fileURLToPath(new URL('../../registries/fleet.jsonc', import.meta.url)),
+    'utf8',
+  );
+  return stylelintConfigFromRegistries(parseRegistries(source), repo);
+}
