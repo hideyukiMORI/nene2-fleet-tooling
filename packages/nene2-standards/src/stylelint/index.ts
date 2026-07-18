@@ -17,6 +17,7 @@ import {
   parseRegistries,
   type ComponentsAllowlistEntry,
   type LegacyManifestEntry,
+  type LintBaselineEntry,
   type RegistriesDocument,
 } from '../registries/schema.js';
 
@@ -81,6 +82,16 @@ export default config;
  * **供給元は中央 registries のみ**（被検査者=product が書けるファイルは読まない）。これにより
  * 「合成そのものを被検査者の手から取り上げる」＝G-7 を API で強制する（手書き列挙 MUST NOT）。
  */
+/**
+ * base config が configure する stylelint rule の語彙（core＋nene2/*）。
+ * lint-baseline の rule がこの語彙内なら「合成が意味を理解できる rule」＝(rule,file) grandfather の対象。
+ * 語彙外（eslint 系 noHardcodedJapanese 等）は stylelint config には無関係＝素通し。
+ */
+const KNOWN_STYLELINT_RULES: ReadonlySet<string> = new Set<string>([
+  ...Object.keys(config.rules ?? {}),
+  ...(config.overrides ?? []).flatMap((o) => Object.keys(o.rules ?? {})),
+]);
+
 export function stylelintConfigFromRegistries(doc: RegistriesDocument, repo: string): Config {
   const forRepo = doc.entries.filter((e) => e.repo === repo);
   const classes = forRepo
@@ -96,7 +107,24 @@ export function stylelintConfigFromRegistries(doc: RegistriesDocument, repo: str
   if (files.length > 0) {
     rules['nene2/layer-legacy-manifest-only'] = [true, { files: [...files].sort() }];
   }
-  return { ...config, rules };
+
+  // (rule,file) lint-baseline を per-file grandfather の override として焼く（P2 §2・#101）。
+  // 語彙内の rule が file 無しで来たら loud error（黙って未消費の座席にしない — invoice 座席事件 /
+  // #92「表に無いものを黙って処理しない」と同族。file 有無 × 語彙内外の4象限を全て明示挙動に）。
+  const overrides = config.overrides ? [...config.overrides] : [];
+  const baselines = forRepo.filter((e): e is LintBaselineEntry => e.kind === 'lint-baseline');
+  for (const b of baselines) {
+    if (!KNOWN_STYLELINT_RULES.has(b.rule)) continue; // 語彙外（eslint 系）は stylelint 合成に無関係＝素通し
+    if (!b.file) {
+      throw new Error(
+        `lint-baseline "${b.id}": rule "${b.rule}" は stylelint 語彙内だが file が無い — ` +
+          `(rule,file) 粒度が必要（黙ってスキップしない・loud error — #101/A2）`,
+      );
+    }
+    overrides.push({ files: [b.file], rules: { [b.rule]: null } });
+  }
+
+  return { ...config, rules, overrides };
 }
 
 /**
