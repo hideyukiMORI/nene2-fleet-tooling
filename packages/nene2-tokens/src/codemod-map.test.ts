@@ -14,7 +14,7 @@ import {
 
 describe('codemod mapping table v1 (versioned)', () => {
   it('is versioned (M-1: 使い捨てスクリプト化 MUST NOT)', () => {
-    expect(CODEMOD_MAP_V1.version).toBe('1.0.2');
+    expect(CODEMOD_MAP_V1.version).toBe('1.1.0');
     expect(CODEMOD_MAP_V1.contract).toBe('1.0');
   });
 
@@ -199,15 +199,25 @@ describe('#24 ORIGIN_TABLE (full 現物 enumeration)', () => {
     }
   });
 
-  it('the real origin themes (default.css + dark.css) map with 0 NULL — faithful 実測', () => {
+  // C part-1（#92）: origin 現物には v4 namespace 外のトークンが 5 つある（--z-*×3・
+  // --border-width-*×2）。v1.1.0 までは fallback が 'z'/'border' を発明して x-送りしていた
+  // （--z-x-modal 等の dead token）。いまは **loud reject** ＝ 語彙判断（除外 namespace 化 or
+  // 再ホーム）が写像表に入るまで origin の buildPlan は停止する — C part-2 の入力。
+  it('the real origin themes reject exactly the 5 known non-v4-namespace tokens (C part-1 #92)', () => {
     const names = new Set<string>();
     for (const f of ['./__fixtures__/origin-default.css', './__fixtures__/origin-dark.css']) {
       const src = readFileSync(fileURLToPath(new URL(f, import.meta.url)), 'utf8');
       for (const m of src.matchAll(/^\s*(--[a-z][a-z0-9-]*)\s*:/gim)) names.add(m[1]!);
     }
     expect(names.size).toBeGreaterThan(40);
-    const nulls = [...names].filter((n) => mapTokenName(n, 'origin') === null);
-    expect(nulls).toEqual([]);
+    const nulls = [...names].filter((n) => mapTokenName(n, 'origin') === null).sort();
+    expect(nulls).toEqual([
+      '--border-width-default',
+      '--border-width-emphasis',
+      '--z-dropdown',
+      '--z-modal',
+      '--z-toast',
+    ]);
   });
 
   it('the real origin themes map with 0 conflicts (accent-ink disambiguation resolves it)', () => {
@@ -217,7 +227,14 @@ describe('#24 ORIGIN_TABLE (full 現物 enumeration)', () => {
       for (const m of src.matchAll(/^\s*(--[a-z][a-z0-9-]*)\s*:/gim)) names.add(m[1]!);
     }
     const r = mapTokenSet([...names], 'origin');
-    expect(r.rejected).toEqual([]);
+    // reject 5 件は上のテストで固定（C part-1）。ここは conflict 0 の不変条件のみを見る。
+    expect(r.rejected.map((x) => x.from).sort()).toEqual([
+      '--border-width-default',
+      '--border-width-emphasis',
+      '--z-dropdown',
+      '--z-modal',
+      '--z-toast',
+    ]);
     expect(r.conflicts).toEqual([]);
   });
 });
