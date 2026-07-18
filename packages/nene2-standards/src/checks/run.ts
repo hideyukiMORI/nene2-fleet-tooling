@@ -13,7 +13,11 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 
-import { parseRegistries, type RegistriesDocument } from '../registries/schema.js';
+import {
+  parseRegistries,
+  REGISTRIES_SCHEMA_ID,
+  type RegistriesDocument,
+} from '../registries/schema.js';
 import {
   CONFORMANCE_KEYS,
   CONFORMANCE_SCHEMA_ID,
@@ -96,6 +100,25 @@ export function loadRegistries(
   } catch (e) {
     return { registries: null, manifestSha: null, error: (e as Error).message };
   }
+}
+
+/**
+ * init の registries 解決（P2 follow-up・#107）。意味論を mode で分離する:
+ * - `scan`（生成）: registries.jsonc **不在＝空とみなして生成へ進む**（fresh repo の初回 bootstrap。
+ *   --scan は空の初回台帳を作る道具＝不在中止は目的と逆）。ただし**在るが形式不正なら null**（fail-closed）。
+ * - `check`（読み取り専用再走査・検証）: 不在＝null（呼び出し側が exit 2）。検証は不在中止が美徳。
+ */
+export function resolveInitRegistries(
+  registriesPath: string | undefined,
+  cwd: string,
+  mode: 'scan' | 'check',
+): { registries: RegistriesDocument | null; error?: string } {
+  const effectivePath = registriesPath ?? path.join(cwd, 'registries.jsonc');
+  if (mode === 'scan' && !existsSync(effectivePath)) {
+    return { registries: { schema: REGISTRIES_SCHEMA_ID, entries: [] } };
+  }
+  const { registries, error } = loadRegistries(registriesPath, cwd);
+  return error !== undefined ? { registries, error } : { registries };
 }
 
 export async function runConformance(options: RunOptions): Promise<ConformanceVector> {

@@ -25,7 +25,7 @@ import { checkExemplars, renderExemplarsMarkdown, type DocFile } from './exempla
 import { checkGateIntegrity } from './gate-integrity.js';
 import { initCheck, initScan, initScanEntries, ledgersAlreadyInitialized } from './init-scan.js';
 import { REGISTRIES_SCHEMA_ID } from '../registries/schema.js';
-import { loadRegistries, runConformance } from './run.js';
+import { resolveInitRegistries, runConformance } from './run.js';
 import {
   auditStandardsDoc,
   enforcedEslintRuleIds,
@@ -129,7 +129,9 @@ async function main(): Promise<number> {
     }
 
     case 'init': {
-      const { registries, error } = loadRegistries(registriesPath, cwd);
+      // --scan（生成）は registries 不在=空で bootstrap 続行・--check（検証）は不在=中止（#107）。
+      const initMode = flags.has('check') ? 'check' : 'scan';
+      const { registries, error } = resolveInitRegistries(registriesPath, cwd, initMode);
       if (registries === null) {
         console.error(`registries が読めない（fail-closed で中止）: ${error ?? 'unknown'}`);
         return 2;
