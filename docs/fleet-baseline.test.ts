@@ -41,13 +41,15 @@ describe('fleet-baseline.json', () => {
     }
   });
 
-  it('発効済み: client ^1.1.0・tokens ^1.0.0・standards ^1.1.0（2026-07-17 A1 codemod 同梱で minor bump・npm 公開実測 shasum 080230a1）・i18n ^0.1.0', () => {
+  it('発効済み: client ^1.1.0・tokens ^1.1.0・standards ^1.2.0（2026-07-18 publish landed で実在版追随・npm 公開実測 shasum standards 6b8fd027 / tokens e18befd5）・i18n ^0.1.0', () => {
     expect(baseline.packages['@hideyukimori/nene2-client']).toBe('^1.1.0');
-    expect(baseline.packages['@hideyukimori/nene2-tokens']).toBe('^1.0.0');
-    // standards ^1.1.0: A1 hooks→model codemod（新 bin nene2-a1-hooks-to-model）を含む最低版を要求
-    // （^1.0.0 でも 1.1.0 は install されるが、A1 を持つ最低版を fleet-baseline に記録する — AM-12 の結合）。
-    // 2026-07-17 publish 実在確認後に座席充填（#57 順序規範: publish→座席充填）。
-    expect(baseline.packages['@hideyukimori/nene2-standards']).toBe('^1.1.0');
+    // tokens ^1.1.0: 2026-07-18 publish landed（写像表 v1 payout 分＋codemod ランナー同梱の最低版）。
+    // npm latest=1.1.0・dist.shasum e18befd55354be6002b236859746ebcf89399b91（fleet-tooling 実測）。
+    expect(baseline.packages['@hideyukimori/nene2-tokens']).toBe('^1.1.0');
+    // standards ^1.2.0: 2026-07-18 publish landed（registries/fleet.jsonc 同梱・components-allowlist kind）。
+    // npm latest=1.2.0・dist.shasum 6b8fd02714cdc9f52fc469c07bc71327a3d4071a（fleet-tooling 実測）。
+    // #57 順序規範（publish→座席充填）どおり、publish 実在確認後にフロアを実在版へ追随。
+    expect(baseline.packages['@hideyukimori/nene2-standards']).toBe('^1.2.0');
     // null（座席のみ）→ ^0.1.0。rc で出すと範囲が ^0.1.0-rc.1 になり、それは 0.1.0 も 0.1.1 も
     // 拾う（semver 実測）ため、版が進んでも全消費リポに prerelease 範囲が残り続ける（#44）
     expect(baseline.packages['@hideyukimori/nene2-i18n']).toBe('^0.1.0');
