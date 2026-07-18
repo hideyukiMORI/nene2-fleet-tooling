@@ -2,7 +2,8 @@
  * nene2-check（conformance skeleton）— fail-closed（G-6）・5状態ユニオン・gate-integrity・
  * scan-coverage・init --scan の両方向（green＋故意 fail）検査。
  */
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -22,7 +23,7 @@ import {
   initScanEntries,
   ledgersAlreadyInitialized,
 } from '../src/checks/init-scan.js';
-import { runConformance } from '../src/checks/run.js';
+import { resolveInitRegistries, runConformance } from '../src/checks/run.js';
 import {
   parseRegistries,
   REGISTRIES_SCHEMA_ID,
@@ -324,5 +325,34 @@ describe('runConformance（skeleton 全体 — CF-1〜4）', () => {
     // meta（CF-4）: contractVersion = テーマプラグマ最小値
     expect(vector.meta.contractVersion).toBe('1.0');
     expect(vector.meta.manifestSha).toMatch(/^[0-9a-f]{64}$/);
+  });
+});
+
+describe('resolveInitRegistries — scan は不在=空で bootstrap 続行・check は不在=中止（#107）', () => {
+  const tmp: string[] = [];
+  afterAll(() => {
+    for (const d of tmp) rmSync(d, { recursive: true, force: true });
+  });
+  const freshRepo = (): string => {
+    const d = mkdtempSync(path.join(tmpdir(), 'nene2-boot-'));
+    tmp.push(d);
+    return d; // registries.jsonc 無し
+  };
+
+  it('scan: registries 不在 → 空 doc で生成へ進む（fresh repo bootstrap）', () => {
+    const { registries } = resolveInitRegistries(undefined, freshRepo(), 'scan');
+    expect(registries).toEqual({ schema: REGISTRIES_SCHEMA_ID, entries: [] });
+  });
+
+  it('check: registries 不在 → null（呼び出し側が exit 2・fail-closed 維持）', () => {
+    const { registries } = resolveInitRegistries(undefined, freshRepo(), 'check');
+    expect(registries).toBeNull();
+  });
+
+  it('scan: 在るが形式不正 → null（不在だけが空・fail-closed）', () => {
+    const d = freshRepo();
+    writeFileSync(path.join(d, 'registries.jsonc'), '{ not valid registries');
+    const { registries } = resolveInitRegistries(undefined, d, 'scan');
+    expect(registries).toBeNull();
   });
 });
