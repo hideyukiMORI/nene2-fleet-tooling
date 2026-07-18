@@ -2,10 +2,39 @@
  * #65 Piece 2 — stylelintConfigFor / stylelintConfigFromRegistries（台帳由来 secondary の合成）。
  * 4型（vault=allowlist / deal=legacy-manifest / payout=0 / 未登録=fail-closed）＋ G-7 隔離を固定。
  */
-import { describe, expect, it } from 'vitest';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import { REGISTRIES_SCHEMA_ID, type RegistriesDocument } from '../registries/schema.js';
+import { afterEach, describe, expect, it } from 'vitest';
+
+import {
+  parseRegistries,
+  REGISTRIES_SCHEMA_ID,
+  type RegistriesDocument,
+} from '../registries/schema.js';
 import config, { stylelintConfigFor, stylelintConfigFromRegistries } from './index.js';
+
+/** 中央 source fleet.jsonc（リポ内・tarball 非同梱）を repo でスライスした per-repo registry を temp に書く。 */
+const centralSource = readFileSync(
+  fileURLToPath(new URL('../../registries/fleet.jsonc', import.meta.url)),
+  'utf8',
+);
+const tmpDirs: string[] = [];
+afterEach(() => {
+  for (const d of tmpDirs) rmSync(d, { recursive: true, force: true });
+  tmpDirs.length = 0;
+});
+function writeRepoRegistry(repo: string): string {
+  const central = parseRegistries(centralSource);
+  const entries = central.entries.filter((e) => e.repo === repo);
+  const dir = mkdtempSync(path.join(tmpdir(), 'nene2-b1-'));
+  tmpDirs.push(dir);
+  const p = path.join(dir, 'registries.jsonc');
+  writeFileSync(p, JSON.stringify({ schema: REGISTRIES_SCHEMA_ID, entries }, null, 2));
+  return p;
+}
 
 function docOf(entries: RegistriesDocument['entries']): RegistriesDocument {
   return { schema: REGISTRIES_SCHEMA_ID, entries };
@@ -95,21 +124,27 @@ describe('stylelintConfigFromRegistries — 台帳由来 secondary の合成', (
   });
 });
 
-describe('stylelintConfigFor — 同梱中央 registries を読む', () => {
+describe('stylelintConfigFor — per-repo registries.jsonc を読む（P2-B1）', () => {
   it('REG-2 登録済み（#65）: vault/invoice は allowlist・deal は legacy-manifest を焼いて返す', () => {
-    const vault = stylelintConfigFor('nene-vault');
+    const vault = stylelintConfigFor('nene-vault', {
+      registriesPath: writeRepoRegistry('nene-vault'),
+    });
     const vaultRule = vault.rules?.['nene2/layer-components-allowlist'];
     expect(Array.isArray(vaultRule)).toBe(true);
     expect((vaultRule as [true, { allowedClasses: string[] }])[1].allowedClasses).toHaveLength(156);
     expect(vault.plugins).toEqual(config.plugins);
 
-    const invoice = stylelintConfigFor('nene-invoice');
+    const invoice = stylelintConfigFor('nene-invoice', {
+      registriesPath: writeRepoRegistry('nene-invoice'),
+    });
     const invoiceRule = invoice.rules?.['nene2/layer-components-allowlist'];
     expect((invoiceRule as [true, { allowedClasses: string[] }])[1].allowedClasses).toHaveLength(
       381,
     );
 
-    const deal = stylelintConfigFor('nene-deal');
+    const deal = stylelintConfigFor('nene-deal', {
+      registriesPath: writeRepoRegistry('nene-deal'),
+    });
     expect(deal.rules?.['nene2/layer-legacy-manifest-only']).toEqual([
       true,
       { files: ['src/app/design/designs.css', 'src/app/design/styles.css'] },
@@ -118,11 +153,29 @@ describe('stylelintConfigFor — 同梱中央 registries を読む', () => {
     expect(deal.rules?.['nene2/layer-components-allowlist']).toBe(true);
   });
 
-  it('未登録 repo は base（fail-closed）で返る・throw しない', () => {
-    const r = stylelintConfigFor('nene-payout');
+  it('未登録 repo（空 registries.jsonc）は base（fail-closed）で返る・throw しない（F2 payout 型）', () => {
+    const r = stylelintConfigFor('nene-payout', {
+      registriesPath: writeRepoRegistry('nene-payout'),
+    });
     expect(r.rules?.['nene2/layer-components-allowlist']).toBe(true);
     expect(r.rules?.['nene2/layer-legacy-manifest-only']).toBe(true);
     expect(r.plugins).toEqual(config.plugins);
+  });
+
+  it('registries.jsonc 不在 → loud error（silent fallback 廃止・F2）', () => {
+    const missing = path.join(mkdtempSync(path.join(tmpdir(), 'nene2-b1-')), 'registries.jsonc');
+    tmpDirs.push(path.dirname(missing));
+    expect(() => stylelintConfigFor('nene-invoice', { registriesPath: missing })).toThrow(
+      /見つからない/,
+    );
+  });
+
+  it('別 repo のエントリが混じる → loud error（取り違え検出・B1 追加受入条件）', () => {
+    // invoice を要求したのに vault の registry を渡す（cwd 取り違えの模擬）
+    const vaultRegistry = writeRepoRegistry('nene-vault');
+    expect(() => stylelintConfigFor('nene-invoice', { registriesPath: vaultRegistry })).toThrow(
+      /別 repo/,
+    );
   });
 });
 
