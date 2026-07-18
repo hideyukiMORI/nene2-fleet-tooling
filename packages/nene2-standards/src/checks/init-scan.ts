@@ -12,6 +12,8 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
+import baseStylelintConfig from '../stylelint/index.js';
+import stylelintPlugins from '../stylelint/plugin.js';
 import { classTokens, layerParamsInclude } from '../stylelint/helpers.js';
 import type {
   ComponentsAllowlistEntry,
@@ -25,12 +27,56 @@ export interface InitScanResult {
   allowedClasses: string[];
   /** legacy manifest 初期値（テーマ正準配置・index.css 以外の css） */
   legacyManifest: Array<{ path: string; maxLines: number; maxBytes: number }>;
+  /** (rule,file) 別の構造ルール違反件数（P2-A4 — lint-baseline frozenCount の実測初期値） */
+  lintBaselines: Array<{ rule: string; file: string; frozenCount: number }>;
   /** 500行超の助言 warning（AM-25' — MUST ではない） */
   advisories: string[];
 }
 
 const CANONICAL_NON_LEGACY = [/^src\/shared\/ui\/theme\//, /^src\/index\.css$/];
 const ADVISORY_LINES = 500;
+
+/**
+ * lint-baseline 集計から除外するルール（P2-A4 F1）。この2つは components-allowlist /
+ * legacy-manifest kind が別途 seat 済み＝ (rule,file) baseline に入れると二重計上になる。
+ */
+const LINT_BASELINE_EXCLUDED_RULES = new Set<string>([
+  'nene2/layer-components-allowlist',
+  'nene2/layer-legacy-manifest-only',
+]);
+
+/**
+ * (rule,file) 別に構造ルール違反を実測する（P2-A4）。base config を programmatic 実行し
+ * （合成 config でなく＝allowlist は構造 warning を変えず・初回 scan の循環回避＝F2）、
+ * seat 済みルール（F1 除外集合）以外の warning を (rule,file) で集計する。
+ * plugin はモジュールパス文字列でなくオブジェクトを直接渡す（自己参照の解決を避ける）。
+ * frozenCount>0 のもののみ返す（green は entry 0＝AM-14 と一貫・F4）。
+ */
+export async function scanLintBaselines(cwd: string): Promise<InitScanResult['lintBaselines']> {
+  const sources = enumerateStyleSources(cwd).filter((p) => p.endsWith('.css'));
+  if (sources.length === 0) return [];
+  const stylelint = (await import('stylelint')).default;
+  const runnable = { ...baseStylelintConfig, plugins: stylelintPlugins };
+  const { results } = await stylelint.lint({
+    files: sources.map((rel) => path.join(cwd, rel)),
+    config: runnable,
+  });
+  const counts = new Map<string, number>();
+  for (const r of results) {
+    const rel = path.relative(cwd, r.source ?? '');
+    for (const w of r.warnings) {
+      if (!w.rule || LINT_BASELINE_EXCLUDED_RULES.has(w.rule)) continue;
+      const key = `${w.rule}\t${rel}`;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+  }
+  return [...counts.entries()]
+    .map(([key, frozenCount]) => {
+      const [rule, file] = key.split('\t');
+      return { rule: rule ?? '', file: file ?? '', frozenCount };
+    })
+    .sort((a, b) => a.rule.localeCompare(b.rule) || a.file.localeCompare(b.file));
+}
 
 async function formattedLineCount(source: string): Promise<number> {
   // pinned prettier（workspace 同梱）で整形してから数える
@@ -78,9 +124,12 @@ export async function initScan(cwd: string): Promise<InitScanResult> {
     }
   }
 
+  const lintBaselines = await scanLintBaselines(cwd);
+
   return {
     allowedClasses: [...allowed].sort(),
     legacyManifest,
+    lintBaselines,
     advisories,
   };
 }
@@ -114,6 +163,18 @@ export function initScanEntries(scan: InitScanResult, repo: string): RegistryEnt
       maxBytes: e.maxBytes,
     });
   }
+  // lint-baseline: (rule,file) ごと1エントリ（frozenCount>0 のみ・走査実測＝手書き MUST NOT）。
+  for (const lb of scan.lintBaselines) {
+    entries.push({
+      kind: 'lint-baseline',
+      id: `${repo}-lb-${slug(lb.rule)}-${slug(lb.file)}`,
+      repo,
+      rule: lb.rule,
+      file: lb.file,
+      frozenCount: lb.frozenCount,
+      initializedBy: 'init --scan',
+    });
+  }
   return entries;
 }
 
@@ -121,12 +182,13 @@ export function initScanEntries(scan: InitScanResult, repo: string): RegistryEnt
 export function ledgersAlreadyInitialized(
   registries: RegistriesDocument,
   repo: string,
-): { legacyManifest: boolean; componentsAllowlist: boolean } {
+): { legacyManifest: boolean; componentsAllowlist: boolean; lintBaseline: boolean } {
   return {
     legacyManifest: registries.entries.some((e) => e.kind === 'legacy-manifest' && e.repo === repo),
     componentsAllowlist: registries.entries.some(
       (e) => e.kind === 'components-allowlist' && e.repo === repo,
     ),
+    lintBaseline: registries.entries.some((e) => e.kind === 'lint-baseline' && e.repo === repo),
   };
 }
 

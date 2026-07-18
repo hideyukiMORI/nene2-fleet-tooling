@@ -148,10 +148,11 @@ async function main(): Promise<number> {
       // T-3: 対象台帳が既存なら実行拒否（生成はゲート導入 PR の一度きり）。
       // components-allowlist / legacy-manifest のどちらか既存でも拒否（#65 — kind 追加で穴を塞ぐ）。
       const already = ledgersAlreadyInitialized(registries, repo);
-      if (already.legacyManifest || already.componentsAllowlist) {
+      if (already.legacyManifest || already.componentsAllowlist || already.lintBaseline) {
         const existing = [
           already.legacyManifest ? 'legacy-manifest' : null,
           already.componentsAllowlist ? 'components-allowlist' : null,
+          already.lintBaseline ? 'lint-baseline' : null,
         ]
           .filter(Boolean)
           .join(' / ');
