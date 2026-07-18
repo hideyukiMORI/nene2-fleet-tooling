@@ -33,7 +33,7 @@ publish の実行は施主（hide）。担当リナは準備と検証まで。
 
 release note 明記2点（hub 依頼・正直表記）:
 
-1. **適用済みリポ re-run の idempotence（no-op）保証範囲**: themegen `fill` は不動点（fixed point）を**テストで保証**（`themegen.test.ts`「fill is idempotent」）。codemod は写像キーが旧名のみ＝適用済みコードに再走しても書き換え対象が残らない設計（衝突検出 #27）。**フリート実リポでの re-run 実測はまだ無い** — 保証はテスト・設計由来の範囲。
+1. **適用済みリポ re-run の idempotence（no-op）保証範囲**〔#90 で実測訂正〕: 保証されるのは (a) themegen `fill` の不動点（**テストで保証** — `themegen.test.ts`「fill is idempotent」）と (b) **契約 namespace の x-送り済みトークン**（`--spacing-x-*`・`--font-weight-x-*` 等 — contract 扱いで不変〔dist 実測〕）。**一般には no-op ではない**: (i) **未知 namespace の x-送り済みトークンは再走で silent 二重送り**（`--line-x-height-body → --line-x-x-height-body`・`--z-x-modal → --z-x-x-modal`〔dist 実測 2026-07-18〕— fallback が namespace を再発明するため。plan に通常 rename として載り誤りとは示されない） (ii) 字面衝突の再入 pair（`gap-x-*` 等）は `reentrantRenames` が plan で**開示**する（既知・#17）。**運用条項: re-run 時は plan を必ず確認し、reentrant または `-x-x-` を含む rename があれば撃たない**。(i) の根治は C part-1（fallback 除去＝loud reject 化・本 publish 後にマージ）。
 2. **dead/unknown-namespace token（`--line-x-height-body` 等）の挙動**: 写像側は未知名を **reject（fail-closed・null → 呼び出し側 error・写像を発明しない）**が実装・テスト済み。**生成側の loud reject（(i)reject＝`tailwindNamespaceOf` regex fallback 除去）は C part-1 で未実装** — 本束に入っているのは #50 の導出までで、(i)reject は C 完了後（原理: loud reject・実装状況を誇称しない）。
 
 publish 手順は「2回目以降（GitHub Actions）」（下記）。dry_run → 本番とも**施主実行**。成功後に fleet-baseline.json の null → 実版数の**別 PR**（下記「publish 成功後にやること」）。
