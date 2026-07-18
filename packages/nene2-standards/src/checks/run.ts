@@ -70,17 +70,23 @@ function gitCommitSha(cwd: string): string | null {
 export interface RunOptions {
   cwd: string;
   repo: string;
-  /** pinned registries jsonc のパス（パッケージ同梱の registries/fleet.jsonc が既定） */
+  /** pinned registries jsonc のパス（既定は cwd の per-repo `registries.jsonc` — P2 B1） */
   registriesPath?: string | undefined;
 }
 
-export function loadRegistries(registriesPath: string | undefined): {
+/**
+ * per-repo registry を読む（P2 B1）。既定は `cwd/registries.jsonc`（規約パス）・`--registries` は override。
+ * 同梱の中央 fleet.jsonc は tarball から外れた（A-1/A-2 根治）。不在・形式不正は null＋error（fail-closed）。
+ */
+export function loadRegistries(
+  registriesPath: string | undefined,
+  cwd: string,
+): {
   registries: RegistriesDocument | null;
   manifestSha: string | null;
   error?: string;
 } {
-  const defaultPath = new URL('../../registries/fleet.jsonc', import.meta.url);
-  const p = registriesPath ?? defaultPath;
+  const p = registriesPath ?? path.join(cwd, 'registries.jsonc');
   try {
     const source = readFileSync(p, 'utf8');
     return {
@@ -94,7 +100,7 @@ export function loadRegistries(registriesPath: string | undefined): {
 
 export async function runConformance(options: RunOptions): Promise<ConformanceVector> {
   const { cwd, repo } = options;
-  const { registries, manifestSha, error } = loadRegistries(options.registriesPath);
+  const { registries, manifestSha, error } = loadRegistries(options.registriesPath, cwd);
 
   const meta: ConformanceMeta = {
     standardsVersion: null,

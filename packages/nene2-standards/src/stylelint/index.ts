@@ -8,8 +8,8 @@
  * ここでは**未指定＝fail-closed（空集合）**。実効値は registries から機械生成した override を
  * ゲート導入 PR（W1）で合成する — 手書き列挙 MUST NOT（会議R4 AM-10/AM-13(ii)決定・G-7）。
  */
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
 
 import type { Config } from 'stylelint';
 
@@ -130,19 +130,34 @@ export function stylelintConfigFromRegistries(doc: RegistriesDocument, repo: str
 /**
  * 製品側 stylelint.config.js のコピペ正本（#65 arm の実効部）:
  * `import { stylelintConfigFor } from '@hideyukimori/nene2-standards/stylelint';`
- * `export default stylelintConfigFor('nene-vault');`
+ * `export default stylelintConfigFor('nene-invoice');`
  *
- * 同梱の中央 registries（fleet.jsonc）を読み、`repo` の台帳を焼いて返す。
+ * **per-repo registry を読む（P2 B1）**: 既定は cwd の `registries.jsonc`（規約パス・Q1）。
+ * 同梱の中央 fleet.jsonc は tarball から外れた（A-1/A-2 根治＝一般ユーザに NeNe 台帳を配らない）。
+ * `opts.registriesPath` で明示注入可（run.ts/cli/テスト）。
  *
- * ⚠️ `repo` は**自己申告**である。理論上、別リポ名を渡して他リポの allowlist を借用する迂回が
- * ありうる（例: invoice が 'nene-vault' を渡すと vault の許可クラスを借りる）。現実には config 1行の
- * diff レビューで可視＋故意でしか起きないが、**将来の gate-integrity 拡張で「引数 repo ↔ 実リポの
- * 同一性」を照合する**（それまでは中央 PR レビューが担保）。
+ * fail-closed:
+ * - `registries.jsonc` **不在 → loud error**（silent fallback は廃止＝#92 と同族。移行手順を誘導）。
+ * - 空 registries.jsonc（entries []）は valid ＝ base fail-closed で返る（payout 型＝未登録を壊さない）。
+ * - 読んだ registry に**別 repo のエントリが混じる → loud error**（取り違え検出 — 別リポの
+ *   registries.jsonc を偶然拾う事故を静かに通さない。B1 追加受入条件）。
  */
-export function stylelintConfigFor(repo: string): Config {
-  const source = readFileSync(
-    fileURLToPath(new URL('../../registries/fleet.jsonc', import.meta.url)),
-    'utf8',
-  );
-  return stylelintConfigFromRegistries(parseRegistries(source), repo);
+export function stylelintConfigFor(repo: string, opts?: { registriesPath?: string }): Config {
+  const registriesPath = opts?.registriesPath ?? path.resolve(process.cwd(), 'registries.jsonc');
+  if (!existsSync(registriesPath)) {
+    throw new Error(
+      `per-repo registry が見つからない: ${registriesPath} — ` +
+        `<repo>/registries.jsonc を fleet-tooling の cross-review PR で用意する` +
+        `（G-7・同梱 fallback は廃止＝P2 B1）`,
+    );
+  }
+  const doc = parseRegistries(readFileSync(registriesPath, 'utf8')); // 形式不正は throw（fail-closed）
+  const foreignRepos = [...new Set(doc.entries.map((e) => e.repo).filter((r) => r !== repo))];
+  if (foreignRepos.length > 0) {
+    throw new Error(
+      `registry ${registriesPath} に別 repo のエントリ（${foreignRepos.join(', ')}）— ` +
+        `<repo>/registries.jsonc は単一 repo（${repo}）のみ MUST（取り違え検出・B1）`,
+    );
+  }
+  return stylelintConfigFromRegistries(doc, repo);
 }

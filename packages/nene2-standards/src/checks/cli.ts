@@ -129,7 +129,7 @@ async function main(): Promise<number> {
     }
 
     case 'init': {
-      const { registries, error } = loadRegistries(registriesPath);
+      const { registries, error } = loadRegistries(registriesPath, cwd);
       if (registries === null) {
         console.error(`registries が読めない（fail-closed で中止）: ${error ?? 'unknown'}`);
         return 2;
