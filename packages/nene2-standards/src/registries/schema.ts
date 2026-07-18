@@ -89,6 +89,14 @@ export interface ComponentsAllowlistEntry extends EntryBase {
 export interface LintBaselineEntry extends EntryBase {
   kind: 'lint-baseline';
   rule: string;
+  /**
+   * (rule,file) 粒度の grandfather 対象ファイル（P2 §2・#99）。
+   * - **在り** = CSS 構造ルールの per-file grandfather（stylelint 消費側=config 合成が file 単位で
+   *   当該 rule を null 化する override を焼く。invoice 169 / deal 12 の緑化器）。
+   * - **無し** = リポ全体の rule baseline（eslint noHardcodedJapanese 等・単一 file を持たない負債）。
+   * ※ optional の理由: リポ全体 baseline（JP-lint）は単一 file を持たず、file 必須化は虚偽 file の強要になる。
+   */
+  file?: string;
   /** 凍結違反の件数（init --scan / ゲート導入 PR で実測生成。green には 0 が必要 — AM-14） */
   frozenCount: number | null;
   /** null = ゲート導入時に init --scan で生成（T-3）。生成前の座席登録を明示する */
@@ -344,6 +352,13 @@ export function validateRegistries(source: string, now = new Date()): RegistryDi
       case 'lint-baseline': {
         requireString(raw, 'rule', id, diags);
         requireString(raw, 'initializedBy', id, diags);
+        // file は optional（(rule,file) 粒度・#99）。在るなら非空文字列 MUST・無しはリポ全体 baseline。
+        if ('file' in raw && (typeof raw['file'] !== 'string' || raw['file'].trim() === '')) {
+          diags.push({
+            entryId: id,
+            message: 'file は在れば非空文字列 MUST（(rule,file) 粒度・#99）',
+          });
+        }
         const fc = raw['frozenCount'];
         if (fc !== null && (typeof fc !== 'number' || !Number.isInteger(fc) || fc < 0)) {
           diags.push({ entryId: id, message: 'frozenCount は null（未走査）か非負整数 MUST' });

@@ -209,3 +209,58 @@ describe('components-allowlist kind（#65 — DEBT・縮小単調）', () => {
     expect(DEBT_KINDS).toContain('components-allowlist');
   });
 });
+
+describe('lint-baseline kind の (rule,file) 粒度（#99 — P2 §2 構造負債 grandfather 器）', () => {
+  it('file 在り（CSS 構造 grandfather）は green', () => {
+    const ok = validateRegistries(
+      doc([
+        {
+          kind: 'lint-baseline',
+          id: 'invoice-specificity-index',
+          repo: 'nene-invoice',
+          rule: 'selector-max-specificity',
+          file: 'src/shared/ui/theme/index.css',
+          frozenCount: 149,
+          initializedBy: 'init --scan (P2 ゲート導入)',
+        },
+      ]),
+      NOW,
+    );
+    expect(ok).toEqual([]);
+  });
+
+  it('file 無し（リポ全体 rule baseline・JP-lint 型）も green（optional）', () => {
+    const ok = validateRegistries(
+      doc([
+        {
+          kind: 'lint-baseline',
+          id: 'concierge-jp-baseline',
+          repo: 'nene-concierge',
+          rule: 'no-restricted-syntax (noHardcodedJapanese)',
+          frozenCount: null,
+          initializedBy: 'init --scan (W0b)',
+        },
+      ]),
+      NOW,
+    );
+    expect(ok).toEqual([]);
+  });
+
+  it('file が空文字列は FAIL（在れば非空 MUST・fail-closed）', () => {
+    const diags = validateRegistries(
+      doc([
+        {
+          kind: 'lint-baseline',
+          id: 'x',
+          repo: 'nene-x',
+          rule: 'selector-max-specificity',
+          file: '   ',
+          frozenCount: 0,
+          initializedBy: 'init --scan',
+        },
+      ]),
+      NOW,
+    );
+    expect(diags.some((d) => d.message.includes('file'))).toBe(true);
+  });
+});
