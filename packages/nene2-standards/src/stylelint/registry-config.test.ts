@@ -125,3 +125,67 @@ describe('stylelintConfigFor — 同梱中央 registries を読む', () => {
     expect(r.plugins).toEqual(config.plugins);
   });
 });
+
+describe('lint-baseline (rule,file) grandfather の合成（P2-A2・#101）', () => {
+  it('invoice 型（file 在り・語彙内 rule）: 当該 file の当該 rule を null 化する override を足す', () => {
+    const r = stylelintConfigFromRegistries(
+      docOf([
+        {
+          kind: 'lint-baseline',
+          id: 'invoice-spec-index',
+          repo: 'nene-invoice',
+          rule: 'selector-max-specificity',
+          file: 'src/shared/ui/theme/index.css',
+          frozenCount: 149,
+          initializedBy: 'init --scan',
+        },
+      ]),
+      'nene-invoice',
+    );
+    const added = (r.overrides ?? []).filter((o) =>
+      (o.files as string[])?.includes('src/shared/ui/theme/index.css'),
+    );
+    expect(added).toHaveLength(1);
+    expect(added[0]?.rules?.['selector-max-specificity']).toBeNull();
+    // base の rule 本体は不変（当該 file 以外では効く）
+    expect(r.rules?.['selector-max-specificity']).toBe(config.rules?.['selector-max-specificity']);
+    // base の overrides（themes/base.css）は保たれる
+    expect((r.overrides ?? []).length).toBe((config.overrides ?? []).length + 1);
+  });
+
+  it('語彙内 rule なのに file 無し → loud error（黙ってスキップしない・hub 追加受入条件）', () => {
+    expect(() =>
+      stylelintConfigFromRegistries(
+        docOf([
+          {
+            kind: 'lint-baseline',
+            id: 'invoice-spec-nofile',
+            repo: 'nene-invoice',
+            rule: 'selector-max-specificity',
+            frozenCount: 149,
+            initializedBy: 'init --scan',
+          },
+        ]),
+        'nene-invoice',
+      ),
+    ).toThrow(/file が無い/);
+  });
+
+  it('語彙外 rule（eslint JP-lint）は file 無しでも素通し（stylelint 合成に無関係・throw しない）', () => {
+    const r = stylelintConfigFromRegistries(
+      docOf([
+        {
+          kind: 'lint-baseline',
+          id: 'concierge-jp',
+          repo: 'nene-concierge',
+          rule: 'no-restricted-syntax (noHardcodedJapanese)',
+          frozenCount: null,
+          initializedBy: 'init --scan',
+        },
+      ]),
+      'nene-concierge',
+    );
+    // override は増えない（base のまま）
+    expect((r.overrides ?? []).length).toBe((config.overrides ?? []).length);
+  });
+});
