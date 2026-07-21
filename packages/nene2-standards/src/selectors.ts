@@ -28,8 +28,11 @@ export const API_FETCH_SYNTAX: readonly SyntaxSelector[] = [
 /** 05 §2.2.4 styling の7セレクタ（会議R1⑤・R2⑥・R4 AM-5/AM-8/AM-13・R5議題(3)決定）。 */
 export const STYLING_SYNTAX: readonly SyntaxSelector[] = [
   {
-    // Tailwind arbitrary value 禁止（9リポの既存 lint の共通化 — 会議R1⑤決定）
-    selector: String.raw`JSXAttribute[name.name='className'] Literal[value=/(^|[\s'"!])[\w:-]*\[/]`,
+    // Tailwind arbitrary value 禁止（9リポの既存 lint の共通化 — 会議R1⑤決定）。
+    // arbitrary VARIANT（data-[tone=x]:… 等 = FC-1 blessed idiom）は対象外 MUST —
+    // `](?!:)` で「] の後に : が続く」＝ variant 形を除外する（#142）。
+    // 残ギャップ: data-[x]:bg-[17px]（variant 直後の arbitrary value）は boundary の制約で漏れる。
+    selector: String.raw`JSXAttribute[name.name='className'] Literal[value=/(^|[\s'"!])[\w:-]*\[[^\]]*\](?!:)/]`,
     message:
       'arbitrary value（p-[17px] 等）MUST NOT。値はトークン由来ユーティリティのみ（会議R1⑤決定）。',
   },

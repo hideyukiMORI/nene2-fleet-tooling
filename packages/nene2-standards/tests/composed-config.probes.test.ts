@@ -127,6 +127,15 @@ describe('検出プローブ — styling（R1⑤・R2⑥・R4 AM-5/AM-8/AM-13）
     }
   });
 
+  it('arbitrary VARIANT（data-[tone=x]: 等）は誤検知せず、variant 下の arbitrary VALUE は検知する（#142）', () => {
+    const msgs = messagesFor('src/features/probe-slice/arbitrary-variant-probe.tsx').filter(
+      (m) => m.ruleId === 'no-restricted-syntax' && m.message.includes('arbitrary value'),
+    );
+    // fixture 内の flag 対象は hover:p-[17px] の1行のみ（data-[tone=x]:… / [&:nth-child]:… は許容）
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0].message).toContain('arbitrary value');
+  });
+
   it('style prop は CSS 変数注入のみ許可（nene2/style-prop-css-vars-only）', () => {
     const msgs = messagesFor('src/features/probe-slice/style-prop-probe.tsx').filter(
       (m) => m.ruleId === 'nene2/style-prop-css-vars-only',
