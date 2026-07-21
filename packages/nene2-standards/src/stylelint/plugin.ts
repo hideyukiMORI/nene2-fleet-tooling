@@ -136,6 +136,15 @@ const layerComponentsAllowlist: Rule<true, { allowedClasses?: string[] }> =
     root.walkAtRules('layer', (atRule) => {
       if (!layerParamsInclude(atRule.params, 'components')) return;
       atRule.walkRules((rule) => {
+        // @keyframes のフレーム行（from/to/percentage）は class ではない — 兄弟ルール
+        // （noUnlayeredCss :39-46 等）と一貫してスキップする（#116 — init-scan も keyframe を
+        // class 収集しないので、罰する側だけが keyframe を見る非対称＝生成 baseline で緑到達不能を潰す）。
+        if (
+          rule.parent?.type === 'atrule' &&
+          /keyframes$/i.test((rule.parent as { name?: string }).name ?? '')
+        ) {
+          return;
+        }
         const tokens = classTokens(rule.selector);
         if (tokens.length === 0) {
           report({
