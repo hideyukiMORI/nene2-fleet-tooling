@@ -139,9 +139,24 @@ async function main(): Promise<number> {
       if (flags.has('check')) {
         const report = await initCheck(cwd, repo, registries);
         console.log(JSON.stringify(report, null, 2));
-        const count = report.unregisteredClasses.length + report.unregisteredLegacyFiles.length;
-        console.error(`init --check: 未分類 ${count} 件（styling green 条件は 0 件 — AM-10）`);
-        return count > 0 ? 1 : 0;
+        const unclassified =
+          report.unregisteredClasses.length + report.unregisteredLegacyFiles.length;
+        const regressions = report.lintBaselineRegressions.length;
+        console.error(
+          `init --check: 未分類 ${unclassified} 件（styling green 条件は 0 件 — AM-10）／` +
+            `lint-baseline 回帰 ${regressions} 件（count-ratchet FAIL 条件 — AM-14 縮小単調・#119）`,
+        );
+        for (const r of report.lintBaselineRegressions) {
+          console.error(
+            `  回帰: ${r.rule} @ ${r.file} — frozenCount ${r.frozenCount} → 実測 ${r.liveCount}（超過）`,
+          );
+        }
+        for (const s of report.lintBaselineShrinkable) {
+          console.error(
+            `  advisory（縮小可）: ${s.rule} @ ${s.file} — frozenCount ${s.frozenCount} → 実測 ${s.liveCount}（registry を下げられる）`,
+          );
+        }
+        return unclassified + regressions > 0 ? 1 : 0;
       }
       if (!flags.has('scan')) {
         console.error('init は --scan（生成）か --check（読み取り専用再走査）を指定する');
