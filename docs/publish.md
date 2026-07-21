@@ -9,12 +9,13 @@ publish の実行は施主（hide）。担当リナは準備と検証まで。
 | パッケージ                      | 版                                 | 状態                                                                                                                                                                                                                                                                                                                                                                 |
 | ------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@hideyukimori/nene2-tokens`    | ローカル **1.1.0** / npm **1.1.0** | 契約凍結済み（2026-07-14 hide 承認）。**1.0.0・1.0.1・1.1.0 は publish 済み**（1.1.0 = 2026-07-18・#85 束・写像表 v1 payout 分＋codemod ランナー同梱の minor〔npm view 実測〕）＝**未 publish の差分なし**。旧ローカル表記 1.0.2（`21ce902`）は束に feat #32 を含むため minor へ改番（semver 判断は fleet 委任 — 2026-07-18 pickup）                                 |
-| `@hideyukimori/nene2-standards` | ローカル **2.0.0** / npm **1.2.0** | known-utility warn プレースホルダ等の暫定は README 明記のまま（規約の設計 — O-5/O-6）。**1.0.0・1.0.1・1.1.0・1.2.0 は publish 済み**（1.2.0 = 2026-07-18・#85 束・registries components-allowlist kind＋stylelintConfigFor 同梱〔npm view 実測〕）。**2.0.0 は未 publish**（#110 準備・下記「2.0.0 節」・BREAKING = P2 器 landed で per-repo 化＋tarball 同梱撤去） |
+| `@hideyukimori/nene2-standards` | ローカル **2.0.1** / npm **2.0.0** | known-utility warn プレースホルダ等の暫定は README 明記のまま（規約の設計 — O-5/O-6）。**1.0.0・1.0.1・1.1.0・1.2.0・2.0.0 は publish 済み**（2.0.0 = 2026-07-21・BREAKING = per-repo registries.jsonc read＋tarball 同梱撤去〔npm view 実測 latest=2.0.0〕）。**2.0.1 は未 publish**（#120 準備・下記「2.0.1 節」・patch = #116 layer-components-allowlist の @keyframes 偽陽性修正） |
 | `@hideyukimori/nene2-i18n`      | ローカル **0.1.0** / npm **0.1.0** | `private` 解除済み（#44 — 施主 hide 2026-07-16 裁定: 0.1.0 で publish）。**0.1.0 は publish 済み**（2026-07-16T05:46:12Z・`dist-tags latest=0.1.0`・`shasum 36d06bcd65854543c8af1ef971b36eccc1dcb3db`）＝ **未 publish の差分なし**。W0a 実体は catalog+parity（`/format` `/react` `/testing` は W0b — 規約 04 §0 の API 表が状態を明記）                            |
 
 ## publish 束の履歴と現在の待ち
 
-> **現在の未 publish = `nene2-standards` 2.0.0 のみ**（#110・下記「2.0.0 節」）。
+> **現在の未 publish = `nene2-standards` 2.0.1 のみ**（#120・下記「2.0.1 節」・patch）。
+> standards **2.0.0** は **2026-07-21 publish 済み**（BREAKING・per-repo registries／npm view 実測 latest=2.0.0・shasum 20e4f3e0）。
 > #84/#85 束（standards 1.2.0＋tokens 1.1.0）は **2026-07-18 publish 済み**（npm view 実測で latest 一致）。
 > 監査根拠: 未 publish 範囲は git tag / npm view の実測突き合わせ。数字・挙動は全て実測かテスト現物で裏取りし、未実装は未実装と明記する。
 
@@ -25,7 +26,7 @@ publish の実行は施主（hide）。担当リナは準備と検証まで。
   ※ 1.2.0 時点では `files` に `registries` を含み npm 同梱された（stylelintConfigFor は同梱中央 registries を読む）。**2.0.0 で per-repo 化＋同梱撤去（下記・BREAKING）**。
 - fix: check:standards-doc の deferred 扱い分離（#73）・`<!-- nonnormative -->` 構造マーカー対応（#75）
 
-### `@hideyukimori/nene2-standards` 2.0.0（**major — BREAKING**・#110 準備）
+### `@hideyukimori/nene2-standards` 2.0.0（**major — BREAKING**）✅ publish 済み（2026-07-21・#111 prep）
 
 未 publish コミット（`39e3cb5`（#100）..`1f30dc0`（#108）・5件 — P2 registry 再設計の器）:
 
@@ -33,6 +34,15 @@ publish の実行は施主（hide）。担当リナは準備と検証まで。
 - **🔴 BREAKING（B1 #106）: per-repo registries.jsonc read＋tarball 同梱撤去**。`stylelintConfigFor(repo, opts?)` は既定 `cwd/registries.jsonc` を読む（不在=loud error・空=base・別 repo 混入=loud error）。**`package.json` の `files` から `registries` を除去**＝一般ユーザ配布物に NeNe 台帳を載せない（監査 A-1/A-2 根治・`npm pack --dry-run` で非同梱を実測）。消費側は `<repo>/registries.jsonc` が必要（fleet-tooling cross-review で配備・G-7）。
 - feat: init --scan は registries 不在=空で bootstrap 続行（bootstrap #108・--check は不在=中止維持）＝全 fresh arm の初回台帳生成の穴を塞ぐ。
 - 検証: 統合 main で `npm run check` 緑（398 tests・AM-2 PASS）〔実測〕。
+
+### `@hideyukimori/nene2-standards` 2.0.1（**patch — バグ修正のみ**・#120 準備）
+
+未 publish コミット（`95eedb0`（#117）・1件 — pilot 発見の欠陥修正）:
+
+- **fix: `nene2/layer-components-allowlist` が @layer components 内の @keyframes フレーム（from/to/percentage）を class 誤検知して reject するのを修正**（#116）。兄弟ルール（noUnlayeredCss 等）と一貫した keyframe スキップを追加。init-scan も keyframe を class 収集しないため、罰する側だけが keyframe を見る非対称＝生成 baseline で緑到達不能を潰す。回帰テスト3件同梱（keyframes-allowlist.test.ts）。
+- 発見経緯: **D-invoice pilot（実証1例目）**。invoice の index.css の `@keyframes csv-spin{to{}}` が唯一の偽陽性で赤だった。修正版 standards を pack→invoice clone install→`stylelint 'src/**/*.css'` で rc=0（緑・168 構造違反は registries.jsonc で grandfather・新規未登録クラスは赤）をエンドツーエンド実測。
+- API 変更なし（patch）。BREAKING の per-repo registries（2.0.0）はそのまま。**D-invoice 本体 PR の緑化前提**。
+- 検証: 統合 main で `npm run check` 緑（401 tests・AM-2 PASS）〔実測〕。`npm pack --dry-run` で version 2.0.1・registries 非同梱を確認〔実測〕。
 
 ### `@hideyukimori/nene2-tokens` 1.1.0（minor — feat を含むため 1.0.2 から改番）✅ publish 済み（2026-07-18・#85 束）
 
