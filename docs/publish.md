@@ -8,13 +8,13 @@ publish の実行は施主（hide）。担当リナは準備と検証まで。
 
 | パッケージ                      | 版                                 | 状態                                                                                                                                                                                                                                                                                                                                                                 |
 | ------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@hideyukimori/nene2-tokens`    | ローカル **1.1.0** / npm **1.1.0** | 契約凍結済み（2026-07-14 hide 承認）。**1.0.0・1.0.1・1.1.0 は publish 済み**（1.1.0 = 2026-07-18・#85 束・写像表 v1 payout 分＋codemod ランナー同梱の minor〔npm view 実測〕）＝**未 publish の差分なし**。旧ローカル表記 1.0.2（`21ce902`）は束に feat #32 を含むため minor へ改番（semver 判断は fleet 委任 — 2026-07-18 pickup）                                 |
+| `@hideyukimori/nene2-tokens`    | ローカル **1.2.0** / npm **1.1.0** | 契約凍結済み（2026-07-14 hide 承認）。**1.0.0・1.0.1・1.1.0 は publish 済み**（1.1.0 = 2026-07-18・#85 束〔npm view 実測〕）。**1.2.0 は未 publish**（#127 準備・下記「1.2.0 節」・minor = C part-2 束: LEGACY_PREFIX_HINTS＋FIELD_TABLE＋§4-4 版乖離吸収） |
 | `@hideyukimori/nene2-standards` | ローカル **2.1.0** / npm **2.0.1** | known-utility warn プレースホルダ等の暫定は README 明記のまま（規約の設計 — O-5/O-6）。**1.0.0・1.0.1・1.1.0・1.2.0・2.0.0・2.0.1 は publish 済み**（2.0.1 = 2026-07-21・patch #116 keyframe 偽陽性修正〔npm view 実測 latest=2.0.1〕）。**2.1.0 は未 publish**（#123 準備・下記「2.1.0 節」・minor = #119 lint-baseline count-ratchet を arm へ届ける） |
 | `@hideyukimori/nene2-i18n`      | ローカル **0.1.0** / npm **0.1.0** | `private` 解除済み（#44 — 施主 hide 2026-07-16 裁定: 0.1.0 で publish）。**0.1.0 は publish 済み**（2026-07-16T05:46:12Z・`dist-tags latest=0.1.0`・`shasum 36d06bcd65854543c8af1ef971b36eccc1dcb3db`）＝ **未 publish の差分なし**。W0a 実体は catalog+parity（`/format` `/react` `/testing` は W0b — 規約 04 §0 の API 表が状態を明記）                            |
 
 ## publish 束の履歴と現在の待ち
 
-> **現在の未 publish = `nene2-standards` 2.1.0 のみ**（#123・下記「2.1.0 節」・minor）。
+> **現在の未 publish = `nene2-standards` 2.1.0（#123）＋ `nene2-tokens` 1.2.0（#127）**（各 minor・下記各節）。
 > standards **2.0.1** は **2026-07-21 publish 済み**（patch #116 keyframe 修正／npm view 実測 latest=2.0.1・shasum e6ce6b0e）。
 > standards **2.0.0** は **2026-07-21 publish 済み**（BREAKING・per-repo registries／npm view 実測 latest=2.0.0・shasum 20e4f3e0）。
 > #84/#85 束（standards 1.2.0＋tokens 1.1.0）は **2026-07-18 publish 済み**（npm view 実測で latest 一致）。
@@ -66,6 +66,17 @@ release note 明記2点（hub 依頼・正直表記）:
 
 1. **適用済みリポ re-run の idempotence（no-op）保証範囲**〔#90 で実測訂正〕: 保証されるのは (a) themegen `fill` の不動点（**テストで保証** — `themegen.test.ts`「fill is idempotent」）と (b) **契約 namespace の x-送り済みトークン**（`--spacing-x-*`・`--font-weight-x-*` 等 — contract 扱いで不変〔dist 実測〕）。**一般には no-op ではない**: (i) **未知 namespace の x-送り済みトークンは再走で silent 二重送り**（`--line-x-height-body → --line-x-x-height-body`・`--z-x-modal → --z-x-x-modal`〔dist 実測 2026-07-18〕— fallback が namespace を再発明するため。plan に通常 rename として載り誤りとは示されない） (ii) 字面衝突の再入 pair（`gap-x-*` 等）は `reentrantRenames` が plan で**開示**する（既知・#17）。**運用条項: re-run 時は plan を必ず確認し、reentrant または `-x-x-` を含む rename があれば撃たない**。(i) の根治は C part-1（fallback 除去＝loud reject 化・本 publish 後にマージ）。
 2. **dead/unknown-namespace token（`--line-x-height-body` 等）の挙動**: 写像側は未知名を **reject（fail-closed・null → 呼び出し側 error・写像を発明しない）**が実装・テスト済み。**生成側の loud reject（(i)reject＝`tailwindNamespaceOf` regex fallback 除去）は C part-1 で未実装** — 本束に入っているのは #50 の導出までで、(i)reject は C 完了後（原理: loud reject・実装状況を誇称しない）。
+
+### `@hideyukimori/nene2-tokens` 1.2.0（**minor — C part-2 束**・#127 準備）
+
+未 publish コミット（C part-1 #93〔`6c6cc36`〕/ C part-2 impl #126 / FIELD_TABLE＋版 #127）:
+
+- **feat: C part-1（#92/#93）＝未知 namespace の x-送り fallback 除去→loud reject**（1.1.0 publish 後にマージ済み・本 1.2.0 で初めて npm に載る）。
+- **feat: C part-2 impl（#125/#126）＝`LEGACY_PREFIX_HINTS`（hint 付き reject 表・step 5.5）**。fallback 非経由の silent 受理（`--font-size-*` が font-family に食われる #17 型）を止める。font-size は activeFrom W3（既定 W1 は現行 x-送り維持）・z/border-width は plain var 誘導。
+- **feat: FIELD_TABLE 正本化（#127）**＝nene-field W1 語彙表（(B) x-送り 20 行）。安全弁1 で origin#24 型衝突を排除（(A) 8 件は field 側 (C)-style 5＋本表 (B) 3 へ再分類）。
+- **🔴 §4-4 版乖離吸収**: published 1.1.0 は「未知 namespace を silent x-送り＝`gap-x-stack` 衝突あり」で、main の 1.1.0（C part-1 で reject）と**同一版番号で別挙動**だった（C part-1 が 1.1.0 publish 後マージのため）。**1.2.0 が正本**——published=silent x-送り／1.2.0=reject の別を版で確定する（origin W1 #300 の栓を抜く合流点）。
+- 検証: 統合 main で `npm run check` 緑（415 tests・AM-2 PASS）〔実測〕。CODEMOD_MAP_VERSION 1.2.0＝package version と一致。
+- 後続: 本 publish 後に origin/field 同時解禁（origin=#300 の栓解除・field=FIELD_TABLE pin＋(C)-style 手前処理→W1 再開）。
 
 publish 手順は「2回目以降（GitHub Actions）」（下記）。dry_run → 本番とも**施主実行**。成功後に fleet-baseline.json の null → 実版数の**別 PR**（下記「publish 成功後にやること」）。
 

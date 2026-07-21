@@ -26,7 +26,10 @@ import {
 export { TAILWIND_V4_NAMESPACES, tailwindNamespaceOf };
 
 // 1.1.0: C part-1（#92）— 未知 namespace の x-送り（fallback 発明）を廃し reject へ。
-export const CODEMOD_MAP_VERSION = '1.1.0';
+// 1.2.0: C part-2 束 — LEGACY_PREFIX_HINTS（#125）＋FIELD_TABLE 正本化（#127）。
+//   ＋published 1.1.0（silent x-送り＝gap-x-stack 衝突）と main 1.1.0（reject）の挙動乖離を
+//   版で区別する是正を兼ねる（§4-4・origin W1 #300 実測 2026-07-21）。正本は 1.2.0。
+export const CODEMOD_MAP_VERSION = '1.2.0';
 
 /**
  * Tailwind v4 の theme variable namespace（**長い namespace が短い prefix より先**）。
@@ -50,7 +53,7 @@ export const CODEMOD_MAP_VERSION = '1.1.0';
  * 未知 namespace（`--z-*` 等）は C part-1（#92）で reject へ落ちる — namespace を発明しない。
  */
 
-export type MappingTableId = 'common' | 'origin' | 'vault' | 'suite';
+export type MappingTableId = 'common' | 'origin' | 'vault' | 'suite' | 'field';
 
 /**
  * 写像の結果類型（#24 point5 — 「fatal null」と「pass-through」を型で区別する）。
@@ -276,14 +279,57 @@ export const SUITE_TABLE: Readonly<Record<string, string>> = {
   'r-pill': '--r-x-pill',
 };
 
+/**
+ * field 個別表（#127 — nene-field W1 語彙表正本化・候補案 handoff-field-w1-token-map-proposal を
+ * fleet 正本化レビュー通過＝安全弁1 で origin#24 型衝突を排除して確定）。
+ *
+ * ここに載るのは **(B) x-送り 20 行のみ**（改名のみ＝視覚変化ゼロ・x- 座席は空＝conflict なし）。
+ * 元候補の (A) 8 件は、field ネイティブ契約トークン（surface-overlay/border 等）への rename が
+ * codemod の 2ソース→1ターゲット conflict を起こすため（G-6 silent 上書き禁止・実測確認）、正本化前に
+ * hub 裁定で再分類済み: 5 件は field 側 **(C)-style**（源削除＋参照書換＝視覚 merge を意図どおり
+ * 実現）・3 件は本表の **(B) x-送り**（fg-muted-2/fg-faint-2/border-input・使用多&中Δ で退行回避）。
+ * (C) 総数 = 8（btn-danger 統合＋btn-disabled/pulse 削除＋(A)由来 (C)-style 5）— FIELD_TABLE 外。
+ *
+ * **Δ中スモーク条項（安全弁2）**: (C)-style で契約段へ寄せる行のうち fg-muted-2/fg-faint-2 型は Δ中。
+ * field 統合時の目視スモーク（Dashboard/MobileShell/フォーム系/Table）で退行が出たら (B) x-送りへ
+ * 切替可（本表へ追加＝視覚変化ゼロへ退避）。
+ */
+export const FIELD_TABLE: Readonly<Record<string, string>> = {
+  // 分類1 (B): 面・線の1色化(#24 型)回避＋ドメイン深段
+  'accent-soft-border': 'x-accent-soft-border',
+  'accent-deep': 'x-accent-deep',
+  'accent-deep-2': 'x-accent-deep-2',
+  // 分類1 (A由来→B): 使用多&中Δ＝退行回避で x-送り（安全弁2 の事前適用）
+  'fg-muted-2': 'x-fg-muted-2',
+  'fg-faint-2': 'x-fg-faint-2',
+  'border-input': 'x-border-input',
+  // 分類2 (B): 業務状態色（report status のドメイン語彙 — 汎用へ潰さず独立保持）
+  submitted: 'x-submitted',
+  'submitted-soft': 'x-submitted-soft',
+  approved: 'x-approved',
+  'approved-soft': 'x-approved-soft',
+  rejected: 'x-rejected',
+  'rejected-soft': 'x-rejected-soft',
+  draft: 'x-draft', // hex=fg-muted-2 と同値だが意味が別＝統合しない
+  'draft-soft': 'x-draft-soft',
+  // 分類3 (B): 機能色（近い契約段なし／別トーン塗り）
+  ai: 'x-ai',
+  'ai-soft': 'x-ai-soft',
+  'btn-success': 'x-btn-success',
+  'toast-check': 'x-toast-check',
+  'row-hover': 'x-row-hover',
+  'row-active': 'x-row-active',
+};
+
 /** `--color-` 接尾辞で引く個別表（common 共通ベース付き）。 */
 const COLOR_SUFFIX_TABLES: Record<
-  'common' | 'origin' | 'vault',
+  'common' | 'origin' | 'vault' | 'field',
   Readonly<Record<string, string>>
 > = {
   common: COMMON_TABLE,
   origin: ORIGIN_TABLE,
   vault: VAULT_TABLE,
+  field: FIELD_TABLE,
 };
 
 /** prefix-less 全名で引く個別表（suite — キーは裸名・値は完全なターゲット名）。 */
