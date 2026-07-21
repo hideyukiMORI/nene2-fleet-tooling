@@ -7,5 +7,7 @@
 
 ## 索引（新しい順）
 
+- [2026-07-22](2026-07-22.md) — 判例20 実閉鎖＋D-invoice/deal gate 発効・tokens1.2.0/standards2.1.0/i18n0.2.0 publish（統合席）／**i18n 0.3.0（/react・runtime 昇格）完走**（i18n 席・PR #138/#139/#141 マージ・追補節）
+- [2026-07-18](2026-07-18.md) — 完全準拠キャンペーン初日: 批准前提(a) を red→green で1日クローズ＋#65 components-allowlist kind 実装3枚（PR #77/#78/#79 マージ）
 - [2026-07-17](2026-07-17.md) — A1 codemod 実装・publish（PR #67/#68 マージ）／批准前提(a) 全119件仕分け完了で 07-21 green 確定／concierge C1 sanction
 - [2026-07-16](2026-07-16.md) — `check:exemplars` が規約 A-10 に違反していた日（PR 6本マージ・Issue 7本起票）
