@@ -41,15 +41,16 @@ describe('fleet-baseline.json', () => {
     }
   });
 
-  it('発効済み: client ^1.1.0・tokens ^1.1.0・standards ^1.2.0（2026-07-18 publish landed で実在版追随・npm 公開実測 shasum standards 6b8fd027 / tokens e18befd5）・i18n ^0.1.0', () => {
+  it('発効済み: client ^1.1.0・tokens ^1.1.0・standards ^2.0.0（2026-07-21 publish landed で実在版追随・npm 公開実測 shasum standards 20e4f3e0 / tokens e18befd5）・i18n ^0.1.0', () => {
     expect(baseline.packages['@hideyukimori/nene2-client']).toBe('^1.1.0');
     // tokens ^1.1.0: 2026-07-18 publish landed（写像表 v1 payout 分＋codemod ランナー同梱の最低版）。
     // npm latest=1.1.0・dist.shasum e18befd55354be6002b236859746ebcf89399b91（fleet-tooling 実測）。
     expect(baseline.packages['@hideyukimori/nene2-tokens']).toBe('^1.1.0');
-    // standards ^1.2.0: 2026-07-18 publish landed（registries/fleet.jsonc 同梱・components-allowlist kind）。
-    // npm latest=1.2.0・dist.shasum 6b8fd02714cdc9f52fc469c07bc71327a3d4071a（fleet-tooling 実測）。
+    // standards ^2.0.0: 2026-07-21 publish landed（BREAKING・per-repo registries.jsonc read＋tarball 同梱撤去）。
+    // npm latest=2.0.0・dist.shasum 20e4f3e0c4cbfb508f788fb2053af4d27d9eae04（fleet-tooling 実測）。
+    // BREAKING なので caret でも 1.x は拾わない（意図どおり）。
     // #57 順序規範（publish→座席充填）どおり、publish 実在確認後にフロアを実在版へ追随。
-    expect(baseline.packages['@hideyukimori/nene2-standards']).toBe('^1.2.0');
+    expect(baseline.packages['@hideyukimori/nene2-standards']).toBe('^2.0.0');
     // null（座席のみ）→ ^0.1.0。rc で出すと範囲が ^0.1.0-rc.1 になり、それは 0.1.0 も 0.1.1 も
     // 拾う（semver 実測）ため、版が進んでも全消費リポに prerelease 範囲が残り続ける（#44）
     expect(baseline.packages['@hideyukimori/nene2-i18n']).toBe('^0.1.0');
