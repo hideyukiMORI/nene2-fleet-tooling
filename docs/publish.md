@@ -9,12 +9,13 @@ publish の実行は施主（hide）。担当リナは準備と検証まで。
 | パッケージ                      | 版                                 | 状態                                                                                                                                                                                                                                                                                                                                                                 |
 | ------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@hideyukimori/nene2-tokens`    | ローカル **1.1.0** / npm **1.1.0** | 契約凍結済み（2026-07-14 hide 承認）。**1.0.0・1.0.1・1.1.0 は publish 済み**（1.1.0 = 2026-07-18・#85 束・写像表 v1 payout 分＋codemod ランナー同梱の minor〔npm view 実測〕）＝**未 publish の差分なし**。旧ローカル表記 1.0.2（`21ce902`）は束に feat #32 を含むため minor へ改番（semver 判断は fleet 委任 — 2026-07-18 pickup）                                 |
-| `@hideyukimori/nene2-standards` | ローカル **2.0.1** / npm **2.0.0** | known-utility warn プレースホルダ等の暫定は README 明記のまま（規約の設計 — O-5/O-6）。**1.0.0・1.0.1・1.1.0・1.2.0・2.0.0 は publish 済み**（2.0.0 = 2026-07-21・BREAKING = per-repo registries.jsonc read＋tarball 同梱撤去〔npm view 実測 latest=2.0.0〕）。**2.0.1 は未 publish**（#120 準備・下記「2.0.1 節」・patch = #116 layer-components-allowlist の @keyframes 偽陽性修正） |
+| `@hideyukimori/nene2-standards` | ローカル **2.1.0** / npm **2.0.1** | known-utility warn プレースホルダ等の暫定は README 明記のまま（規約の設計 — O-5/O-6）。**1.0.0・1.0.1・1.1.0・1.2.0・2.0.0・2.0.1 は publish 済み**（2.0.1 = 2026-07-21・patch #116 keyframe 偽陽性修正〔npm view 実測 latest=2.0.1〕）。**2.1.0 は未 publish**（#123 準備・下記「2.1.0 節」・minor = #119 lint-baseline count-ratchet を arm へ届ける） |
 | `@hideyukimori/nene2-i18n`      | ローカル **0.1.0** / npm **0.1.0** | `private` 解除済み（#44 — 施主 hide 2026-07-16 裁定: 0.1.0 で publish）。**0.1.0 は publish 済み**（2026-07-16T05:46:12Z・`dist-tags latest=0.1.0`・`shasum 36d06bcd65854543c8af1ef971b36eccc1dcb3db`）＝ **未 publish の差分なし**。W0a 実体は catalog+parity（`/format` `/react` `/testing` は W0b — 規約 04 §0 の API 表が状態を明記）                            |
 
 ## publish 束の履歴と現在の待ち
 
-> **現在の未 publish = `nene2-standards` 2.0.1 のみ**（#120・下記「2.0.1 節」・patch）。
+> **現在の未 publish = `nene2-standards` 2.1.0 のみ**（#123・下記「2.1.0 節」・minor）。
+> standards **2.0.1** は **2026-07-21 publish 済み**（patch #116 keyframe 修正／npm view 実測 latest=2.0.1・shasum e6ce6b0e）。
 > standards **2.0.0** は **2026-07-21 publish 済み**（BREAKING・per-repo registries／npm view 実測 latest=2.0.0・shasum 20e4f3e0）。
 > #84/#85 束（standards 1.2.0＋tokens 1.1.0）は **2026-07-18 publish 済み**（npm view 実測で latest 一致）。
 > 監査根拠: 未 publish 範囲は git tag / npm view の実測突き合わせ。数字・挙動は全て実測かテスト現物で裏取りし、未実装は未実装と明記する。
@@ -35,7 +36,7 @@ publish の実行は施主（hide）。担当リナは準備と検証まで。
 - feat: init --scan は registries 不在=空で bootstrap 続行（bootstrap #108・--check は不在=中止維持）＝全 fresh arm の初回台帳生成の穴を塞ぐ。
 - 検証: 統合 main で `npm run check` 緑（398 tests・AM-2 PASS）〔実測〕。
 
-### `@hideyukimori/nene2-standards` 2.0.1（**patch — バグ修正のみ**・#120 準備）
+### `@hideyukimori/nene2-standards` 2.0.1（**patch — バグ修正のみ**）✅ publish 済み（2026-07-21・#121 prep）
 
 未 publish コミット（`95eedb0`（#117）・1件 — pilot 発見の欠陥修正）:
 
@@ -43,6 +44,16 @@ publish の実行は施主（hide）。担当リナは準備と検証まで。
 - 発見経緯: **D-invoice pilot（実証1例目）**。invoice の index.css の `@keyframes csv-spin{to{}}` が唯一の偽陽性で赤だった。修正版 standards を pack→invoice clone install→`stylelint 'src/**/*.css'` で rc=0（緑・168 構造違反は registries.jsonc で grandfather・新規未登録クラスは赤）をエンドツーエンド実測。
 - API 変更なし（patch）。BREAKING の per-repo registries（2.0.0）はそのまま。**D-invoice 本体 PR の緑化前提**。
 - 検証: 統合 main で `npm run check` 緑（401 tests・AM-2 PASS）〔実測〕。`npm pack --dry-run` で version 2.0.1・registries 非同梱を確認〔実測〕。
+
+### `@hideyukimori/nene2-standards` 2.1.0（**minor — 機能追加**・#123 準備）
+
+未 publish コミット（`c046eac`（#122）・1件 — lint-baseline count-ratchet）:
+
+- **feat: `init --check` に lint-baseline count-ratchet を配線**（#119）。baselined な (rule,file) の `frozenCount` ceiling を実強制（AM-14 縮小単調検査器の実装本体）。`InitCheckReport` に `lintBaselineRegressions`（実測 live > frozenCount＝**FAIL**）＋`lintBaselineShrinkable`（live < frozenCount＝縮小歓迎の advisory・非 FAIL）を追加。CLI `init --check` の exit を「未分類 + 回帰 > 0 で FAIL」へ拡張。
+- なぜ minor: report field 追加＋新 FAIL 条件＝機能追加。既存 arm は `init --check` 未配線ゆえ非破壊（semver 正直・hub 裁定 2026-07-21）。
+- 意義: **判例20 の穴（同一 baselined (rule,file) 内の count 回帰が stylelint gate では機械検出されない一辺）を閉じる**。D-invoice/D-deal pilot（Q-D4）で実測周知した穴の恒久策。
+- **arm 実強制の前提**: publish 後、invoice/deal 等が新版 pin＋check に `nene2-check init --check` を配線（arm-side flip・(a) 採用）して初めて CI 強制される。「配線（本 publish）」と「実強制（arm flip）」は別段（横展開ガードは実強制 landed まで解除しない）。
+- 検証: 統合 main で `npm run check` 緑（405 tests・AM-2 PASS）〔実測〕。`npm pack --dry-run` で version 2.1.0・registries 非同梱を確認〔実測〕。
 
 ### `@hideyukimori/nene2-tokens` 1.1.0（minor — feat を含むため 1.0.2 から改番）✅ publish 済み（2026-07-18・#85 束）
 
