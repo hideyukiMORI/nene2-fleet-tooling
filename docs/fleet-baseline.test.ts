@@ -41,7 +41,7 @@ describe('fleet-baseline.json', () => {
     }
   });
 
-  it('発効済み: client ^1.1.0・tokens ^1.1.0・standards ^2.0.0（2026-07-21 publish landed で実在版追随・npm 公開実測 shasum standards 20e4f3e0 / tokens e18befd5）・i18n ^0.1.0', () => {
+  it('発効済み: client ^1.1.0・tokens ^1.1.0・standards ^2.0.0・i18n ^0.3.0（2026-07-21 publish landed で実在版追随・npm 公開実測 shasum standards 20e4f3e0 / tokens e18befd5 / i18n 8c2e2b08）', () => {
     expect(baseline.packages['@hideyukimori/nene2-client']).toBe('^1.1.0');
     // tokens ^1.1.0: 2026-07-18 publish landed（写像表 v1 payout 分＋codemod ランナー同梱の最低版）。
     // npm latest=1.1.0・dist.shasum e18befd55354be6002b236859746ebcf89399b91（fleet-tooling 実測）。
@@ -51,8 +51,10 @@ describe('fleet-baseline.json', () => {
     // BREAKING なので caret でも 1.x は拾わない（意図どおり）。
     // #57 順序規範（publish→座席充填）どおり、publish 実在確認後にフロアを実在版へ追随。
     expect(baseline.packages['@hideyukimori/nene2-standards']).toBe('^2.0.0');
-    // null（座席のみ）→ ^0.1.0。rc で出すと範囲が ^0.1.0-rc.1 になり、それは 0.1.0 も 0.1.1 も
-    // 拾う（semver 実測）ため、版が進んでも全消費リポに prerelease 範囲が残り続ける（#44）
-    expect(baseline.packages['@hideyukimori/nene2-i18n']).toBe('^0.1.0');
+    // i18n ^0.3.0: 2026-07-21 publish landed（runtime translator options＋/react I18nProvider＋
+    // renderWithI18n＝runtime 昇格レーン W0b・#137/#138/#139）。npm latest=0.3.0・
+    // dist.shasum 8c2e2b08c5e603117e941f99ceed3d696bf08cb6（fleet-tooling 実測）。
+    // 0.x caret ゆえ ^0.3.0 = >=0.3.0 <0.4.0。#57 順序規範（publish→座席充填）どおり実在確認後に追随。
+    expect(baseline.packages['@hideyukimori/nene2-i18n']).toBe('^0.3.0');
   });
 });
