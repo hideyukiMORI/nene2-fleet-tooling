@@ -10,11 +10,11 @@ publish の実行は施主（hide）。担当リナは準備と検証まで。
 | ------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@hideyukimori/nene2-tokens`    | ローカル **1.2.0** / npm **1.1.0** | 契約凍結済み（2026-07-14 hide 承認）。**1.0.0・1.0.1・1.1.0 は publish 済み**（1.1.0 = 2026-07-18・#85 束〔npm view 実測〕）。**1.2.0 は未 publish**（#127 準備・下記「1.2.0 節」・minor = C part-2 束: LEGACY_PREFIX_HINTS＋FIELD_TABLE＋§4-4 版乖離吸収） |
 | `@hideyukimori/nene2-standards` | ローカル **2.1.0** / npm **2.0.1** | known-utility warn プレースホルダ等の暫定は README 明記のまま（規約の設計 — O-5/O-6）。**1.0.0・1.0.1・1.1.0・1.2.0・2.0.0・2.0.1 は publish 済み**（2.0.1 = 2026-07-21・patch #116 keyframe 偽陽性修正〔npm view 実測 latest=2.0.1〕）。**2.1.0 は未 publish**（#123 準備・下記「2.1.0 節」・minor = #119 lint-baseline count-ratchet を arm へ届ける） |
-| `@hideyukimori/nene2-i18n`      | ローカル **0.2.0** / npm **0.1.0** | `private` 解除済み（#44 — 施主 hide 2026-07-16 裁定）。**0.1.0 は publish 済み**（2026-07-16・latest=0.1.0）。**0.2.0 は未 publish**（#129 準備・下記「0.2.0 節」・minor = `./testing` subpath ＝批准前提(b) の最小解除）。W0a 実体は catalog+parity（`/format` `/react` は W0b・`renderWithI18n` は 0.3.0 — 規約 04 §0 の API 表） |
+| `@hideyukimori/nene2-i18n`      | ローカル **0.3.0** / npm **0.2.0** | `private` 解除済み（#44 — 施主 hide 2026-07-16 裁定）。**0.1.0・0.2.0 は publish 済み**（0.2.0 = `./testing` subpath・#129／npm view 実測 latest=0.2.0）。**0.3.0 は未 publish**（#137 準備・下記「0.3.0 節」・minor = runtime translator options＋`/react`（I18nProvider）＋`renderWithI18n`）。W0b runtime 昇格レーン（`/format` は別供給・I18N-13） |
 
 ## publish 束の履歴と現在の待ち
 
-> **現在の未 publish = `nene2-i18n` 0.2.0（#129・minor・下記「0.2.0 節」）**。
+> **現在の未 publish = `nene2-i18n` 0.3.0（#137・minor・下記「0.3.0 節」）**。`nene2-i18n` 0.2.0（#129・`./testing`）は **publish 済み**（npm view 実測 latest=0.2.0）。
 > standards **2.1.0**（#123・count-ratchet）＋ tokens **1.2.0**（#127・C part-2＋FIELD_TABLE）は **2026-07-21 publish 済み**（npm view 実測 latest=2.1.0 shasum 4921c61d / latest=1.2.0 shasum 8ba2e691）。※各 table 行・版節の「publish 済み」訂正は各パッケージの次 bump PR で（established パターン）。
 > standards **2.0.1** は **2026-07-21 publish 済み**（patch #116 keyframe 修正／npm view 実測 latest=2.0.1・shasum e6ce6b0e）。
 > standards **2.0.0** は **2026-07-21 publish 済み**（BREAKING・per-repo registries／npm view 実測 latest=2.0.0・shasum 20e4f3e0）。
@@ -87,6 +87,17 @@ release note 明記2点（hub 依頼・正直表記）:
 - スコープ外（分離）: `renderWithI18n` は `/react`（I18nProvider）依存＝**0.3.0 W0b レーン**（「無いものを配らない」— I18N-22 の沈黙 fallback を再生産しないため react は設計してから）。payout B-2 は B-2a（本 0.2.0）/ B-2b（format 0.3.0）分割。
 - 検証: 統合 main で `npm run check` 緑（28 files / 418 tests・AM-2 PASS）〔実測〕。`npm pack --dry-run` で version 0.2.0・`dist/testing.{js,d.ts}` 同梱。`import { expectCatalogParity } from '@hideyukimori/nene2-i18n/testing'` が実解決（node exports 解決 OK）〔実測〕。
 - 後続: 本 publish 後、payout 側で [X] アンカー3本植栽＋`check:exemplars --ref origin/main`（fetch あり・A-10 正）で green を取り直す（payout レーン同時）。
+
+### `@hideyukimori/nene2-i18n` 0.3.0（**minor — runtime 昇格レーン W0b**・#137 準備）
+
+未 publish コミット（#137 ＝ 1本の `/react` PR・vault C4b 実測の runtime 昇格ブロッカー3点＋`/react`）:
+
+- **feat: `createTranslator(catalog, options?)` に第2引数**（§6-①）。`onMissing`（`'throw'` 既定 / `'key-echo'` 可視 fallback I18N-22 / 関数）・`interpolation`（`'single'` 既定 `{name}` / `'double'` `{{name}}`）・`catalogShape`（`'flat'` 既定・完全一致 / `'nested'` dot-path）。**既定引数は 0.2.0 と byte 同一挙動＝既存テスト不変・回帰0**。コア `t()` は分岐を持たず 3 strategy を注入（コアは薄く）。nested の key 型は `string` に緩め（`LooseTranslator`・DotPaths 型は 0.3.x 別 issue・hub 裁定）。
+- **feat: `/react` subpath 新設**（§6-②）＝`I18nProvider` + `useTranslation`。`useSyncExternalStore` で locale 購読（vault auth-store 同型）・scope 要素（既定 `<div lang>`・`as` 差替）に lang（AM-18）・provider 外/未知 locale は throw（fail-closed I18N-22）。JSX 不使用（createElement）・react は **optional peerDependency**。
+- **feat: `renderWithI18n`**（§6-③）＝I18nProvider で包む RTL テストヘルパ。production `/react` を RTL に密結合させないため実体は `render.ts`・`/testing` から re-export（RTL/react-dom は optional peer）。
+- **chore: exports に `./react` 追加・version 0.2.0→0.3.0**（§6-④）。`npm pack --dry-run` で version 0.3.0・`dist/{react,render}.{js,d.ts}` 同梱・`import ... from '@hideyukimori/nene2-i18n/react'` が node 解決〔実測〕。
+- 検証: 統合 main で `npm run check` 緑（AM-2 PASS）〔実測〕。**publish はしない**（施主 seam・④は version bump のみ）。
+- 意義: **vault が自前 translate.ts / i18n-context.tsx を `createTranslator(..., {catalogShape:'nested', interpolation:'double', onMissing:'key-echo'})` ＋ `I18nProvider` で置換可能に**（C4b クローズの土台）。
 
 publish 手順は「2回目以降（GitHub Actions）」（下記）。dry_run → 本番とも**施主実行**。成功後に fleet-baseline.json の null → 実版数の**別 PR**（下記「publish 成功後にやること」）。
 

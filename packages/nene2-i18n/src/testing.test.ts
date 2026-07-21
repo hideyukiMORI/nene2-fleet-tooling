@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { expectCatalogParity as fromRoot } from './index.js';
-import { expectCatalogParity as fromTesting } from './testing.js';
+import { expectCatalogParity as fromTesting, renderWithI18n } from './testing.js';
 
 /** n キーの健全カタログ対（parity.test.ts と同型）。 */
 function catalogs(n: number): { ja: Record<string, string>; en: Record<string, string> } {
@@ -26,6 +26,10 @@ describe('./testing subpath — expectCatalogParity 再export（#129/#76）', ()
 
   it('`.` と同一関数（再export であってコピーでない）', () => {
     expect(fromTesting).toBe(fromRoot);
+  });
+
+  it('renderWithI18n も /testing から出す（0.3.0 §6-③ の再export 経路）', () => {
+    expect(typeof renderWithI18n).toBe('function');
   });
 
   it('キー集合一致は green・欠落は throw（parity の挙動が subpath 経由でも同じ）', () => {

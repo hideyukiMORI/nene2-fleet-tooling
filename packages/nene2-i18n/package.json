@@ -1,7 +1,7 @@
 {
   "name": "@hideyukimori/nene2-i18n",
-  "version": "0.2.0",
-  "description": "NeNe fleet typed i18n — typed catalog + parity (AM-17 final form). W0a skeleton: translate/plural/format/react are W0b.",
+  "version": "0.3.0",
+  "description": "NeNe fleet typed i18n — typed catalog + parity + runtime translator options + React (I18nProvider). 0.3.0 W0b.",
   "type": "module",
   "license": "MIT",
   "main": "./dist/index.js",
@@ -11,6 +11,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "default": "./dist/react.js"
+    },
     "./testing": {
       "types": "./dist/testing.d.ts",
       "default": "./dist/testing.js"
@@ -19,6 +23,22 @@
   "files": [
     "dist"
   ],
+  "peerDependencies": {
+    "@testing-library/react": "^16.0.0",
+    "react": "^18.2.0 || ^19.0.0",
+    "react-dom": "^18.2.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@testing-library/react": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
   "scripts": {
     "build": "tsc --build",
     "prepack": "tsc --build"
