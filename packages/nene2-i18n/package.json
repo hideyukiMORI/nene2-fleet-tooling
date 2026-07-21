@@ -1,6 +1,6 @@
 {
   "name": "@hideyukimori/nene2-i18n",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "NeNe fleet typed i18n — typed catalog + parity (AM-17 final form). W0a skeleton: translate/plural/format/react are W0b.",
   "type": "module",
   "license": "MIT",
@@ -10,6 +10,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "default": "./dist/testing.js"
     }
   },
   "files": [

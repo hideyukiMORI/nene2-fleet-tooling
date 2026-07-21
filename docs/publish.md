@@ -10,11 +10,12 @@ publish の実行は施主（hide）。担当リナは準備と検証まで。
 | ------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@hideyukimori/nene2-tokens`    | ローカル **1.2.0** / npm **1.1.0** | 契約凍結済み（2026-07-14 hide 承認）。**1.0.0・1.0.1・1.1.0 は publish 済み**（1.1.0 = 2026-07-18・#85 束〔npm view 実測〕）。**1.2.0 は未 publish**（#127 準備・下記「1.2.0 節」・minor = C part-2 束: LEGACY_PREFIX_HINTS＋FIELD_TABLE＋§4-4 版乖離吸収） |
 | `@hideyukimori/nene2-standards` | ローカル **2.1.0** / npm **2.0.1** | known-utility warn プレースホルダ等の暫定は README 明記のまま（規約の設計 — O-5/O-6）。**1.0.0・1.0.1・1.1.0・1.2.0・2.0.0・2.0.1 は publish 済み**（2.0.1 = 2026-07-21・patch #116 keyframe 偽陽性修正〔npm view 実測 latest=2.0.1〕）。**2.1.0 は未 publish**（#123 準備・下記「2.1.0 節」・minor = #119 lint-baseline count-ratchet を arm へ届ける） |
-| `@hideyukimori/nene2-i18n`      | ローカル **0.1.0** / npm **0.1.0** | `private` 解除済み（#44 — 施主 hide 2026-07-16 裁定: 0.1.0 で publish）。**0.1.0 は publish 済み**（2026-07-16T05:46:12Z・`dist-tags latest=0.1.0`・`shasum 36d06bcd65854543c8af1ef971b36eccc1dcb3db`）＝ **未 publish の差分なし**。W0a 実体は catalog+parity（`/format` `/react` `/testing` は W0b — 規約 04 §0 の API 表が状態を明記）                            |
+| `@hideyukimori/nene2-i18n`      | ローカル **0.2.0** / npm **0.1.0** | `private` 解除済み（#44 — 施主 hide 2026-07-16 裁定）。**0.1.0 は publish 済み**（2026-07-16・latest=0.1.0）。**0.2.0 は未 publish**（#129 準備・下記「0.2.0 節」・minor = `./testing` subpath ＝批准前提(b) の最小解除）。W0a 実体は catalog+parity（`/format` `/react` は W0b・`renderWithI18n` は 0.3.0 — 規約 04 §0 の API 表） |
 
 ## publish 束の履歴と現在の待ち
 
-> **現在の未 publish = `nene2-standards` 2.1.0（#123）＋ `nene2-tokens` 1.2.0（#127）**（各 minor・下記各節）。
+> **現在の未 publish = `nene2-i18n` 0.2.0（#129・minor・下記「0.2.0 節」）**。
+> standards **2.1.0**（#123・count-ratchet）＋ tokens **1.2.0**（#127・C part-2＋FIELD_TABLE）は **2026-07-21 publish 済み**（npm view 実測 latest=2.1.0 shasum 4921c61d / latest=1.2.0 shasum 8ba2e691）。※各 table 行・版節の「publish 済み」訂正は各パッケージの次 bump PR で（established パターン）。
 > standards **2.0.1** は **2026-07-21 publish 済み**（patch #116 keyframe 修正／npm view 実測 latest=2.0.1・shasum e6ce6b0e）。
 > standards **2.0.0** は **2026-07-21 publish 済み**（BREAKING・per-repo registries／npm view 実測 latest=2.0.0・shasum 20e4f3e0）。
 > #84/#85 束（standards 1.2.0＋tokens 1.1.0）は **2026-07-18 publish 済み**（npm view 実測で latest 一致）。
@@ -77,6 +78,15 @@ release note 明記2点（hub 依頼・正直表記）:
 - **🔴 §4-4 版乖離吸収**: published 1.1.0 は「未知 namespace を silent x-送り＝`gap-x-stack` 衝突あり」で、main の 1.1.0（C part-1 で reject）と**同一版番号で別挙動**だった（C part-1 が 1.1.0 publish 後マージのため）。**1.2.0 が正本**——published=silent x-送り／1.2.0=reject の別を版で確定する（origin W1 #300 の栓を抜く合流点）。
 - 検証: 統合 main で `npm run check` 緑（415 tests・AM-2 PASS）〔実測〕。CODEMOD_MAP_VERSION 1.2.0＝package version と一致。
 - 後続: 本 publish 後に origin/field 同時解禁（origin=#300 の栓解除・field=FIELD_TABLE pin＋(C)-style 手前処理→W1 再開）。
+
+### `@hideyukimori/nene2-i18n` 0.2.0（**minor — `./testing` subpath**・#129 準備）
+
+未 publish コミット（#129・ティア1）:
+
+- **feat: `./testing` subpath export（`expectCatalogParity`）**（#76 の批准前提(b) 最小解除）。規約 04 §0 API 表の正本 import 経路 `@hideyukimori/nene2-i18n/testing` の実体。payout の [X] exemplar アンカー3本（I18N-6/20/22）が要る `expectCatalogParity` を、この subpath から解決可能にする。`.`（ルート）からの export はそのまま維持（非破壊）。
+- スコープ外（分離）: `renderWithI18n` は `/react`（I18nProvider）依存＝**0.3.0 W0b レーン**（「無いものを配らない」— I18N-22 の沈黙 fallback を再生産しないため react は設計してから）。payout B-2 は B-2a（本 0.2.0）/ B-2b（format 0.3.0）分割。
+- 検証: 統合 main で `npm run check` 緑（28 files / 418 tests・AM-2 PASS）〔実測〕。`npm pack --dry-run` で version 0.2.0・`dist/testing.{js,d.ts}` 同梱。`import { expectCatalogParity } from '@hideyukimori/nene2-i18n/testing'` が実解決（node exports 解決 OK）〔実測〕。
+- 後続: 本 publish 後、payout 側で [X] アンカー3本植栽＋`check:exemplars --ref origin/main`（fetch あり・A-10 正）で green を取り直す（payout レーン同時）。
 
 publish 手順は「2回目以降（GitHub Actions）」（下記）。dry_run → 本番とも**施主実行**。成功後に fleet-baseline.json の null → 実版数の**別 PR**（下記「publish 成功後にやること」）。
 
