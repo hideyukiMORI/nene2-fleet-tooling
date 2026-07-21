@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   CODEMOD_MAP_V1,
+  FIELD_TABLE,
   ORIGIN_TABLE,
   REMEDIATION_V1,
   SUITE_TABLE,
@@ -14,7 +15,7 @@ import {
 
 describe('codemod mapping table v1 (versioned)', () => {
   it('is versioned (M-1: 使い捨てスクリプト化 MUST NOT)', () => {
-    expect(CODEMOD_MAP_V1.version).toBe('1.1.0');
+    expect(CODEMOD_MAP_V1.version).toBe('1.2.0');
     expect(CODEMOD_MAP_V1.contract).toBe('1.0');
   });
 
@@ -351,5 +352,43 @@ describe('remediation list v1 (同梱 — R2⑩)', () => {
     const unconfirmed = REMEDIATION_V1.filter((r) => !r.confirmed);
     expect(unconfirmed.length).toBeGreaterThan(0);
     for (const r of unconfirmed) expect(r.source).toContain('起草判断');
+  });
+});
+
+describe('FIELD_TABLE — field 語彙表正本化（C part-2・#127）', () => {
+  it('20 行の (B) x-送りエントリ（全て x- 名＝x- 座席へ改名）', () => {
+    const entries = Object.entries(FIELD_TABLE);
+    expect(entries).toHaveLength(20);
+    for (const [key, val] of entries) {
+      expect(val, `${key} は x- 送り`).toMatch(/^x-/);
+    }
+  });
+
+  it('field token は --color-x-* へ rename（業務状態色・機能色）', () => {
+    expect(mapTokenName('--color-submitted', 'field')).toBe('--color-x-submitted');
+    expect(mapTokenName('--color-approved', 'field')).toBe('--color-x-approved');
+    expect(mapTokenName('--color-rejected', 'field')).toBe('--color-x-rejected');
+    expect(mapTokenName('--color-ai', 'field')).toBe('--color-x-ai');
+    expect(mapTokenName('--color-fg-muted-2', 'field')).toBe('--color-x-fg-muted-2');
+    expect(mapTokenName('--color-border-input', 'field')).toBe('--color-x-border-input');
+  });
+
+  it('🔴 (A) を排した効果: field ネイティブ契約トークンと (B) 改名は conflict しない', () => {
+    // 契約 border/surface-overlay を native 保持しつつ FIELD_TABLE の (B) 改名 = 別ターゲット（x-）
+    // なので 2ソース→1ターゲット衝突は起きない（G-6・(A) rename を排した設計の実証）。
+    const names = [
+      '--color-border', // native contract
+      '--color-surface-overlay', // native contract
+      '--color-submitted', // (B) → x-submitted
+      '--color-fg-muted-2', // (A)由来 (B) → x-fg-muted-2
+    ];
+    const r = mapTokenSet(names, 'field');
+    expect(r.conflicts).toEqual([]);
+    expect(r.rejected).toEqual([]);
+  });
+
+  it('draft は fg-muted-2 と hex 同値でも別ターゲット（意味が別＝統合しない）', () => {
+    expect(mapTokenName('--color-draft', 'field')).toBe('--color-x-draft');
+    expect(mapTokenName('--color-fg-muted-2', 'field')).toBe('--color-x-fg-muted-2');
   });
 });
