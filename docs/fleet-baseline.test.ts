@@ -46,11 +46,12 @@ describe('fleet-baseline.json', () => {
     // tokens ^1.1.0: 2026-07-18 publish landed（写像表 v1 payout 分＋codemod ランナー同梱の最低版）。
     // npm latest=1.1.0・dist.shasum e18befd55354be6002b236859746ebcf89399b91（fleet-tooling 実測）。
     expect(baseline.packages['@hideyukimori/nene2-tokens']).toBe('^1.1.0');
-    // standards ^2.0.0: 2026-07-21 publish landed（BREAKING・per-repo registries.jsonc read＋tarball 同梱撤去）。
-    // npm latest=2.0.0・dist.shasum 20e4f3e0c4cbfb508f788fb2053af4d27d9eae04（fleet-tooling 実測）。
-    // BREAKING なので caret でも 1.x は拾わない（意図どおり）。
+    // standards ^2.1.1: 2026-07-22 publish landed（#142 arbitrary-VARIANT 誤検知修正＝FC-1
+    // blessed idiom `data-[tone=x]:` を eslint⑤ が通すパッチ・#143/#145）。
+    // npm latest=2.1.1・dist.shasum e7b2e4e794e79e4ce7f8f5a63a1d464d5346bbc5（hub 実測）。
+    // BREAKING 2.0 系 caret ゆえ 1.x は拾わない（意図どおり）。
     // #57 順序規範（publish→座席充填）どおり、publish 実在確認後にフロアを実在版へ追随。
-    expect(baseline.packages['@hideyukimori/nene2-standards']).toBe('^2.0.0');
+    expect(baseline.packages['@hideyukimori/nene2-standards']).toBe('^2.1.1');
     // i18n ^0.3.0: 2026-07-21 publish landed（runtime translator options＋/react I18nProvider＋
     // renderWithI18n＝runtime 昇格レーン W0b・#137/#138/#139）。npm latest=0.3.0・
     // dist.shasum 8c2e2b08c5e603117e941f99ceed3d696bf08cb6（fleet-tooling 実測）。
