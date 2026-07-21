@@ -291,6 +291,84 @@ const FULLNAME_TABLES: Partial<Record<MappingTableId, Readonly<Record<string, st
   suite: SUITE_TABLE,
 };
 
+/** codemod が発火する wave 文脈（C part-2 #94 §4-1 施主裁定 — font-size は W3 でのみ reject）。 */
+export type ActiveWave = 'W1' | 'W3';
+
+/**
+ * legacy prefix hint 表（C part-2 #94/#125 — hint 付き reject 表 B1）。
+ *
+ * fallback 非経由の silent 受理を止める: `--font-size-body` は先頭 `font` が v4 実在
+ * namespace（font-family）に prefix 一致するため step 6 が `--font-x-size-body` へ x-送りして
+ * **黙って font-family に帰属**させる（#17 が font-size で生存した形・#56-A で禁止）。fallback 除去
+ * （C part-1）では直らない（fallback を通らない）ので、step 6 の**前**（step 5.5）で reject する。
+ *
+ * - **reject であって auto-rename ではない**: 送り先変更は「今黙っているものの起動」＝W1 受入条件
+ *   「現行外観の保存」に反し、機械導出不能で M-1 純度も満たせない（board (C) 施主裁定の線）。
+ * - `activeFrom`: `'now'`=常時 active（非実在 prefix 系は part-1 後の既定が step7 reject＝hint を足す改良）。
+ *   `'W3'`=wave ゲート（font-size は現行 W1 x-送りを維持し W3 で reject — §4-1 施主裁定 案2）。
+ * - **キーは v4 実在 namespace と素な集合**（実在 namespace を B1 に書けない — §5(b) でテスト）。
+ */
+export const LEGACY_PREFIX_HINTS: Readonly<
+  Record<
+    string,
+    { readonly hint: string | null; readonly activeFrom: ActiveWave; readonly note: string }
+  >
+> = {
+  'font-size': {
+    hint: 'text',
+    activeFrom: 'W3',
+    note: 'v4 の家は --text-*。再ホームは語彙裁定（第二波）',
+  },
+  'line-height': {
+    hint: 'leading',
+    activeFrom: 'W1',
+    note: 'part-1 で既に reject — hint を足すだけ',
+  },
+  'letter-spacing': {
+    hint: 'tracking',
+    activeFrom: 'W1',
+    note: '候補（フリート実測では未出現・予防的収載）',
+  },
+  'border-width': {
+    hint: null,
+    activeFrom: 'W1',
+    note: 'v4 に namespace 無し（border 幅は静的 utility）。@theme 外の plain var へ（§4-3(a)）',
+  },
+  z: {
+    hint: null,
+    activeFrom: 'W1',
+    note: 'v4 に namespace 無し（z-index は静的 utility）。@theme 外の plain var へ（§4-3(a)）',
+  },
+};
+
+/** 裸名（先頭 `--` 除去済み）が LEGACY_PREFIX_HINTS のどの prefix に該当するか（longest-first）。 */
+function matchLegacyPrefix(
+  name: string,
+): { prefix: string; entry: (typeof LEGACY_PREFIX_HINTS)[string] } | null {
+  const bare = name.slice(2); // 先頭 `--` を除く
+  const prefixes = Object.keys(LEGACY_PREFIX_HINTS).sort((a, b) => b.length - a.length);
+  for (const prefix of prefixes) {
+    if (bare.startsWith(`${prefix}-`)) return { prefix, entry: LEGACY_PREFIX_HINTS[prefix]! };
+  }
+  return null;
+}
+
+/** B1 reject の reason 文（hint あり=正しい家を示す・hint 無し=plain var へ誘導）。 */
+function legacyPrefixReason(
+  name: string,
+  prefix: string,
+  entry: (typeof LEGACY_PREFIX_HINTS)[string],
+): string {
+  const home = entry.hint
+    ? `正しい家は '--${entry.hint}-*'。`
+    : `v4 に対応 namespace が無い（静的 utility）— @theme 外の plain var へ移す。`;
+  return (
+    `legacy token ${name} — '--${prefix}-*' は v4 では別 namespace に食われる（silent 受理は ` +
+    `#56-A で禁止）。${home}自動改名は W1 外観保存（07-14 裁定）に反するため行わない — ` +
+    `写像表に語彙裁定を追加せよ（C part-2 #94）`
+  );
+}
+
 /**
  * CSS カスタムプロパティ名の写像分類（#24 point5 — 型で contract/rename/passthrough/reject を区別）。
  *
@@ -303,7 +381,11 @@ const FULLNAME_TABLES: Partial<Record<MappingTableId, Readonly<Record<string, st
  *  6. 非契約カテゴリ（typography/radius/spacing 等）→ 機械的 x- 送り。
  *  7. 単一セグメント等の未知名 → reject（fail-closed・写像を発明しない）。
  */
-export function classifyTokenName(name: string, table: MappingTableId = 'common'): TokenMapping {
+export function classifyTokenName(
+  name: string,
+  table: MappingTableId = 'common',
+  opts: { activeWave?: ActiveWave } = {},
+): TokenMapping {
   // 1a. prefix-less 全名表（suite）— #23 原因3 の根本回避（単一セグメント名の NULL 落ち防止）
   const wholeTable = FULLNAME_TABLES[table];
   if (wholeTable) {
@@ -340,6 +422,17 @@ export function classifyTokenName(name: string, table: MappingTableId = 'common'
   // 5. 契約 4 键以外の shadow は x- 送り（--shadow-glow → --shadow-x-glow）
   if (name.startsWith('--shadow-')) {
     return { kind: 'rename', name: `--shadow-x-${name.slice('--shadow-'.length)}` };
+  }
+  // 5.5. legacy prefix hint 表（B1・C part-2 #94/#125）— fallback 非経由の silent 受理を止める。
+  //      step 6（namespace x-送り）の**前**・step 1〜5 の**後**（表に明示エントリがあれば上が勝つ）。
+  //      font-size（activeFrom 'W3'）は既定 W1 では素通り＝現行 x-送り維持・W3 でのみ reject（§4-1 施主裁定）。
+  const legacy = matchLegacyPrefix(name);
+  if (legacy) {
+    const gatedOff = legacy.entry.activeFrom === 'W3' && opts.activeWave !== 'W3';
+    if (!gatedOff) {
+      return { kind: 'reject', reason: legacyPrefixReason(name, legacy.prefix, legacy.entry) };
+    }
+    // gatedOff（font-size @ W1）= 現行挙動維持のため step 6 へ素通り
   }
   // 6. 非契約カテゴリ（typography/radius/spacing 等）は v1 スコープ外 — 機械的 x- 送り
   //    （AM-3 scope 宣言「x- 拡張で書き v2 で契約化を再審」の写像実装 — tokens 技術判断）
@@ -410,13 +503,14 @@ export interface TokenSetResult {
 export function mapTokenSet(
   names: readonly string[],
   table: MappingTableId = 'common',
+  opts: { activeWave?: ActiveWave } = {},
 ): TokenSetResult {
   const renames: { from: string; to: string }[] = [];
   const passthrough: string[] = [];
   const rejected: { from: string; reason: string }[] = [];
   const byTarget = new Map<string, Set<string>>(); // ターゲット名 → それを生む相異なる旧名
   for (const name of names) {
-    const r = classifyTokenName(name, table);
+    const r = classifyTokenName(name, table, opts);
     if (r.kind === 'reject') {
       rejected.push({ from: name, reason: r.reason });
       continue;
