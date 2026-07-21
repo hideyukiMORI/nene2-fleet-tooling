@@ -6,9 +6,11 @@
  * '@hideyukimori/nene2-i18n/testing'` を解決する必要があり、これがその subpath 実体。
  *
  * `expectCatalogParity` は `.`（ルート）からも引き続き出す（非破壊）— どちらの import も解決する。
- * `renderWithI18n`（React テストヘルパ）は `/react`（I18nProvider）依存＝**0.2.0 では未提供**。
- * react subpath 設計後の 0.3.0（W0b）で足す（「無いものを配らない」— I18N-22 の沈黙 fallback を
- * 再生産しないため react は設計してから）。
+ * `renderWithI18n`（React テストヘルパ）は 0.3.0（W0b）で追加＝I18nProvider で包む RTL ヘルパ。
+ * production `/react` を RTL に密結合させないため実体は `render.ts` に置き、ここから re-export する
+ * （RTL / react-dom は optional peer＝このヘルパを使うテスト環境にのみ要る）。
  */
 export { expectCatalogParity } from './parity.js';
 export type { ParityOptions, ParityViolation } from './parity.js';
+export { renderWithI18n } from './render.js';
+export type { RenderWithI18nOptions } from './render.js';
