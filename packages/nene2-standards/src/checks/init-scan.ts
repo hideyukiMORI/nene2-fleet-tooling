@@ -17,6 +17,7 @@ import stylelintPlugins from '../stylelint/plugin.js';
 import { classTokens, layerParamsInclude } from '../stylelint/helpers.js';
 import type {
   ComponentsAllowlistEntry,
+  LintBaselineEntry,
   RegistriesDocument,
   RegistryEntry,
 } from '../registries/schema.js';
@@ -192,9 +193,25 @@ export function ledgersAlreadyInitialized(
   };
 }
 
+/** (rule,file) count-ratchet の1件（#119・AM-14）。frozenCount = 登録凍結値・liveCount = 実測。 */
+export interface LintBaselineDelta {
+  rule: string;
+  file: string;
+  frozenCount: number;
+  liveCount: number;
+}
+
 export interface InitCheckReport {
   unregisteredClasses: string[];
   unregisteredLegacyFiles: string[];
+  /**
+   * baselined (rule,file) で実測 live > frozenCount（**回帰＝FAIL**・AM-14 縮小単調違反）。
+   * stylelint 合成は当該 file で rule を null 化（grandfather）するため、baselined (rule,file) 内の
+   * count 超過は stylelint gate では機械検出できない（判例20 の穴）。この count-ratchet がその一辺を閉じる。
+   */
+  lintBaselineRegressions: LintBaselineDelta[];
+  /** baselined (rule,file) で live < frozenCount（縮小＝歓迎・frozenCount を下げられる advisory・非 FAIL）。 */
+  lintBaselineShrinkable: LintBaselineDelta[];
 }
 
 /** `--check`（読み取り専用再走査）: 台帳との差分を報告する。 */
@@ -218,10 +235,41 @@ export async function initCheck(
       )
       .flatMap((e) => e.classes),
   );
+  // (rule,file) count-ratchet（#119・AM-14 縮小単調検査器の実装本体）:
+  // 登録 lint-baseline の frozenCount と、いま実測した live count を突き合わせる。
+  // 登録キーを起点に回す（scan.lintBaselines は frozenCount>0 のみ返す＝完全解消は不在＝live 0）。
+  // file 無し（リポ全体 baseline）や未走査座席（frozenCount null）は (rule,file) ratchet の対象外。
+  const frozenByKey = new Map<string, number>();
+  for (const e of registries.entries) {
+    if (e.kind !== 'lint-baseline' || e.repo !== repo) continue;
+    const b = e as LintBaselineEntry;
+    if (b.file === undefined || b.frozenCount === null) continue;
+    frozenByKey.set(`${b.rule}\t${b.file}`, b.frozenCount);
+  }
+  const liveByKey = new Map(scan.lintBaselines.map((l) => [`${l.rule}\t${l.file}`, l.frozenCount]));
+  const lintBaselineRegressions: LintBaselineDelta[] = [];
+  const lintBaselineShrinkable: LintBaselineDelta[] = [];
+  for (const [key, frozen] of frozenByKey) {
+    const [rule = '', file = ''] = key.split('\t');
+    const live = liveByKey.get(key) ?? 0; // 不在 = 完全解消（live 0）
+    if (live > frozen)
+      lintBaselineRegressions.push({ rule, file, frozenCount: frozen, liveCount: live });
+    else if (live < frozen)
+      lintBaselineShrinkable.push({ rule, file, frozenCount: frozen, liveCount: live });
+  }
+  lintBaselineRegressions.sort(
+    (a, b) => a.rule.localeCompare(b.rule) || a.file.localeCompare(b.file),
+  );
+  lintBaselineShrinkable.sort(
+    (a, b) => a.rule.localeCompare(b.rule) || a.file.localeCompare(b.file),
+  );
+
   return {
     unregisteredClasses: scan.allowedClasses.filter((c) => !registeredClasses.has(c)),
     unregisteredLegacyFiles: scan.legacyManifest
       .map((e) => e.path)
       .filter((p) => !manifestPaths.has(p)),
+    lintBaselineRegressions,
+    lintBaselineShrinkable,
   };
 }
