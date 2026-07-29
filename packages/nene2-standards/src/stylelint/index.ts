@@ -92,12 +92,29 @@ export default config;
 /** themes override が持つ rule 名（scoped-theme の secondary を焼く先 — #159）。 */
 const THEMES_TOKEN_ONLY = 'nene2/themes-token-only';
 
+/**
+ * 合成 config に、**意図的に落とした登録**を残すための非標準キー（#159 受入条件・hub 裁定 2026-07-29）。
+ *
+ * 不可視のスキップは「なぜ widget が無いのか」の調査コストとして後で必ず請求される。合成の入力
+ * （registries）と出力（config）を突き合わせた人が、差分の理由を**生成物だけで**読めるようにする。
+ * `stylelint --print-config` に現れるので、実運用の確認経路がそのまま診断経路になる。
+ *
+ * stylelint は未知のトップレベルキーを無視する（2026-07-29 実測: 警告も invalidOptionWarnings も出ない）。
+ */
+export const EXCLUDED_KEY = 'nene2ExcludedFromSynthesis';
+
+/** 合成結果（stylelint Config ＋ 意図的スキップの記録）。 */
+export type SynthesizedConfig = Config & { [EXCLUDED_KEY]?: string[] };
+
 const KNOWN_STYLELINT_RULES: ReadonlySet<string> = new Set<string>([
   ...Object.keys(config.rules ?? {}),
   ...(config.overrides ?? []).flatMap((o) => Object.keys(o.rules ?? {})),
 ]);
 
-export function stylelintConfigFromRegistries(doc: RegistriesDocument, repo: string): Config {
+export function stylelintConfigFromRegistries(
+  doc: RegistriesDocument,
+  repo: string,
+): SynthesizedConfig {
   const forRepo = doc.entries.filter((e) => e.repo === repo);
   const classes = forRepo
     .filter((e): e is ComponentsAllowlistEntry => e.kind === 'components-allowlist')
@@ -123,11 +140,18 @@ export function stylelintConfigFromRegistries(doc: RegistriesDocument, repo: str
   //   （現物は `"(widget mount root)"` というプレースホルダ）。themes/*.css の話ではないので
   //   **意図的にスキップする**。lint-baseline の loud error（語彙内 rule に file 無し）と違い、
   //   widget エントリは「stylelint 合成にとって無関係」であって「壊れた登録」ではないため throw しない
-  //   （throw にすると corpus / concierge が config 生成できなくなる）。この意図は下のテストが固定する。
-  const scopeSelectors = forRepo
-    .filter((e): e is ScopedThemeEntry => e.kind === 'scoped-theme')
-    .filter((e) => e.variant === 'local')
-    .map((e) => e.selector);
+  //   （throw にすると corpus / concierge が config 生成できなくなる）。ただし**黙って落とさない**:
+  //   スキップした事実と理由を `EXCLUDED_KEY` で生成物に残す（#92「表に無いものを黙って処理しない」
+  //   との整合 — 明示分岐＋生成物での可視化＋テストで意図を固定する三点で担保）。
+  const scopedThemes = forRepo.filter((e): e is ScopedThemeEntry => e.kind === 'scoped-theme');
+  const scopeSelectors = scopedThemes.filter((e) => e.variant === 'local').map((e) => e.selector);
+  const excluded = scopedThemes
+    .filter((e) => e.variant !== 'local')
+    .map(
+      (e) =>
+        `scoped-theme "${e.id}" (variant=${e.variant}): マウントルート要素の記述でセレクタではないため ` +
+        `${THEMES_TOKEN_ONLY} の additionalScopeSelectors に焼かない（by design — #159）`,
+    );
 
   // base の override 要素は**複製して差し替える**（in-place 変更 MUST NOT）。`config` はモジュール
   // レベルの単一インスタンスであり、要素を直接書き換えると以後の全呼び出しへ漏れる（呼び出し順
@@ -158,7 +182,10 @@ export function stylelintConfigFromRegistries(doc: RegistriesDocument, repo: str
     overrides.push({ files: [b.file], rules: { [b.rule]: null } });
   }
 
-  return { ...config, rules, overrides };
+  // 意図的スキップは**あったときだけ**生成物へ残す（無いときにキーを生やすと差分がノイズになる）。
+  return excluded.length > 0
+    ? { ...config, rules, overrides, [EXCLUDED_KEY]: excluded }
+    : { ...config, rules, overrides };
 }
 
 /**
@@ -176,7 +203,10 @@ export function stylelintConfigFromRegistries(doc: RegistriesDocument, repo: str
  * - 読んだ registry に**別 repo のエントリが混じる → loud error**（取り違え検出 — 別リポの
  *   registries.jsonc を偶然拾う事故を静かに通さない。B1 追加受入条件）。
  */
-export function stylelintConfigFor(repo: string, opts?: { registriesPath?: string }): Config {
+export function stylelintConfigFor(
+  repo: string,
+  opts?: { registriesPath?: string },
+): SynthesizedConfig {
   const registriesPath = opts?.registriesPath ?? path.resolve(process.cwd(), 'registries.jsonc');
   if (!existsSync(registriesPath)) {
     throw new Error(

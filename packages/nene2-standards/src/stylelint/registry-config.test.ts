@@ -15,7 +15,11 @@ import {
   REGISTRIES_SCHEMA_ID,
   type RegistriesDocument,
 } from '../registries/schema.js';
-import config, { stylelintConfigFor, stylelintConfigFromRegistries } from './index.js';
+import config, {
+  EXCLUDED_KEY,
+  stylelintConfigFor,
+  stylelintConfigFromRegistries,
+} from './index.js';
 
 /** 中央 source fleet.jsonc（リポ内・tarball 非同梱）を repo でスライスした per-repo registry を temp に書く。 */
 const centralSource = readFileSync(
@@ -158,6 +162,47 @@ describe('stylelintConfigFromRegistries — 台帳由来 secondary の合成', (
       (o) => o.rules?.['nene2/themes-token-only'] !== undefined,
     );
     expect(themes[0]?.rules?.['nene2/themes-token-only']).toBe(true);
+  });
+
+  it('🔴 スキップは生成物から見える: widget の除外理由が config に残る（#159 hub 受入条件）', () => {
+    const r = stylelintConfigFromRegistries(
+      docOf([
+        {
+          kind: 'scoped-theme',
+          id: 'corpus-widget-scoped-theme',
+          repo: 'nene-corpus',
+          variant: 'widget',
+          selector: '(widget mount root)',
+          reasonRef: 'council:minutes#R2-6-widget-scope',
+        },
+      ]),
+      'nene-corpus',
+    );
+    const excluded = r[EXCLUDED_KEY];
+    expect(excluded).toHaveLength(1);
+    // 「どのエントリが・なぜ」落ちたかを生成物だけで読めること（半年後の調査コストを作らない）
+    expect(excluded?.[0]).toContain('corpus-widget-scoped-theme');
+    expect(excluded?.[0]).toContain('variant=widget');
+    expect(excluded?.[0]).toContain('by design');
+  });
+
+  it('スキップが無いときは診断キーを生やさない（無変更 config に差分ノイズを作らない）', () => {
+    const noEntries = stylelintConfigFromRegistries(docOf([]), 'nene-payout');
+    expect(EXCLUDED_KEY in noEntries).toBe(false);
+    const localOnly = stylelintConfigFromRegistries(
+      docOf([
+        {
+          kind: 'scoped-theme',
+          id: 'r',
+          repo: 'nene-records',
+          variant: 'local',
+          selector: '.nene-public[data-theme]',
+          reasonRef: 'r',
+        },
+      ]),
+      'nene-records',
+    );
+    expect(EXCLUDED_KEY in localOnly).toBe(false);
   });
 
   it('local と widget の混在: local だけ焼く（複数 local はソート済み）', () => {
