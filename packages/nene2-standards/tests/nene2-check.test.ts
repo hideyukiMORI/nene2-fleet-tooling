@@ -144,6 +144,32 @@ describe('gate-integrity（05 §5.2 #15 — 実効 severity / オプション欠
     }
   }, 60_000);
 
+  it('🔴 偽陽性を出さない: canonical が off のセルは、製品にルールが無くても緩和ではない（#178）', async () => {
+    // canonical は `src/shared/api/client.ts` の no-restricted-globals / no-restricted-imports を
+    // **severity 0（off）**で持つ（canonicalSeverityTable 実測）。製品側にそのルールが「無い」のも
+    // 実効挙動は同じ＝走らない。不在を -1 に落として 0 と比較すると緩和と誤検出する
+    // （origin 素振り実測: `no-restricted-globals: 実効 severity -1 < canonical 0` が red に混ざった）。
+    const productWithoutRule = composedConfig().map((block) => {
+      if (!block.rules) return block;
+      const rules = { ...block.rules };
+      delete rules['no-restricted-globals'];
+      delete rules['no-restricted-imports'];
+      return { ...block, rules };
+    });
+    const result = await checkGateIntegrity({
+      cwd: probeApp,
+      productConfigOverride: productWithoutRule,
+    });
+    // canonical が off の座席（client.ts）については、緩和が1件も出ないこと
+    const offSeatNoise =
+      result.state === 'red'
+        ? result.details.filter(
+            (d) => d.startsWith('src/shared/api/client.ts /') && d.includes('緩和'),
+          )
+        : [];
+    expect(offSeatNoise).toEqual([]);
+  }, 60_000);
+
   it('fail-closed: eslint.config.js 不在 = unknown(not-installed)', async () => {
     const result = await checkGateIntegrity({ cwd: checkApp });
     expect(result.state).toBe('unknown');

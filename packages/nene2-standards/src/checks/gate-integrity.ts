@@ -151,8 +151,12 @@ export async function checkGateIntegrity(options: GateIntegrityOptions): Promise
     const canon = canonTable[i];
     const prod = productTable[i];
     if (!canon || !prod) continue;
-    const sevCanon = canon.severity ?? -1;
-    const sevProd = prod.severity ?? -1;
+    // ルール不在（severity null）と off（0）は**同じ実効挙動**（そのルールは走らない）。
+    // 不在を -1 に落とすと「canonical が off・製品が不在」を緩和と誤検出する（#178 実測: origin の
+    // `no-restricted-globals: 実効 -1 < canonical 0`）。緩和とは「canonical が走らせるものを
+    // 製品が走らせない/弱める」ことなので、走らない同士の比較は差ではない。
+    const sevCanon = canon.severity ?? 0;
+    const sevProd = prod.severity ?? 0;
     // 緩和（canonical より弱い severity）= FAIL。強化は oracle 正本（O-5）に反し得るが
     // gate-integrity の管轄は「差異登録なき緩和」— 強化の是非は check:tw-oracle 側。
     if (sevProd < sevCanon) {
