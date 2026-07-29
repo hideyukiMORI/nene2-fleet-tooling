@@ -17,6 +17,7 @@ import stylelintPlugins from '../stylelint/plugin.js';
 import { classTokens, layerParamsInclude } from '../stylelint/helpers.js';
 import type {
   ComponentsAllowlistEntry,
+  LegacyManifestEntry,
   LintBaselineEntry,
   RegistriesDocument,
   RegistryEntry,
@@ -212,6 +213,25 @@ export interface InitCheckReport {
   lintBaselineRegressions: LintBaselineDelta[];
   /** baselined (rule,file) で live < frozenCount（縮小＝歓迎・frozenCount を下げられる advisory・非 FAIL）。 */
   lintBaselineShrinkable: LintBaselineDelta[];
+  /**
+   * legacy-manifest の size-ratchet 超過（**回帰**・AM-14 縮小単調違反・#176）。
+   * 登録 cap（maxLines / maxBytes）を実測が超えた分。lint-baseline の count-ratchet と同じ役割を
+   * legacy CSS の量に対して負う。**行数は必ず `formattedLineCount`（pinned prettier 整形後・空行除外）
+   * で測る** — 登録時と同じ尺度でなければ比較が意味を持たない（#176 実測: raw `wc -l` で登録された
+   * cap が混在していた）。
+   */
+  legacyManifestRegressions: LegacyManifestDelta[];
+  /** cap 未満（縮小＝歓迎・cap を下げられる advisory・非 FAIL）。 */
+  legacyManifestShrinkable: LegacyManifestDelta[];
+}
+
+/** legacy-manifest size-ratchet の1件（#176）。cap = 登録凍結値・live = 実測。 */
+export interface LegacyManifestDelta {
+  path: string;
+  capLines: number;
+  liveLines: number;
+  capBytes: number;
+  liveBytes: number;
 }
 
 /** `--check`（読み取り専用再走査）: 台帳との差分を報告する。 */
@@ -264,6 +284,37 @@ export async function initCheck(
     (a, b) => a.rule.localeCompare(b.rule) || a.file.localeCompare(b.file),
   );
 
+  // legacy-manifest size-ratchet（#176）: 登録 cap と実測を突き合わせる。
+  // initScan は各ファイルの maxLines / maxBytes を実測しているが、従来は `.path` だけ取り出して
+  // 集合差分に使い、**測った値を比較せずに捨てていた**（lint-baseline に count-ratchet があるのと
+  // 非対称だった）。deal 実測では cap を 20倍超過しても init --check が緑になっていた。
+  const capByPath = new Map<string, { lines: number; bytes: number }>();
+  for (const e of registries.entries) {
+    if (e.kind !== 'legacy-manifest' || e.repo !== repo) continue;
+    const m = e as LegacyManifestEntry;
+    capByPath.set(m.path, { lines: m.maxLines, bytes: m.maxBytes });
+  }
+  const legacyManifestRegressions: LegacyManifestDelta[] = [];
+  const legacyManifestShrinkable: LegacyManifestDelta[] = [];
+  for (const live of scan.legacyManifest) {
+    const cap = capByPath.get(live.path);
+    if (cap === undefined) continue; // 未登録ファイルは unregisteredLegacyFiles の管轄
+    const delta: LegacyManifestDelta = {
+      path: live.path,
+      capLines: cap.lines,
+      liveLines: live.maxLines,
+      capBytes: cap.bytes,
+      liveBytes: live.maxBytes,
+    };
+    // どちらか一方でも超えたら回帰（行だけ・バイトだけ増える改変を両方とも捕まえる）
+    if (live.maxLines > cap.lines || live.maxBytes > cap.bytes)
+      legacyManifestRegressions.push(delta);
+    else if (live.maxLines < cap.lines || live.maxBytes < cap.bytes)
+      legacyManifestShrinkable.push(delta);
+  }
+  legacyManifestRegressions.sort((a, b) => a.path.localeCompare(b.path));
+  legacyManifestShrinkable.sort((a, b) => a.path.localeCompare(b.path));
+
   return {
     unregisteredClasses: scan.allowedClasses.filter((c) => !registeredClasses.has(c)),
     unregisteredLegacyFiles: scan.legacyManifest
@@ -271,5 +322,7 @@ export async function initCheck(
       .filter((p) => !manifestPaths.has(p)),
     lintBaselineRegressions,
     lintBaselineShrinkable,
+    legacyManifestRegressions,
+    legacyManifestShrinkable,
   };
 }
