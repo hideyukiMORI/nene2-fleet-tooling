@@ -115,7 +115,7 @@ describe('gate-integrity（05 §5.2 #15 — 実効 severity / オプション欠
     expect(result).toEqual({ state: 'green' });
   }, 60_000);
 
-  it('故意 fail: 後置き off（差異登録なき緩和）は red', async () => {
+  it('故意 fail: 後置き off（canonical より弱い実効）は red', async () => {
     const relaxed: Linter.Config[] = [
       ...composedConfig(),
       { files: ['src/**/*.tsx'], rules: { 'no-restricted-syntax': 'off' } },
@@ -123,7 +123,10 @@ describe('gate-integrity（05 §5.2 #15 — 実効 severity / オプション欠
     const result = await checkGateIntegrity({ cwd: probeApp, productConfigOverride: relaxed });
     expect(result.state).toBe('red');
     if (result.state === 'red') {
-      expect(result.details.some((d) => d.includes('緩和'))).toBe(true);
+      expect(result.details.some((d) => d.includes('canonical より弱い実効 severity'))).toBe(true);
+      // 🔴 #184: 「差異登録すれば消える」と誤読させない（gate-integrity は registries を読まない）
+      expect(result.details.some((d) => d.includes('差異登録では消えない'))).toBe(true);
+      expect(result.details.some((d) => d.includes('差異登録なき緩和'))).toBe(false);
     }
   }, 60_000);
 

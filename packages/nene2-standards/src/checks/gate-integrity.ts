@@ -1,6 +1,12 @@
 /**
  * gate-integrity 検査（規約 05 §5.2 #15・会議R4 AM-11(iii)決定）:
- * 実効 severity / effective ignores を canonical 表と照合し、差異登録なき緩和を FAIL にする。
+ * 実効 severity / effective ignores を canonical 表と照合し、canonical より弱い実効を FAIL にする。
+ *
+ * 🔴 本検査器は registries を**読まない**（#184・hub 裁定 2026-07-30 で (B) 採用）。責務は
+ * 「配布 config が実効しているか」の機械照合であり、緩和の**正当性判断は別レイヤー**が持つ。
+ * 差異登録で個別に red を消す運用は、リポが自分を免罪する経路になり G-7 と衝突する。
+ * 正当な例外は red を消すのではなく**注記で運ぶ**（緑は純粋なまま・red は機械的真実のまま・
+ * 判断は annotation が持つ — #180 の「負債は隠さない・止めるかは別」と同じ形）。
  *
  * canonical 表は配布 config（composedConfig）自身から機械導出する — 手書き二重管理 MUST NOT
  * （G-7 と同旨: 正本は配布物）。照合は ESLint.calculateConfigForFile の実効値
@@ -154,10 +160,11 @@ export async function checkGateIntegrity(options: GateIntegrityOptions): Promise
     const sevCanon = canon.severity ?? -1;
     const sevProd = prod.severity ?? -1;
     // 緩和（canonical より弱い severity）= FAIL。強化は oracle 正本（O-5）に反し得るが
-    // gate-integrity の管轄は「差異登録なき緩和」— 強化の是非は check:tw-oracle 側。
+    // gate-integrity の管轄は「canonical より弱い実効」— 強化の是非は check:tw-oracle 側。
     if (sevProd < sevCanon) {
       details.push(
-        `${canon.path} / ${canon.rule}: 実効 severity ${sevProd} < canonical ${sevCanon}（差異登録なき緩和）`,
+        `${canon.path} / ${canon.rule}: 実効 severity ${sevProd} < canonical ${sevCanon}` +
+          `（canonical より弱い実効 severity — 差異登録では消えない。正当な例外は注記で運ぶ・#184）`,
       );
     }
     // 後勝ち全置換によるオプション欠落（severity 照合では検出できない — §2.2 冒頭）
