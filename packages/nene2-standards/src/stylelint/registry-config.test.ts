@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import stylelint from 'stylelint';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
@@ -114,6 +115,119 @@ describe('stylelintConfigFromRegistries — 台帳由来 secondary の合成', (
     expect(r.rules?.['nene2/layer-components-allowlist']).toBe(true);
   });
 
+  it('records 型（scoped-theme variant=local）: themes override に additionalScopeSelectors を焼く（#159）', () => {
+    const r = stylelintConfigFromRegistries(
+      docOf([
+        {
+          kind: 'scoped-theme',
+          id: 'records-public-scoped-theme',
+          repo: 'nene-records',
+          variant: 'local',
+          selector: '.nene-public[data-theme]',
+          reasonRef: 'council:minutes#R2-6-records-local-scope',
+        },
+      ]),
+      'nene-records',
+    );
+    const themes = (r.overrides ?? []).filter(
+      (o) => o.rules?.['nene2/themes-token-only'] !== undefined,
+    );
+    expect(themes).toHaveLength(1);
+    expect(themes[0]?.rules?.['nene2/themes-token-only']).toEqual([
+      true,
+      { additionalScopeSelectors: ['.nene-public[data-theme]'] },
+    ]);
+  });
+
+  it('🔴 scoped-theme variant=widget は焼かない（意図的スキップ・throw もしない — corpus/concierge 型）', () => {
+    const widgetEntries = docOf([
+      {
+        kind: 'scoped-theme',
+        id: 'corpus-widget-scoped-theme',
+        repo: 'nene-corpus',
+        variant: 'widget',
+        // 現物はセレクタでなくマウントルート要素のプレースホルダ（焼くと無意味・有害）
+        selector: '(widget mount root)',
+        reasonRef: 'council:minutes#R2-6-widget-scope',
+      },
+    ]);
+    // config 生成自体は成功する（widget 艦を壊さない）
+    const r = stylelintConfigFromRegistries(widgetEntries, 'nene-corpus');
+    // themes override は base のまま＝secondary 無し（`true` 単体）
+    const themes = (r.overrides ?? []).filter(
+      (o) => o.rules?.['nene2/themes-token-only'] !== undefined,
+    );
+    expect(themes[0]?.rules?.['nene2/themes-token-only']).toBe(true);
+  });
+
+  it('local と widget の混在: local だけ焼く（複数 local はソート済み）', () => {
+    const r = stylelintConfigFromRegistries(
+      docOf([
+        {
+          kind: 'scoped-theme',
+          id: 'x-widget',
+          repo: 'nene-x',
+          variant: 'widget',
+          selector: '(widget mount root)',
+          reasonRef: 'r',
+        },
+        {
+          kind: 'scoped-theme',
+          id: 'x-local-b',
+          repo: 'nene-x',
+          variant: 'local',
+          selector: "[data-design='calm'][data-theme='dark']",
+          reasonRef: 'r',
+        },
+        {
+          kind: 'scoped-theme',
+          id: 'x-local-a',
+          repo: 'nene-x',
+          variant: 'local',
+          selector: '.nene-public[data-theme]',
+          reasonRef: 'r',
+        },
+      ]),
+      'nene-x',
+    );
+    const themes = (r.overrides ?? []).find(
+      (o) => o.rules?.['nene2/themes-token-only'] !== undefined,
+    );
+    expect(themes?.rules?.['nene2/themes-token-only']).toEqual([
+      true,
+      {
+        additionalScopeSelectors: [
+          '.nene-public[data-theme]',
+          "[data-design='calm'][data-theme='dark']",
+        ],
+      },
+    ]);
+  });
+
+  it('🔴 base config を汚染しない（module レベル config の override を in-place で書き換えない）', () => {
+    const before = JSON.stringify(config.overrides);
+    stylelintConfigFromRegistries(
+      docOf([
+        {
+          kind: 'scoped-theme',
+          id: 'r',
+          repo: 'nene-records',
+          variant: 'local',
+          selector: '.nene-public[data-theme]',
+          reasonRef: 'r',
+        },
+      ]),
+      'nene-records',
+    );
+    // 合成後も base は secondary 無しのまま（次の呼び出しへ漏れない）
+    expect(JSON.stringify(config.overrides)).toBe(before);
+    const fresh = stylelintConfigFromRegistries(docOf([]), 'nene-records');
+    const themes = (fresh.overrides ?? []).find(
+      (o) => o.rules?.['nene2/themes-token-only'] !== undefined,
+    );
+    expect(themes?.rules?.['nene2/themes-token-only']).toBe(true);
+  });
+
   it('base config の他ルール・overrides は保持する（rules を破壊しない）', () => {
     const r = stylelintConfigFromRegistries(
       docOf([{ kind: 'components-allowlist', id: 'x', repo: 'nene-vault', classes: ['a'] }]),
@@ -121,6 +235,77 @@ describe('stylelintConfigFromRegistries — 台帳由来 secondary の合成', (
     );
     expect(r.rules?.['color-no-hex']).toBe(true);
     expect(r.overrides).toEqual(config.overrides);
+  });
+});
+
+/**
+ * 合成 config の「形」だけでなく **lint の結果が変わること** を実 stylelint で固定する（#159）。
+ * config オブジェクトの shape だけを見るテストは、rule 側が secondary を無視していても緑になる
+ * （＝空虚合格）。#159 の本体はまさに「供給経路が塞がっていて登録が効かない」だったので、
+ * ここは実行結果で押さえる。
+ */
+describe('🔴 scoped-theme の供給が lint 挙動に届く（実 stylelint・#159）', () => {
+  const themeCss = (selector: string) => `${selector} {\n  --x-color-bg: oklch(0.2 0 0);\n}\n`;
+  const localEntry = (repo: string, selector: string): RegistriesDocument['entries'][number] => ({
+    kind: 'scoped-theme',
+    id: `${repo}-local`,
+    repo,
+    variant: 'local',
+    selector,
+    reasonRef: 'council:minutes#R2-6-records-local-scope',
+  });
+
+  async function themeWarnings(
+    doc: RegistriesDocument,
+    repo: string,
+    selector: string,
+  ): Promise<string[]> {
+    const synthesized = stylelintConfigFromRegistries(doc, repo);
+    const { results } = await stylelint.lint({
+      code: themeCss(selector),
+      config: synthesized,
+      // themes override（`!(*.components).css`）に載る位置で検査する
+      codeFilename: 'src/shared/ui/theme/themes/default.css',
+    });
+    return results[0].warnings
+      .filter((w) => w.rule === 'nene2/themes-token-only')
+      .map((w) => w.text);
+  }
+
+  it('登録前（scoped-theme 無し）: 局所スコープは badScope で落ちる＝#159 の現象', async () => {
+    const warnings = await themeWarnings(docOf([]), 'nene-records', '.nene-public[data-theme]');
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatch(/登録スコープセレクタのみ/);
+  });
+
+  it('登録後（variant=local）: 同じ CSS が通る＝台帳登録が効く', async () => {
+    const warnings = await themeWarnings(
+      docOf([localEntry('nene-records', '.nene-public[data-theme]')]),
+      'nene-records',
+      '.nene-public[data-theme]',
+    );
+    expect(warnings).toEqual([]);
+  });
+
+  it('複合セレクタ（deal C5 型 [data-design][data-theme]）も登録で通る', async () => {
+    const selector = "[data-design='calm'][data-theme='dark']";
+    expect(await themeWarnings(docOf([]), 'nene-deal', selector)).toHaveLength(1);
+    expect(
+      await themeWarnings(docOf([localEntry('nene-deal', selector)]), 'nene-deal', selector),
+    ).toEqual([]);
+  });
+
+  it('登録は完全一致（別セレクタを登録しても通らない＝借用できない）', async () => {
+    const warnings = await themeWarnings(
+      docOf([localEntry('nene-deal', '.nene-public[data-theme]')]),
+      'nene-deal',
+      "[data-design='calm'][data-theme='dark']",
+    );
+    expect(warnings).toHaveLength(1);
+  });
+
+  it("既定パターン（[data-theme='x'] 単体）は登録に関係なく通る（回帰）", async () => {
+    expect(await themeWarnings(docOf([]), 'nene-records', "[data-theme='dark']")).toEqual([]);
   });
 });
 

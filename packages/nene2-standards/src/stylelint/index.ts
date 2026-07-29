@@ -19,6 +19,7 @@ import {
   type LegacyManifestEntry,
   type LintBaselineEntry,
   type RegistriesDocument,
+  type ScopedThemeEntry,
 } from '../registries/schema.js';
 
 const config: Config = {
@@ -77,7 +78,8 @@ export default config;
  * で持つ。本関数は**中央 registries の当該 repo エントリ**から実効値を焼く:
  * - components-allowlist（vault/invoice 型）→ `allowedClasses`
  * - legacy-manifest（deal 型）→ `files`
- * どちらのエントリも持たない repo（payout 型・未登録）は base のまま＝fail-closed（G-6）。
+ * - scoped-theme（records 型・variant=local）→ themes override の `additionalScopeSelectors`（#159）
+ * どのエントリも持たない repo（payout 型・未登録）は base のまま＝fail-closed（G-6）。
  *
  * **供給元は中央 registries のみ**（被検査者=product が書けるファイルは読まない）。これにより
  * 「合成そのものを被検査者の手から取り上げる」＝G-7 を API で強制する（手書き列挙 MUST NOT）。
@@ -87,6 +89,9 @@ export default config;
  * lint-baseline の rule がこの語彙内なら「合成が意味を理解できる rule」＝(rule,file) grandfather の対象。
  * 語彙外（eslint 系 noHardcodedJapanese 等）は stylelint config には無関係＝素通し。
  */
+/** themes override が持つ rule 名（scoped-theme の secondary を焼く先 — #159）。 */
+const THEMES_TOKEN_ONLY = 'nene2/themes-token-only';
+
 const KNOWN_STYLELINT_RULES: ReadonlySet<string> = new Set<string>([
   ...Object.keys(config.rules ?? {}),
   ...(config.overrides ?? []).flatMap((o) => Object.keys(o.rules ?? {})),
@@ -108,10 +113,39 @@ export function stylelintConfigFromRegistries(doc: RegistriesDocument, repo: str
     rules['nene2/layer-legacy-manifest-only'] = [true, { files: [...files].sort() }];
   }
 
+  // scoped-theme を themes override の additionalScopeSelectors へ焼く（#159 — #65 根治の取りこぼし）。
+  //
+  // variant による扱い分け MUST:
+  // - `local`（records `.nene-public[data-theme]` 型）= themes/*.css のトップレベルに現れる実セレクタ。
+  //   themes-token-only の既定パターン `[data-theme='x']` 単体に合致しないため、**焼かなければ
+  //   台帳に登録しても効かない**（registries 登録が無意味になり、各艦が手書き列挙へ逃げる＝G-7 違反）。
+  // - `widget`（corpus / concierge）= マウントルート**要素**の記述であってセレクタ文字列ではない
+  //   （現物は `"(widget mount root)"` というプレースホルダ）。themes/*.css の話ではないので
+  //   **意図的にスキップする**。lint-baseline の loud error（語彙内 rule に file 無し）と違い、
+  //   widget エントリは「stylelint 合成にとって無関係」であって「壊れた登録」ではないため throw しない
+  //   （throw にすると corpus / concierge が config 生成できなくなる）。この意図は下のテストが固定する。
+  const scopeSelectors = forRepo
+    .filter((e): e is ScopedThemeEntry => e.kind === 'scoped-theme')
+    .filter((e) => e.variant === 'local')
+    .map((e) => e.selector);
+
+  // base の override 要素は**複製して差し替える**（in-place 変更 MUST NOT）。`config` はモジュール
+  // レベルの単一インスタンスであり、要素を直接書き換えると以後の全呼び出しへ漏れる（呼び出し順
+  // 依存の汚染）。
+  const overrides = (config.overrides ?? []).map((o) => {
+    if (scopeSelectors.length === 0) return o;
+    if (o.rules?.[THEMES_TOKEN_ONLY] === undefined) return o;
+    return {
+      ...o,
+      rules: {
+        ...o.rules,
+        [THEMES_TOKEN_ONLY]: [true, { additionalScopeSelectors: [...scopeSelectors].sort() }],
+      },
+    };
+  });
   // (rule,file) lint-baseline を per-file grandfather の override として焼く（P2 §2・#101）。
   // 語彙内の rule が file 無しで来たら loud error（黙って未消費の座席にしない — invoice 座席事件 /
   // #92「表に無いものを黙って処理しない」と同族。file 有無 × 語彙内外の4象限を全て明示挙動に）。
-  const overrides = config.overrides ? [...config.overrides] : [];
   const baselines = forRepo.filter((e): e is LintBaselineEntry => e.kind === 'lint-baseline');
   for (const b of baselines) {
     if (!KNOWN_STYLELINT_RULES.has(b.rule)) continue; // 語彙外（eslint 系）は stylelint 合成に無関係＝素通し
