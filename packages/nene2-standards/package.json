@@ -22,7 +22,8 @@
     "./migrations/hooks-to-model": {
       "types": "./dist/migrations/hooks-to-model/index.d.ts",
       "default": "./dist/migrations/hooks-to-model/index.js"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist"
