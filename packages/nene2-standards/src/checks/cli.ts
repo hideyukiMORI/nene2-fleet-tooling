@@ -156,7 +156,33 @@ async function main(): Promise<number> {
             `  advisory（縮小可）: ${s.rule} @ ${s.file} — frozenCount ${s.frozenCount} → 実測 ${s.liveCount}（registry を下げられる）`,
           );
         }
-        return unclassified + regressions > 0 ? 1 : 0;
+        // legacy-manifest size-ratchet（#176）。**超過は常に表示する**（実在の負債を隠さない）が、
+        // exit code への算入は `--enforce-legacy-size` を付けた艦だけ＝段階的 enforce（hub 裁定 2026-07-30:
+        // 各艦の C5/W3 レーン合流時に enforce へ・未合流艦は warn 表示のみ。一斉赤化は drain 計画と
+        // 無関係な艦を止めるだけ）。表示しないのではなく、止めるかどうかだけを艦の進度に合わせる。
+        const sizeRegressions = report.legacyManifestRegressions;
+        const enforceLegacySize = flags.has('enforce-legacy-size');
+        for (const r of sizeRegressions) {
+          const over: string[] = [];
+          if (r.liveLines > r.capLines) over.push(`行 ${r.capLines} → ${r.liveLines}`);
+          if (r.liveBytes > r.capBytes) over.push(`byte ${r.capBytes} → ${r.liveBytes}`);
+          console.error(
+            `  ${enforceLegacySize ? '回帰' : 'warn（未 enforce）'}: legacy ${r.path} — ` +
+              `${over.join(' / ')}（cap 超過・AM-14 縮小単調違反）`,
+          );
+        }
+        for (const s of report.legacyManifestShrinkable) {
+          console.error(
+            `  advisory（縮小可）: legacy ${s.path} — 行 ${s.capLines} → ${s.liveLines} / ` +
+              `byte ${s.capBytes} → ${s.liveBytes}（registry を下げられる）`,
+          );
+        }
+        console.error(
+          `init --check: legacy size 超過 ${sizeRegressions.length} 件` +
+            `（${enforceLegacySize ? 'enforce — FAIL 条件' : 'warn 表示のみ — --enforce-legacy-size で FAIL 化'}・#176）`,
+        );
+        const sizeFail = enforceLegacySize ? sizeRegressions.length : 0;
+        return unclassified + regressions + sizeFail > 0 ? 1 : 0;
       }
       if (!flags.has('scan')) {
         console.error('init は --scan（生成）か --check（読み取り専用再走査）を指定する');

@@ -2,7 +2,7 @@
  * nene2-check（conformance skeleton）— fail-closed（G-6）・5状態ユニオン・gate-integrity・
  * scan-coverage・init --scan の両方向（green＋故意 fail）検査。
  */
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -319,6 +319,95 @@ describe('init --scan（T-3/AM-10 — 走査生成・一度きり・--check 読�
     ]);
     expect(ledgersAlreadyInitialized(withCa, 'nene-x').componentsAllowlist).toBe(true);
     expect(ledgersAlreadyInitialized(EMPTY_REGISTRIES, 'nene-x').componentsAllowlist).toBe(false);
+  });
+
+  // #176 size-ratchet。**陽性対照つき**（hub 受入条件 2026-07-30）: 検査器を足すときは
+  // 「本当に検出できること」を故意 fail で示す。#159→#176 と「登録しても効かない」が2件続いた原因は、
+  // 登録経路のテストはあっても**検出経路の負テストが無かった**こと。
+  describe('legacy-manifest size-ratchet（#176 — cap 超過の検出）', () => {
+    const legacyPath = 'src/legacy-styles.css';
+    const capOf = (maxLines: number, maxBytes: number): ReturnType<typeof registriesWith> =>
+      registriesWith([
+        {
+          kind: 'legacy-manifest',
+          id: 'x-legacy',
+          repo: 'nene-x',
+          path: legacyPath,
+          maxLines,
+          maxBytes,
+        },
+      ]);
+
+    it('🔴 陽性対照: cap を下回る値で登録すると回帰として検出する（従来は緑になっていた）', async () => {
+      const scan = await initScan(initApp);
+      const live = scan.legacyManifest.find((e) => e.path === legacyPath);
+      expect(live).toBeDefined();
+      // 実測より小さい cap＝超過している状態
+      const report = await initCheck(
+        initApp,
+        'nene-x',
+        capOf(live!.maxLines - 1, live!.maxBytes - 1),
+      );
+      expect(report.legacyManifestRegressions).toHaveLength(1);
+      expect(report.legacyManifestRegressions[0]).toMatchObject({
+        path: legacyPath,
+        liveLines: live!.maxLines,
+        liveBytes: live!.maxBytes,
+      });
+    });
+
+    it('行だけ超過・byte だけ超過のどちらも検出する（片側だけ見る実装を許さない）', async () => {
+      const scan = await initScan(initApp);
+      const live = scan.legacyManifest.find((e) => e.path === legacyPath)!;
+      const linesOnly = await initCheck(
+        initApp,
+        'nene-x',
+        capOf(live.maxLines - 1, live.maxBytes + 999),
+      );
+      expect(linesOnly.legacyManifestRegressions).toHaveLength(1);
+      const bytesOnly = await initCheck(
+        initApp,
+        'nene-x',
+        capOf(live.maxLines + 999, live.maxBytes - 1),
+      );
+      expect(bytesOnly.legacyManifestRegressions).toHaveLength(1);
+    });
+
+    it('cap ちょうど = 回帰でない（境界は超過に含めない）', async () => {
+      const scan = await initScan(initApp);
+      const live = scan.legacyManifest.find((e) => e.path === legacyPath)!;
+      const report = await initCheck(initApp, 'nene-x', capOf(live.maxLines, live.maxBytes));
+      expect(report.legacyManifestRegressions).toEqual([]);
+      expect(report.legacyManifestShrinkable).toEqual([]);
+    });
+
+    it('cap を下回っていれば advisory（縮小可）— FAIL ではない', async () => {
+      const scan = await initScan(initApp);
+      const live = scan.legacyManifest.find((e) => e.path === legacyPath)!;
+      const report = await initCheck(
+        initApp,
+        'nene-x',
+        capOf(live.maxLines + 10, live.maxBytes + 10),
+      );
+      expect(report.legacyManifestRegressions).toEqual([]);
+      expect(report.legacyManifestShrinkable).toHaveLength(1);
+    });
+
+    it('未登録ファイルは size-ratchet の対象外（unregisteredLegacyFiles の管轄）', async () => {
+      const report = await initCheck(initApp, 'nene-x', EMPTY_REGISTRIES);
+      expect(report.legacyManifestRegressions).toEqual([]);
+      expect(report.unregisteredLegacyFiles).toEqual([legacyPath]);
+    });
+
+    it('🔴 行数は formattedLineCount で測る（raw wc -l ではない — #176 の単位ズレ）', async () => {
+      const scan = await initScan(initApp);
+      const live = scan.legacyManifest.find((e) => e.path === legacyPath)!;
+      const raw = readFileSync(path.join(initApp, legacyPath), 'utf8');
+      const rawLineCount = raw.split('\n').length;
+      // 実測が raw 行数と一致してしまうと、raw で登録された cap との差が見えなくなる。
+      // 尺度が違うことをテストで固定する（一致する場合はフィクスチャを空行入りに直すこと）。
+      expect(live.maxLines).not.toBe(rawLineCount);
+    });
   });
 
   it('--check は登録済み components-allowlist を差し引いた未分類クラスを報告する（#65 — 全報告でなく差分）', async () => {
