@@ -23,7 +23,13 @@ import { detectRepo } from './detect-repo.js';
 import { gitRefSource, worktreeSource } from './exemplar-source.js';
 import { checkExemplars, renderExemplarsMarkdown, type DocFile } from './exemplars.js';
 import { checkGateIntegrity } from './gate-integrity.js';
-import { initCheck, initScan, initScanEntries, ledgersAlreadyInitialized } from './init-scan.js';
+import {
+  initCheck,
+  initRemeasure,
+  initScan,
+  initScanEntries,
+  ledgersAlreadyInitialized,
+} from './init-scan.js';
 import { REGISTRIES_SCHEMA_ID } from '../registries/schema.js';
 import { resolveInitRegistries, runConformance } from './run.js';
 import {
@@ -184,8 +190,60 @@ async function main(): Promise<number> {
         const sizeFail = enforceLegacySize ? sizeRegressions.length : 0;
         return unclassified + regressions + sizeFail > 0 ? 1 : 0;
       }
+      // --remeasure（#176）: 既存 legacy-manifest の cap **だけ**を実測値へ下げる。
+      // `--scan` は T-3 で既存台帳を拒否し `--check` は読み取り専用なので、drain で縮んだ cap を
+      // 記録し直す正規の経路が無かった（＝手書きするしかなかった）。その経路を埋める。
+      if (flags.has('remeasure')) {
+        const result = await initRemeasure(cwd, repo, registries);
+        // 🔴 lower-only: 超過（＝ratchet の FAIL 対象）や台帳腐敗があれば**何も書かずに中止**。
+        // cap を上げて追認する道具にしない（hub 裁定「cap は実態に合わせて上げない」の機械化）。
+        if (result.refused.length > 0 || result.missing.length > 0) {
+          for (const r of result.refused) {
+            const over: string[] = [];
+            if (r.liveLines > r.capLines) over.push(`行 ${r.capLines} → ${r.liveLines}`);
+            if (r.liveBytes > r.capBytes) over.push(`byte ${r.capBytes} → ${r.liveBytes}`);
+            console.error(
+              `更新拒否: ${r.path} — 実測が cap を超えている（${over.join(' / ')}）。` +
+                `remeasure は**引き下げ専用**（超過は size-ratchet の FAIL 対象 — 先に減らす）`,
+            );
+          }
+          for (const p of result.missing) {
+            console.error(`更新拒否: ${p} — 台帳にあるが実ファイルが無い（台帳腐敗）`);
+          }
+          console.error('中止: 出力を書いていない（部分更新もしない — fail-closed）');
+          return 2;
+        }
+        const out = flags.get('out');
+        if (typeof out === 'string' && existsSync(out)) {
+          console.error(`実行拒否: 出力先 ${out} が既存（上書き MUST NOT）`);
+          return 2;
+        }
+        const payload = JSON.stringify(
+          {
+            schema: REGISTRIES_SCHEMA_ID,
+            generatedBy: 'nene2-check init --remeasure',
+            repo,
+            entries: result.entries,
+          },
+          null,
+          2,
+        );
+        if (typeof out === 'string') writeFileSync(out, payload + '\n');
+        console.log(payload);
+        for (const l of result.lowered) {
+          console.error(
+            `引き下げ: ${l.path} — 行 ${l.capLines} → ${l.liveLines} / byte ${l.capBytes} → ${l.liveBytes}`,
+          );
+        }
+        console.error(
+          `init --remeasure: ${result.lowered.length} 件の cap を実測値へ引き下げ（引き上げは構造的に不可・#176）`,
+        );
+        return 0;
+      }
       if (!flags.has('scan')) {
-        console.error('init は --scan（生成）か --check（読み取り専用再走査）を指定する');
+        console.error(
+          'init は --scan（生成）／--check（読み取り専用再走査）／--remeasure（cap 引き下げ）を指定する',
+        );
         return 2;
       }
       // T-3: 対象台帳が既存なら実行拒否（生成はゲート導入 PR の一度きり）。
