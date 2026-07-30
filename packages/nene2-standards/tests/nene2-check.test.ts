@@ -37,6 +37,8 @@ const checkApp = dir('./fixtures/check-app/');
 const checkAppBad = dir('./fixtures/check-app-bad/');
 const checkAppEmpty = dir('./fixtures/check-app-empty/');
 const initApp = dir('./fixtures/init-app/');
+const gateCrashApp = dir('./fixtures/gate-crash-app/');
+const gateUninstalledApp = dir('./fixtures/gate-uninstalled-app/');
 
 // fleet-tooling#28 の実測形（clear legacy 隔離パイロット: E2E ハーネスの dist-e2e/ が
 // build のたびに生成する css）を模す。build 出力そのものは commit しない（.gitignore に
@@ -141,6 +143,52 @@ describe('gate-integrity（05 §5.2 #15 — 実効 severity / オプション欠
     expect(result.state).toBe('red');
     if (result.state === 'red') {
       expect(result.details.some((d) => d.includes('後勝ち全置換'))).toBe(true);
+    }
+  }, 60_000);
+
+  it('crashed は落ちた側を details に書く（#193・陽性対照 = 武装した未定義プラグイン）', async () => {
+    // ESLint は severity>0 のルールのプラグインを解決できないと config 読み込みを拒否する
+    // （off なら通る＝#189 実測）。フィクスチャはそれを製品 config 側で意図的に踏む。
+    // 2026-07-30 に origin で観測した crashed は再現条件が特定できず（5通りの統制条件で再現せず）、
+    // **次に出たときにどちら側か分からない**ことが調査を止めた。そこを塞ぐ回帰テスト。
+    const result = await checkGateIntegrity({ cwd: gateCrashApp });
+    expect(result.state).toBe('unknown');
+    if (result.state === 'unknown') {
+      expect(result.reason).toBe('crashed');
+      // 落ちた側が名指しされている（分類は crashed のまま = G-6・丸めない）
+      expect(result.details?.some((d) => d.includes('製品 config'))).toBe(true);
+      expect(result.details?.some((d) => d.includes('製品側'))).toBe(true);
+      // 取り違えの禁止: 製品側で落ちたのに canonical 側と書いてはいけない
+      expect(result.details?.some((d) => d.includes('canonical 表の導出'))).toBe(false);
+      // 原因メッセージ自体も残す（切り分けの一次情報）
+      expect(result.details?.some((d) => d.includes('@stylistic'))).toBe(true);
+    }
+  }, 60_000);
+
+  it('適用ファイル数 0 の details に測り直し手順が出る（field 実測の cwd 取り違え）', async () => {
+    // src/** を持たないディレクトリ（= リポ直下から測った形）を渡す。
+    const result = await checkGateIntegrity({ cwd: dir('./fixtures/') });
+    expect(result.state).toBe('unknown');
+    if (result.state === 'unknown') {
+      expect(result.reason).toBe('not-installed');
+      expect(result.details?.some((d) => d.includes('適用ファイル数 0'))).toBe(true);
+      // 「測り方の誤り」と「艦の欠陥」を読み手が切り分けられる情報が入っている
+      expect(result.details?.some((d) => d.includes('測り直す'))).toBe(true);
+      expect(result.details?.some((d) => d.includes('frontend/'))).toBe(true);
+    }
+  }, 60_000);
+
+  it('配布パッケージ未 install は crashed でなく not-installed（#193・field 実測の形）', async () => {
+    // 導入済みの艦でも、測定した checkout で npm install が未実行だとこの形になる。
+    // 「壊れている」ではなく「依存が無い」なので reason を分ける（unknown のままなので
+    // fail-closed は維持＝G-6 に反しない）。
+    const result = await checkGateIntegrity({ cwd: gateUninstalledApp });
+    expect(result.state).toBe('unknown');
+    if (result.state === 'unknown') {
+      expect(result.reason).toBe('not-installed');
+      expect(result.details?.some((d) => d.includes('配布パッケージを解決できない'))).toBe(true);
+      // 測り直しの手順が出ている（次に踏んだ人が止まらないため）
+      expect(result.details?.some((d) => d.includes('npm install'))).toBe(true);
     }
   }, 60_000);
 
