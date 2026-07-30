@@ -4,13 +4,17 @@
 CI は [Trusted Publishing](https://docs.npmjs.com/trusted-publishers/)（OIDC）— 長命 `NPM_TOKEN` は使わない。
 publish の実行は施主（hide）。担当リナは準備と検証まで。
 
+> **版の記載場所**（#152・hub 裁定 2026-07-30）: **README に版を書かない**。
+> 正本は `npm view @hideyukimori/<pkg> version`（公開版）と `fleet-baseline.json`（floor）。
+> publish 後に README を追随させる手順は**不要**（手書き台帳を持たない方針を選んだ＝#152 提案 (ii)）。
+
 ## 対象
 
-| パッケージ                      | 版                                 | 状態                                                                                                                                                                                                                                                                                                                                                                 |
-| ------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@hideyukimori/nene2-tokens`    | ローカル **1.2.0** / npm **1.1.0** | 契約凍結済み（2026-07-14 hide 承認）。**1.0.0・1.0.1・1.1.0 は publish 済み**（1.1.0 = 2026-07-18・#85 束〔npm view 実測〕）。**1.2.0 は未 publish**（#127 準備・下記「1.2.0 節」・minor = C part-2 束: LEGACY_PREFIX_HINTS＋FIELD_TABLE＋§4-4 版乖離吸収） |
+| パッケージ                      | 版                                 | 状態                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@hideyukimori/nene2-tokens`    | ローカル **1.2.0** / npm **1.1.0** | 契約凍結済み（2026-07-14 hide 承認）。**1.0.0・1.0.1・1.1.0 は publish 済み**（1.1.0 = 2026-07-18・#85 束〔npm view 実測〕）。**1.2.0 は未 publish**（#127 準備・下記「1.2.0 節」・minor = C part-2 束: LEGACY_PREFIX_HINTS＋FIELD_TABLE＋§4-4 版乖離吸収）                                                                                              |
 | `@hideyukimori/nene2-standards` | ローカル **2.1.0** / npm **2.0.1** | known-utility warn プレースホルダ等の暫定は README 明記のまま（規約の設計 — O-5/O-6）。**1.0.0・1.0.1・1.1.0・1.2.0・2.0.0・2.0.1 は publish 済み**（2.0.1 = 2026-07-21・patch #116 keyframe 偽陽性修正〔npm view 実測 latest=2.0.1〕）。**2.1.0 は未 publish**（#123 準備・下記「2.1.0 節」・minor = #119 lint-baseline count-ratchet を arm へ届ける） |
-| `@hideyukimori/nene2-i18n`      | ローカル **0.3.0** / npm **0.2.0** | `private` 解除済み（#44 — 施主 hide 2026-07-16 裁定）。**0.1.0・0.2.0 は publish 済み**（0.2.0 = `./testing` subpath・#129／npm view 実測 latest=0.2.0）。**0.3.0 は未 publish**（#137 準備・下記「0.3.0 節」・minor = runtime translator options＋`/react`（I18nProvider）＋`renderWithI18n`）。W0b runtime 昇格レーン（`/format` は別供給・I18N-13） |
+| `@hideyukimori/nene2-i18n`      | ローカル **0.3.0** / npm **0.2.0** | `private` 解除済み（#44 — 施主 hide 2026-07-16 裁定）。**0.1.0・0.2.0 は publish 済み**（0.2.0 = `./testing` subpath・#129／npm view 実測 latest=0.2.0）。**0.3.0 は未 publish**（#137 準備・下記「0.3.0 節」・minor = runtime translator options＋`/react`（I18nProvider）＋`renderWithI18n`）。W0b runtime 昇格レーン（`/format` は別供給・I18N-13）   |
 
 ## publish 束の履歴と現在の待ち
 
@@ -65,8 +69,8 @@ publish 済みコミット（`4438e6a`..#85・5件）— 以下は release note 
 
 release note 明記2点（hub 依頼・正直表記）:
 
-1. **適用済みリポ re-run の idempotence（no-op）保証範囲**〔#90 で実測訂正〕: 保証されるのは (a) themegen `fill` の不動点（**テストで保証** — `themegen.test.ts`「fill is idempotent」）と (b) **契約 namespace の x-送り済みトークン**（`--spacing-x-*`・`--font-weight-x-*` 等 — contract 扱いで不変〔dist 実測〕）。**一般には no-op ではない**: (i) **未知 namespace の x-送り済みトークンは再走で silent 二重送り**（`--line-x-height-body → --line-x-x-height-body`・`--z-x-modal → --z-x-x-modal`〔dist 実測 2026-07-18〕— fallback が namespace を再発明するため。plan に通常 rename として載り誤りとは示されない） (ii) 字面衝突の再入 pair（`gap-x-*` 等）は `reentrantRenames` が plan で**開示**する（既知・#17）。**運用条項: re-run 時は plan を必ず確認し、reentrant または `-x-x-` を含む rename があれば撃たない**。(i) の根治は C part-1（fallback 除去＝loud reject 化・本 publish 後にマージ）。
-2. **dead/unknown-namespace token（`--line-x-height-body` 等）の挙動**: 写像側は未知名を **reject（fail-closed・null → 呼び出し側 error・写像を発明しない）**が実装・テスト済み。**生成側の loud reject（(i)reject＝`tailwindNamespaceOf` regex fallback 除去）は C part-1 で未実装** — 本束に入っているのは #50 の導出までで、(i)reject は C 完了後（原理: loud reject・実装状況を誇称しない）。
+1. **適用済みリポ re-run の idempotence（no-op）保証範囲**〔#90 で実測訂正〕: 保証されるのは (a) themegen `fill` の不動点（**テストで保証** — `themegen.test.ts`「fill is idempotent」）と (b) **契約 namespace の x-送り済みトークン**（`--spacing-x-*`・`--font-weight-x-*` 等 — contract 扱いで不変〔dist 実測〕）。**一般には no-op ではない**: (i) **未知 namespace の x-送り済みトークンは loud reject**（`--line-x-height-body` / `--z-x-modal` とも `kind:'reject'`〔dist 実測 **2026-07-30**〕）。🔴 **2026-07-18 版のこの記述（「silent 二重送り」）は現行実装では誤り**——C part-1 の fallback 除去（#92）が landed し、`tailwindNamespaceOf` は未知 namespace で `null` を返すため step 7 の reject へ落ちる。**silent に壊れるのではなく、撃つ前に止まる**。 (ii) 字面衝突の再入 pair（`gap-x-*` 等）は `reentrantRenames` が plan で**開示**する（既知・#17）。加えて x- 送りの結果が拡張トークン名として不正になる場合も **reject**（#134/#88 — 「自分の検査器が拒否する名前を出さない」）。**運用条項: re-run 時は plan を必ず確認し、reentrant を含む rename があれば撃たない**（`-x-x-` は現行実装では生成されない＝reject 側に落ちる）。
+2. **dead/unknown-namespace token（`--line-x-height-body` 等）の挙動**: 写像側は未知名を **reject（fail-closed・null → 呼び出し側 error・写像を発明しない）**が実装・テスト済み。**生成側の loud reject（(i)reject＝`tailwindNamespaceOf` regex fallback 除去）も実装済み**〔#92 受入確認 2026-07-30 実測〕: `tailwindNamespaceOf` に fallback は無く（未知は `null`）、#92 が挙げた6トークン（`--line-height-body` / `--z-dropdown` / `--z-modal` / `--z-toast` / `--border-width-default` / `--border-width-emphasis`）はすべて **reject**。※2026-07-18 時点の「未実装」記述をここで訂正した（実装状況を誇称しない原則は、**遅れて実装された事実を書き漏らさない**ことも含む）。
 
 ### `@hideyukimori/nene2-tokens` 1.2.0（**minor — C part-2 束**・#127 準備）
 
