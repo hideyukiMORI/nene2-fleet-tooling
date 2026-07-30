@@ -135,15 +135,36 @@ export async function checkGateIntegrity(options: GateIntegrityOptions): Promise
     productEslint = new ESLint({ cwd });
   }
 
+  // crashed はどちら側で落ちたかを details に書く（#193）。両者を1つの try で束ねていたため、
+  // 「製品 config が読めない」と「配布 config 自身が壊れている」が同じ出力になっていた。
+  // 2026-07-30 に origin で観測した crashed は再現条件が特定できず（5通りの統制条件で再現せず・
+  // 未導入 config でも計器は red を返す）、**次に出たときに切り分けられる情報が無かった**ことが
+  // 調査を止めた直接の原因だった。分類は変えない（crashed は crashed のまま = G-6）。
   let productTable: SeverityCell[];
   let canonTable: SeverityCell[];
   try {
-    [productTable, canonTable] = await Promise.all([
-      severityTable(productEslint, cwd),
-      canonicalSeverityTable(cwd),
-    ]);
+    productTable = await severityTable(productEslint, cwd);
   } catch (e) {
-    return { state: 'unknown', reason: 'crashed', details: [(e as Error).message] };
+    return {
+      state: 'unknown',
+      reason: 'crashed',
+      details: [
+        `製品 config の実効 severity 取得で例外（cwd=${cwd}）: ${(e as Error).message}`,
+        '切り分け: 製品側（艦の eslint.config.js とその依存）で落ちている。canonical 側は未評価。',
+      ],
+    };
+  }
+  try {
+    canonTable = await canonicalSeverityTable(cwd);
+  } catch (e) {
+    return {
+      state: 'unknown',
+      reason: 'crashed',
+      details: [
+        `canonical 表の導出で例外（cwd=${cwd}）: ${(e as Error).message}`,
+        '切り分け: 配布 config（composedConfig）側で落ちている。製品 config の読み込みは成功した。',
+      ],
+    };
   }
 
   const details: string[] = [];
