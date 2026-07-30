@@ -63,8 +63,18 @@ export {
   validateConformance,
 } from './checks/conformance.js';
 export type { ConformanceKey, ConformanceVector, KeyState } from './checks/conformance.js';
-export { checkGateIntegrity, canonicalSeverityTable } from './checks/gate-integrity.js';
-export { checkScanCoverage } from './checks/scan-coverage.js';
+export {
+  canonicalSeverityTable,
+  checkGateIntegrity,
+  gateIntegrityScope,
+} from './checks/gate-integrity.js';
+export { detectTailwind, TAILWIND_DEPENDENT_RULES } from './checks/tailwind-presence.js';
+export type { TailwindPresence } from './checks/tailwind-presence.js';
+export {
+  checkScanCoverage,
+  htmlEmbeddedStyle,
+  htmlEmbeddedStyleSources,
+} from './checks/scan-coverage.js';
 export { initScan, initCheck } from './checks/init-scan.js';
 export { runConformance } from './checks/run.js';
 export {

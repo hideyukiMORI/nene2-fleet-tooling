@@ -25,6 +25,24 @@ export const API_FETCH_SYNTAX: readonly SyntaxSelector[] = [
   },
 ];
 
+/**
+ * data-theme の付与／読み取り（会議R2⑥・R5）。**登録テーマモジュール本体は唯一の正当な座席**なので、
+ * restrictions 側でそのファイル集合だけこの群を外す（#130 — コントローラ本体が自分の条文で
+ * 罰されるのは条文と逆）。`STYLING_SYNTAX` には含まれるので、他のファイルでの挙動は変わらない。
+ */
+export const STYLING_DATA_THEME_SYNTAX: readonly SyntaxSelector[] = [
+  {
+    // data-theme 付与はテーマコントローラ1ファイルのみ（会議R2⑥決定）
+    selector: "CallExpression[callee.property.name='setAttribute'][arguments.0.value='data-theme']",
+    message: 'data-theme の JS 付与は登録テーマコントローラのみ（会議R2⑥決定）。',
+  },
+  {
+    // コンポーネント内テーマ分岐禁止（会議R5議題(6) タグ発明で MUST 維持）
+    selector: "CallExpression[callee.property.name='getAttribute'][arguments.0.value='data-theme']",
+    message: '登録テーマモジュール外での data-theme 読み取り MUST NOT（会議R5決定）。',
+  },
+];
+
 /** 05 §2.2.4 styling の7セレクタ（会議R1⑤・R2⑥・R4 AM-5/AM-8/AM-13・R5議題(3)決定）。 */
 export const STYLING_SYNTAX: readonly SyntaxSelector[] = [
   {
@@ -46,16 +64,7 @@ export const STYLING_SYNTAX: readonly SyntaxSelector[] = [
     selector: String.raw`TemplateLiteral > TemplateElement[value.cooked=/(^|\s)(text|bg|border)-$/]`,
     message: '色系クラスの文字列補間（text-${x}）MUST NOT。variant map（*_CLASS 定数）を使う。',
   },
-  {
-    // data-theme 付与はテーマコントローラ1ファイルのみ（会議R2⑥決定）
-    selector: "CallExpression[callee.property.name='setAttribute'][arguments.0.value='data-theme']",
-    message: 'data-theme の JS 付与は登録テーマコントローラのみ（会議R2⑥決定）。',
-  },
-  {
-    // コンポーネント内テーマ分岐禁止（会議R5議題(6) タグ発明で MUST 維持）
-    selector: "CallExpression[callee.property.name='getAttribute'][arguments.0.value='data-theme']",
-    message: '登録テーマモジュール外での data-theme 読み取り MUST NOT（会議R5決定）。',
-  },
+  ...STYLING_DATA_THEME_SYNTAX,
   {
     // ランタイム CSS 変数注入は登録注入器ファイルのみ（会議R4 AM-5決定）
     selector: String.raw`CallExpression[callee.property.name='setProperty'][arguments.0.value=/^--/]`,
@@ -69,6 +78,18 @@ export const STYLING_SYNTAX: readonly SyntaxSelector[] = [
   },
 ];
 
+/**
+ * lang 属性の設定（会議R4 AM-18）。**I18nProvider 実装は唯一の正当な座席**なので、restrictions 側で
+ * そのファイルだけこの群を外す（#118 — provider 本体が自分の条文で罰されるのは条文と逆）。
+ * `I18N_RUNTIME_SYNTAX` には含まれるので、他のファイルでの挙動は変わらない。
+ */
+export const I18N_LANG_SYNTAX: readonly SyntaxSelector[] = [
+  {
+    selector: "AssignmentExpression[left.property.name='lang']",
+    message: 'lang 属性の設定は I18nProvider の scope 同期のみ（会議R4 AM-18決定）。',
+  },
+];
+
 /** 05 §2.2.5 の Intl / lang 系（JP 3ノードは別群 — W0a JP lint PR で追加）。 */
 export const I18N_RUNTIME_SYNTAX: readonly SyntaxSelector[] = [
   {
@@ -79,10 +100,7 @@ export const I18N_RUNTIME_SYNTAX: readonly SyntaxSelector[] = [
     selector: "NewExpression[callee.object.name='Intl']",
     message: '同上。Intl 直呼びは nene2-i18n の format 実装内のみ。',
   },
-  {
-    selector: "AssignmentExpression[left.property.name='lang']",
-    message: 'lang 属性の設定は I18nProvider の scope 同期のみ（会議R4 AM-18決定）。',
-  },
+  ...I18N_LANG_SYNTAX,
 ];
 
 /**
