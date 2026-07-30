@@ -329,3 +329,74 @@ export async function initCheck(
     legacyManifestShrinkable,
   };
 }
+
+/**
+ * `--remeasure`（#176）: **既存 legacy-manifest の cap だけ**を実測値へ更新する。
+ *
+ * 背景: `init --scan` は T-3（ラチェット一周リセット MUST NOT）で既存台帳を拒否し、`init --check` は
+ * 読み取り専用。結果「登録済み cap を実測値へ下げる」正規の経路が無く、drain の各 wave で cap を
+ * 維持するには**手書きするしかなかった**（「cap は scan 経路のみ・手書き禁止」の条文方向と矛盾）。
+ * #159 供給経路／#176 検査経路に続く「下げても記録できない」＝更新経路の欠落を埋める。
+ *
+ * 🔴 **lower-only**: 実測が現 cap を**超えている**エントリがあれば `refused` に入れ、**呼び出し側は
+ * 出力を書かずに中止する**。超過は size-ratchet が FAIL にすべきものであり、cap を上げて追認する
+ * 道具にしてはならない（hub 裁定「cap は実態に合わせて上げない」の機械化）。台帳にあってファイルが
+ * 無いもの（台帳腐敗）も同様に中止条件とする。
+ */
+export interface RemeasureResult {
+  /** 更新後の全エントリ（他 kind は素通し・貼れる正本形）。refused/missing が空のときだけ使う。 */
+  entries: RegistryEntry[];
+  /** cap を下げたもの（実測 < 現 cap）。 */
+  lowered: LegacyManifestDelta[];
+  /** 🔴 実測が現 cap を超えた＝更新拒否（ratchet の FAIL 対象・先に負債を減らすのが筋）。 */
+  refused: LegacyManifestDelta[];
+  /** 台帳にあるが実ファイルが無い（台帳腐敗）。 */
+  missing: string[];
+}
+
+export async function initRemeasure(
+  cwd: string,
+  repo: string,
+  registries: RegistriesDocument,
+): Promise<RemeasureResult> {
+  const scan = await initScan(cwd);
+  const liveByPath = new Map(scan.legacyManifest.map((e) => [e.path, e]));
+  const lowered: LegacyManifestDelta[] = [];
+  const refused: LegacyManifestDelta[] = [];
+  const missing: string[] = [];
+  const entries: RegistryEntry[] = [];
+
+  for (const e of registries.entries) {
+    // 他 repo・他 kind は一切触らない（G-7 隔離＋cap 専用の原則）
+    if (e.kind !== 'legacy-manifest' || e.repo !== repo) {
+      entries.push(e);
+      continue;
+    }
+    const m = e as LegacyManifestEntry;
+    const live = liveByPath.get(m.path);
+    if (live === undefined) {
+      missing.push(m.path);
+      entries.push(e); // 判断は呼び出し側（中止する）。ここで勝手に落とさない
+      continue;
+    }
+    const delta: LegacyManifestDelta = {
+      path: m.path,
+      capLines: m.maxLines,
+      liveLines: live.maxLines,
+      capBytes: m.maxBytes,
+      liveBytes: live.maxBytes,
+    };
+    if (live.maxLines > m.maxLines || live.maxBytes > m.maxBytes) {
+      refused.push(delta);
+      entries.push(e); // 超過分は現 cap を保持（上げない）
+      continue;
+    }
+    if (live.maxLines < m.maxLines || live.maxBytes < m.maxBytes) lowered.push(delta);
+    entries.push({ ...m, maxLines: live.maxLines, maxBytes: live.maxBytes });
+  }
+
+  lowered.sort((a, b) => a.path.localeCompare(b.path));
+  refused.sort((a, b) => a.path.localeCompare(b.path));
+  missing.sort();
+  return { entries, lowered, refused, missing };
+}
