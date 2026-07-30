@@ -108,12 +108,21 @@ export async function checkGateIntegrity(options: GateIntegrityOptions): Promise
   const { cwd, productConfigOverride } = options;
 
   // G-6: 適用ファイル数 0 = unknown（glob 不一致による静かな非適用は green ではない — §1.2）
+  //
+  // ⚠️ ここは「艦が未導入」だけでなく「**測る cwd を間違えた**」でも来る。field 実測（2026-07-30）:
+  // 同一 commit・同一コマンドで cwd をリポ直下にすると適用0（unknown）・`frontend/` にすると red。
+  // fail-closed なので誤って green にはならないが、**測り方の誤りと艦の欠陥が同じ出力**になるので
+  // 測り直し手順を details に書く（#193 の crashed 内訳と同型の手当て）。
   const applied = await countAppliedFiles(cwd);
   if (applied === 0) {
     return {
       state: 'unknown',
       reason: 'not-installed',
-      details: ['適用ファイル数 0（src/**/*.{ts,tsx} 不在）— G-6 により green ではなく unknown'],
+      details: [
+        `適用ファイル数 0（${cwd} 配下に src/**/*.{ts,tsx} が無い）— G-6 により green ではなく unknown`,
+        '切り分け: フロントが下位ディレクトリにある艦（frontend/ 等）をリポ直下から測るとこの形になる。' +
+          'src/** を持つディレクトリ（例: frontend/）で実行して測り直すこと。',
+      ],
     };
   }
 

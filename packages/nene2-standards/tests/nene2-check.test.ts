@@ -165,6 +165,19 @@ describe('gate-integrity（05 §5.2 #15 — 実効 severity / オプション欠
     }
   }, 60_000);
 
+  it('適用ファイル数 0 の details に測り直し手順が出る（field 実測の cwd 取り違え）', async () => {
+    // src/** を持たないディレクトリ（= リポ直下から測った形）を渡す。
+    const result = await checkGateIntegrity({ cwd: dir('./fixtures/') });
+    expect(result.state).toBe('unknown');
+    if (result.state === 'unknown') {
+      expect(result.reason).toBe('not-installed');
+      expect(result.details?.some((d) => d.includes('適用ファイル数 0'))).toBe(true);
+      // 「測り方の誤り」と「艦の欠陥」を読み手が切り分けられる情報が入っている
+      expect(result.details?.some((d) => d.includes('測り直す'))).toBe(true);
+      expect(result.details?.some((d) => d.includes('frontend/'))).toBe(true);
+    }
+  }, 60_000);
+
   it('配布パッケージ未 install は crashed でなく not-installed（#193・field 実測の形）', async () => {
     // 導入済みの艦でも、測定した checkout で npm install が未実行だとこの形になる。
     // 「壊れている」ではなく「依存が無い」なので reason を分ける（unknown のままなので
