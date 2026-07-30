@@ -145,11 +145,29 @@ export async function checkGateIntegrity(options: GateIntegrityOptions): Promise
   try {
     productTable = await severityTable(productEslint, cwd);
   } catch (e) {
+    const message = (e as Error).message;
+    // 配布パッケージ自体が解決できない = **依存が入っていない**（= not-installed）。
+    // 「壊れている（crashed）」ではないので区別する。2026-07-30 に field で実測した形:
+    // 導入 PR はマージ済み・CI は緑なのに、測定した checkout で `npm install` が未実行だと
+    // 製品 config の `import nene2 from '@hideyukimori/nene2-standards'` が解決できず、
+    // 「艦の欠陥」と見分けのつかない crashed になっていた（**測定前提の未充足**）。
+    // 分類は unknown のまま（fail-closed は維持・G-6）。reason を正確にするだけ。
+    if (/Cannot find (?:package|module) '@hideyukimori\//.test(message)) {
+      return {
+        state: 'unknown',
+        reason: 'not-installed',
+        details: [
+          `製品 config が配布パッケージを解決できない（cwd=${cwd}）: ${message}`,
+          '切り分け: 艦に依存が入っていない（未導入、または測定した checkout で npm install 未実行）。' +
+            '導入済みの艦を測る場合は、その checkout で依存を入れてから測り直すこと。',
+        ],
+      };
+    }
     return {
       state: 'unknown',
       reason: 'crashed',
       details: [
-        `製品 config の実効 severity 取得で例外（cwd=${cwd}）: ${(e as Error).message}`,
+        `製品 config の実効 severity 取得で例外（cwd=${cwd}）: ${message}`,
         '切り分け: 製品側（艦の eslint.config.js とその依存）で落ちている。canonical 側は未評価。',
       ],
     };

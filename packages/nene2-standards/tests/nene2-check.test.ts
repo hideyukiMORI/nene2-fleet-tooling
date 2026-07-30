@@ -38,6 +38,7 @@ const checkAppBad = dir('./fixtures/check-app-bad/');
 const checkAppEmpty = dir('./fixtures/check-app-empty/');
 const initApp = dir('./fixtures/init-app/');
 const gateCrashApp = dir('./fixtures/gate-crash-app/');
+const gateUninstalledApp = dir('./fixtures/gate-uninstalled-app/');
 
 // fleet-tooling#28 の実測形（clear legacy 隔離パイロット: E2E ハーネスの dist-e2e/ が
 // build のたびに生成する css）を模す。build 出力そのものは commit しない（.gitignore に
@@ -161,6 +162,20 @@ describe('gate-integrity（05 §5.2 #15 — 実効 severity / オプション欠
       expect(result.details?.some((d) => d.includes('canonical 表の導出'))).toBe(false);
       // 原因メッセージ自体も残す（切り分けの一次情報）
       expect(result.details?.some((d) => d.includes('@stylistic'))).toBe(true);
+    }
+  }, 60_000);
+
+  it('配布パッケージ未 install は crashed でなく not-installed（#193・field 実測の形）', async () => {
+    // 導入済みの艦でも、測定した checkout で npm install が未実行だとこの形になる。
+    // 「壊れている」ではなく「依存が無い」なので reason を分ける（unknown のままなので
+    // fail-closed は維持＝G-6 に反しない）。
+    const result = await checkGateIntegrity({ cwd: gateUninstalledApp });
+    expect(result.state).toBe('unknown');
+    if (result.state === 'unknown') {
+      expect(result.reason).toBe('not-installed');
+      expect(result.details?.some((d) => d.includes('配布パッケージを解決できない'))).toBe(true);
+      // 測り直しの手順が出ている（次に踏んだ人が止まらないため）
+      expect(result.details?.some((d) => d.includes('npm install'))).toBe(true);
     }
   }, 60_000);
 
