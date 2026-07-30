@@ -64,7 +64,11 @@ export {
 } from './checks/conformance.js';
 export type { ConformanceKey, ConformanceVector, KeyState } from './checks/conformance.js';
 export { checkGateIntegrity, canonicalSeverityTable } from './checks/gate-integrity.js';
-export { checkScanCoverage } from './checks/scan-coverage.js';
+export {
+  checkScanCoverage,
+  htmlEmbeddedStyle,
+  htmlEmbeddedStyleSources,
+} from './checks/scan-coverage.js';
 export { initScan, initCheck } from './checks/init-scan.js';
 export { runConformance } from './checks/run.js';
 export {
