@@ -18,6 +18,7 @@ import { ESLint, type Linter } from 'eslint';
 
 import { composedConfig } from '../index.js';
 import type { KeyState } from './conformance.js';
+import { detectTailwind, TAILWIND_DEPENDENT_RULES } from './tailwind-presence.js';
 
 /**
  * 照合マトリクス: 「(仮想パス, ルール) → canonical 実効 severity」。
@@ -194,11 +195,25 @@ export async function checkGateIntegrity(options: GateIntegrityOptions): Promise
     };
   }
 
+  // Tailwind 実 entry を要求する検査器は、非 Tailwind 艦では「検査不能」であって「緩和」ではない
+  // （#163・concierge 照会 + fleet 横断実測。非 Tailwind は concierge/serve/corpus/suite の4艦）。
+  // 4艦に同じ差異登録を手書きさせるのは G-7 に反するので canonical 側（ここ）で表現する。
+  // 判定は**依存の実測**（艦の申告ではない）— 「styling 軸を展開していない」を理由に外すと
+  // 「外せば緩和が消える」抜け道になる。
+  const tailwind = detectTailwind(cwd);
+  const outOfScope = new Set(tailwind.present ? [] : TAILWIND_DEPENDENT_RULES);
+
   const details: string[] = [];
+  const skipped: string[] = [];
   for (let i = 0; i < canonTable.length; i++) {
     const canon = canonTable[i];
     const prod = productTable[i];
     if (!canon || !prod) continue;
+    if (outOfScope.has(canon.rule)) {
+      // 対象外は**黙って飛ばさない**（隠れた不検査を作らないため・G-6 の趣旨）。
+      if (!skipped.includes(canon.rule)) skipped.push(canon.rule);
+      continue;
+    }
     // ルール不在（severity null）と off（0）は**同じ実効挙動**（そのルールは走らない）。
     // 不在を -1 に落とすと「canonical が off・製品が不在」を緩和と誤検出する（#178 実測: origin の
     // `no-restricted-globals: 実効 -1 < canonical 0`）。緩和とは「canonical が走らせるものを
@@ -225,7 +240,39 @@ export async function checkGateIntegrity(options: GateIntegrityOptions): Promise
     }
   }
 
-  return details.length === 0 ? { state: 'green' } : { state: 'red', details };
+  // 対象外にしたルールは green/red のどちらでも必ず出す（「何を見ていないか」を隠さない）。
+  const scopeNote =
+    skipped.length > 0
+      ? [
+          `照合対象外 ${skipped.length}件（Tailwind 非依存艦のため）: ${skipped.join(', ')}` +
+            ` — 判定根拠: ${tailwind.reason}。Tailwind 実 entry を要する検査器は非 Tailwind 艦では` +
+            `検査不能であって緩和ではない（#163）。`,
+        ]
+      : [];
+
+  // green の KeyState はスキーマ（nene2-conformance/1）が details を持たないので、
+  // green のときは付けられない。**代わりに `gateIntegrityScope()` で機械可読に外へ出す**
+  // （呼び出し側＝レポートや他レーンが「何を見ていないか」を取れる）。
+  // green に details を持たせるのはスキーマ変更＝凍結明けの案件（本 PR の射程外）。
+  if (details.length === 0) return { state: 'green' };
+  return { state: 'red', details: [...details, ...scopeNote] };
+}
+
+/**
+ * この艦で **照合対象から外れるルール**とその根拠（#163）。
+ *
+ * `checkGateIntegrity` が green を返したときは KeyState に details を積めない
+ * （`nene2-conformance/1` の green は details を持たない）ため、「何を見ていないか」は
+ * ここから取る。**黙って飛ばした対象外を作らない**ための問い合わせ口。
+ */
+export function gateIntegrityScope(cwd: string): { excluded: string[]; reason: string } {
+  const tailwind = detectTailwind(cwd);
+  return {
+    excluded: tailwind.present ? [] : [...TAILWIND_DEPENDENT_RULES],
+    reason: tailwind.present
+      ? `Tailwind 依存を実測（${tailwind.reason}）— 全ルールが照合対象`
+      : `Tailwind 非依存（${tailwind.reason}）— Tailwind 実 entry を要する検査器は検査不能であり緩和ではない（#163）`,
+  };
 }
 
 /** src/**' の適用ファイル数（G-6 の空虚合格検査）。 */
