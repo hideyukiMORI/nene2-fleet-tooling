@@ -9,6 +9,7 @@ import {
   applyRenames,
   buildPlan,
   buildRenameIndex,
+  buildRenameRegex,
   collectDeclaredTokenNames,
   deriveClassRenames,
   namespaceOf,
@@ -462,5 +463,42 @@ describe('C part-2 — LEGACY_PREFIX_HINTS（hint 付き reject 表・#94/#125�
     });
     // radius も B1 非該当。
     expect(classifyTokenName('--radius-md')).toEqual({ kind: 'rename', name: '--radius-x-md' });
+  });
+});
+
+describe('置換境界の不変条件 — renamed 形を再マッチしない（#135）', () => {
+  // #135 の懸念: renamed 形が元トークンを**部分文字列包含**する
+  // （`x-border-input` ⊃ `border-input`・FIELD_TABLE の `border-input → x-border-input`）ため、
+  // `--check` を収束ゲートに使うと 2巡目で誤検出し、2回流すと `x-x-` 破損に至る、というもの。
+  //
+  // 実測（2026-07-30）: **再現しない**。class 境界 `(^|[^a-zA-Z0-9_-])…(?![a-zA-Z0-9_-])` の
+  // 前方1文字が `x-` の `-` を消費するので、renamed 形の内側にはマッチしない。
+  // ここで固定するのは「境界を落とすリファクタが入ったら気づく」ためのラチェット。
+  const index = new Map([
+    ['border-input', 'x-border-input'],
+    ['accent-soft-border', 'x-accent-soft-border'],
+  ]);
+
+  const hits = (text: string): string[] => {
+    const re = buildRenameRegex(index);
+    if (re === null) return [];
+    return [...text.matchAll(re)].map((m) => m[2] ?? '');
+  };
+
+  it('元の class にはマッチする（検査が空振りでない）', () => {
+    expect(hits('class="border-input"')).toEqual(['border-input']);
+  });
+
+  it('🔴 renamed 形（x- 付き）には**マッチしない**＝2巡目で誤検出しない', () => {
+    expect(hits('class="x-border-input"')).toEqual([]);
+    expect(hits('class="x-accent-soft-border"')).toEqual([]);
+  });
+
+  it('variant prefix は保持したまま検知する（境界の前方1文字消費の副作用がない）', () => {
+    expect(hits('class="hover:border-input"')).toEqual(['border-input']);
+  });
+
+  it('この索引に re-entrant 対は無い（あれば CLI が NOTE で開示する側の話）', () => {
+    expect(reentrantRenames(index)).toEqual([]);
   });
 });

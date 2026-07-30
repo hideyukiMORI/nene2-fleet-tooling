@@ -13,6 +13,13 @@
  */
 import type { Linter } from 'eslint';
 
+import {
+  canonicalRuleIds,
+  renderReportOnlyLedger,
+  reportOnly,
+  reportOnlyStaleRules,
+  toolingExemption,
+} from './configs/report-only.js';
 import { api } from './configs/api.js';
 import { base } from './configs/base.js';
 import { fsd } from './configs/fsd.js';
@@ -50,11 +57,39 @@ export type {
 } from './registries/schema.js';
 
 /** 全断片の正準合成（gate-integrity の canonical 表・パッケージテストの検出プローブが使用）。 */
+export {
+  canonicalRuleIds,
+  renderReportOnlyLedger,
+  reportOnly,
+  reportOnlyStaleRules,
+  toolingExemption,
+} from './configs/report-only.js';
+export type {
+  CanonicalAxesOptions,
+  ReportOnlyOptions,
+  ReportOnlySeverity,
+} from './configs/report-only.js';
+
 export function composedConfig(): Linter.Config[] {
   return [...base, ...fsd, ...api, ...styling, ...i18n, ...testing];
 }
 
-const nene2 = { base, fsd, api, styling, stylingWith, i18n, testing, overrides };
+const nene2 = {
+  base,
+  fsd,
+  api,
+  styling,
+  stylingWith,
+  i18n,
+  testing,
+  overrides,
+  // ゲート導入段（report-only）の配布ヘルパ（#189・hub 裁定 2026-07-30）
+  reportOnly,
+  toolingExemption,
+  canonicalRuleIds,
+  reportOnlyStaleRules,
+  renderReportOnlyLedger,
+};
 export default nene2;
 
 export {
@@ -63,8 +98,18 @@ export {
   validateConformance,
 } from './checks/conformance.js';
 export type { ConformanceKey, ConformanceVector, KeyState } from './checks/conformance.js';
-export { checkGateIntegrity, canonicalSeverityTable } from './checks/gate-integrity.js';
-export { checkScanCoverage } from './checks/scan-coverage.js';
+export {
+  canonicalSeverityTable,
+  checkGateIntegrity,
+  gateIntegrityScope,
+} from './checks/gate-integrity.js';
+export { detectTailwind, TAILWIND_DEPENDENT_RULES } from './checks/tailwind-presence.js';
+export type { TailwindPresence } from './checks/tailwind-presence.js';
+export {
+  checkScanCoverage,
+  htmlEmbeddedStyle,
+  htmlEmbeddedStyleSources,
+} from './checks/scan-coverage.js';
 export { initScan, initCheck } from './checks/init-scan.js';
 export { runConformance } from './checks/run.js';
 export {
