@@ -8,6 +8,10 @@
  *
  * **検査不能を違反として罰していた**のが本体なので、#178/#179（不在と off を差に数えない）と同じ類型。
  * 陽性対照 = Tailwind 依存を足すと同じルールが照合対象へ戻ること（＝検査が空振りしていない）。
+ *
+ * ⚠️ 違反行の判定に**文言そのものを pin しない**（「差異登録なき緩和」等）。#184/#185 で red 文言が
+ * 変わり、この陽性対照が壊れた（束マージ時に実測・2026-07-30）。本質は「実効 … < canonical」の**形**なので
+ * そちらで判定する。検査器の文言は実装の要約であって契約ではない（#184 の教訓と同じ向き）。
  */
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -99,7 +103,7 @@ describe('checkGateIntegrity — 非 Tailwind 艦を「緩和」と報告しな�
     if (result.state === 'red') {
       // 注記自体が「緩和ではない」の語を含むので、**違反行の文言**で判定する
       const violated = (d: string): boolean =>
-        d.includes(TW_RULE) && d.includes('差異登録なき緩和');
+        d.includes(TW_RULE) && /実効 severity \d+ < canonical \d+/.test(d);
       expect(result.details.some(violated)).toBe(false);
       // 黙って飛ばさない: 対象外にした事実と根拠が details に出る
       expect(result.details.some((d) => d.includes('照合対象外') && d.includes(TW_RULE))).toBe(
@@ -113,7 +117,7 @@ describe('checkGateIntegrity — 非 Tailwind 艦を「緩和」と報告しな�
     expect(result.state).toBe('red');
     if (result.state === 'red') {
       const violated = (d: string): boolean =>
-        d.includes(TW_RULE) && d.includes('差異登録なき緩和');
+        d.includes(TW_RULE) && /実効 severity \d+ < canonical \d+/.test(d);
       expect(result.details.some(violated)).toBe(true);
       expect(result.details.some((d) => d.includes('照合対象外'))).toBe(false);
     }
