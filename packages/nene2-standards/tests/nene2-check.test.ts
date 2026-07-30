@@ -633,6 +633,47 @@ describe('runConformance（skeleton 全体 — CF-1〜4）', () => {
     expect(vector.meta.contractVersion).toBe('1.0');
     expect(vector.meta.manifestSha).toMatch(/^[0-9a-f]{64}$/);
   });
+
+  // #182: provenance（どの版で測ったか）。exports に ./package.json を持たないパッケージでも
+  // 版が読めること＝**既に配布済みの版でも効く**ことを固定する。
+  // 従来は require('<pkg>/package.json') 一本で、ERR_PACKAGE_PATH_NOT_EXPORTED を握り潰して
+  // null を返していた（正しく導入している艦でも「未導入」に見えた）。
+  it('🔴 導入済みパッケージの版が meta に入る（exports に ./package.json が無くても — #182）', async () => {
+    // fleet 自身の workspace は3パッケージを symlink で持つ＝「導入済み」の実物として使える
+    const vector = await runConformance({
+      cwd: fileURLToPath(new URL('../../../', import.meta.url)), // リポルート
+      repo: 'nene2-fleet-tooling',
+      registriesPath: dir('../registries/fleet.jsonc'),
+    });
+    const own = JSON.parse(
+      readFileSync(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8'),
+    ) as { version: string };
+    // 🔴 null ではなく実版が入ること（従来はここが常に null だった）
+    expect(vector.meta.standardsVersion).toBe(own.version);
+    expect(vector.meta.standardsVersion).not.toBeNull();
+  }, 60_000);
+
+  it('未導入なら null のまま（解決できないものを埋めない — fail-closed）', async () => {
+    // 🔴 リポ内フィクスチャは使えない: createRequire がリポの node_modules まで遡って
+    //    nene2-standards（workspace symlink）を解決してしまい「未導入」を再現できない。
+    //    リポ木の外に置いた temp を cwd にする。
+    const outside = mkdtempSync(path.join(tmpdir(), 'nene2-noinstall-'));
+    writeFileSync(
+      path.join(outside, 'package.json'),
+      JSON.stringify({ name: 'x', version: '0.0.0' }),
+    );
+    try {
+      const vector = await runConformance({
+        cwd: outside,
+        repo: 'nene-x',
+        registriesPath: dir('../registries/fleet.jsonc'),
+      });
+      expect(vector.meta.standardsVersion).toBeNull();
+      expect(vector.meta.tokensVersion).toBeNull();
+    } finally {
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
 });
 
 describe('resolveInitRegistries — scan は不在=空で bootstrap 続行・check は不在=中止（#107）', () => {

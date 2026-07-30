@@ -36,14 +36,49 @@ const FLEET_PACKAGES = [
   ['clientVersion', '@hideyukimori/nene2-client'],
 ] as const;
 
+/**
+ * 配布物の実版を読む（CF-4/AM-11(v) の provenance）。
+ *
+ * 🔴 `require('<pkg>/package.json')` **だけに頼らない**（#182）: `exports` を持つパッケージは
+ * `./package.json` を明示公開していないと `ERR_PACKAGE_PATH_NOT_EXPORTED` で解決できず、
+ * **正しく導入されている艦でも版が null になる**。実測（2026-07-30）で nene2-standards /
+ * tokens / i18n の3つが該当し、`./package.json` を持つ client だけが偶然読めていた。
+ * provenance が構造的に欠損＝「どの版で測ったか」を後から追えない状態だった。
+ *
+ * そこで **exports に依存しない経路**を用意する: エントリの解決結果からディレクトリを遡り、
+ * 当該パッケージの `package.json` を実ファイルとして読む。**すでに配布済みの版でも版が読める**
+ * （exports への `./package.json` 追加は publish 後の版にしか効かないため、両方要る）。
+ */
 function resolveVersion(cwd: string, pkg: string): string | null {
+  const require = createRequire(path.join(cwd, 'package.json'));
+  // 1) 明示公開されていれば最短経路で読む
   try {
-    const require = createRequire(path.join(cwd, 'package.json'));
     const pkgJson = require(`${pkg}/package.json`) as { version?: string };
-    return pkgJson.version ?? null;
+    if (typeof pkgJson.version === 'string') return pkgJson.version;
   } catch {
-    return null;
+    // exports 非公開 — 2) へ
   }
+  // 2) エントリの実体から package.json を遡って探す（exports 非依存）
+  try {
+    let dir = path.dirname(require.resolve(pkg));
+    // ルートまで遡り、name が一致する package.json を採る（入れ子の依存を誤読しない）
+    for (let i = 0; i < 12; i++) {
+      const candidate = path.join(dir, 'package.json');
+      if (existsSync(candidate)) {
+        const json = JSON.parse(readFileSync(candidate, 'utf8')) as {
+          name?: string;
+          version?: string;
+        };
+        if (json.name === pkg && typeof json.version === 'string') return json.version;
+      }
+      const parent = path.dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
+    }
+  } catch {
+    // 未導入（解決自体ができない）— null が正しい答え
+  }
+  return null;
 }
 
 /** 全テーマファイルのプラグマ最小値（CF-4/AM-11(v) — 版比較は semver 単純比較で足りる範囲のみ） */
