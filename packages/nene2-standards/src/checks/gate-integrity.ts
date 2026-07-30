@@ -18,6 +18,7 @@ import { ESLint, type Linter } from 'eslint';
 
 import { composedConfig } from '../index.js';
 import type { KeyState } from './conformance.js';
+import { detectTailwind, TAILWIND_DEPENDENT_RULES } from './tailwind-presence.js';
 
 /**
  * 照合マトリクス: 「(仮想パス, ルール) → canonical 実効 severity」。
@@ -108,12 +109,21 @@ export async function checkGateIntegrity(options: GateIntegrityOptions): Promise
   const { cwd, productConfigOverride } = options;
 
   // G-6: 適用ファイル数 0 = unknown（glob 不一致による静かな非適用は green ではない — §1.2）
+  //
+  // ⚠️ ここは「艦が未導入」だけでなく「**測る cwd を間違えた**」でも来る。field 実測（2026-07-30）:
+  // 同一 commit・同一コマンドで cwd をリポ直下にすると適用0（unknown）・`frontend/` にすると red。
+  // fail-closed なので誤って green にはならないが、**測り方の誤りと艦の欠陥が同じ出力**になるので
+  // 測り直し手順を details に書く（#193 の crashed 内訳と同型の手当て）。
   const applied = await countAppliedFiles(cwd);
   if (applied === 0) {
     return {
       state: 'unknown',
       reason: 'not-installed',
-      details: ['適用ファイル数 0（src/**/*.{ts,tsx} 不在）— G-6 により green ではなく unknown'],
+      details: [
+        `適用ファイル数 0（${cwd} 配下に src/**/*.{ts,tsx} が無い）— G-6 により green ではなく unknown`,
+        '切り分け: フロントが下位ディレクトリにある艦（frontend/ 等）をリポ直下から測るとこの形になる。' +
+          'src/** を持つディレクトリ（例: frontend/）で実行して測り直すこと。',
+      ],
     };
   }
 
@@ -135,24 +145,81 @@ export async function checkGateIntegrity(options: GateIntegrityOptions): Promise
     productEslint = new ESLint({ cwd });
   }
 
+  // crashed はどちら側で落ちたかを details に書く（#193）。両者を1つの try で束ねていたため、
+  // 「製品 config が読めない」と「配布 config 自身が壊れている」が同じ出力になっていた。
+  // 2026-07-30 に origin で観測した crashed は再現条件が特定できず（5通りの統制条件で再現せず・
+  // 未導入 config でも計器は red を返す）、**次に出たときに切り分けられる情報が無かった**ことが
+  // 調査を止めた直接の原因だった。分類は変えない（crashed は crashed のまま = G-6）。
   let productTable: SeverityCell[];
   let canonTable: SeverityCell[];
   try {
-    [productTable, canonTable] = await Promise.all([
-      severityTable(productEslint, cwd),
-      canonicalSeverityTable(cwd),
-    ]);
+    productTable = await severityTable(productEslint, cwd);
   } catch (e) {
-    return { state: 'unknown', reason: 'crashed', details: [(e as Error).message] };
+    const message = (e as Error).message;
+    // 配布パッケージ自体が解決できない = **依存が入っていない**（= not-installed）。
+    // 「壊れている（crashed）」ではないので区別する。2026-07-30 に field で実測した形:
+    // 導入 PR はマージ済み・CI は緑なのに、測定した checkout で `npm install` が未実行だと
+    // 製品 config の `import nene2 from '@hideyukimori/nene2-standards'` が解決できず、
+    // 「艦の欠陥」と見分けのつかない crashed になっていた（**測定前提の未充足**）。
+    // 分類は unknown のまま（fail-closed は維持・G-6）。reason を正確にするだけ。
+    if (/Cannot find (?:package|module) '@hideyukimori\//.test(message)) {
+      return {
+        state: 'unknown',
+        reason: 'not-installed',
+        details: [
+          `製品 config が配布パッケージを解決できない（cwd=${cwd}）: ${message}`,
+          '切り分け: 艦に依存が入っていない（未導入、または測定した checkout で npm install 未実行）。' +
+            '導入済みの艦を測る場合は、その checkout で依存を入れてから測り直すこと。',
+        ],
+      };
+    }
+    return {
+      state: 'unknown',
+      reason: 'crashed',
+      details: [
+        `製品 config の実効 severity 取得で例外（cwd=${cwd}）: ${message}`,
+        '切り分け: 製品側（艦の eslint.config.js とその依存）で落ちている。canonical 側は未評価。',
+      ],
+    };
+  }
+  try {
+    canonTable = await canonicalSeverityTable(cwd);
+  } catch (e) {
+    return {
+      state: 'unknown',
+      reason: 'crashed',
+      details: [
+        `canonical 表の導出で例外（cwd=${cwd}）: ${(e as Error).message}`,
+        '切り分け: 配布 config（composedConfig）側で落ちている。製品 config の読み込みは成功した。',
+      ],
+    };
   }
 
+  // Tailwind 実 entry を要求する検査器は、非 Tailwind 艦では「検査不能」であって「緩和」ではない
+  // （#163・concierge 照会 + fleet 横断実測。非 Tailwind は concierge/serve/corpus/suite の4艦）。
+  // 4艦に同じ差異登録を手書きさせるのは G-7 に反するので canonical 側（ここ）で表現する。
+  // 判定は**依存の実測**（艦の申告ではない）— 「styling 軸を展開していない」を理由に外すと
+  // 「外せば緩和が消える」抜け道になる。
+  const tailwind = detectTailwind(cwd);
+  const outOfScope = new Set(tailwind.present ? [] : TAILWIND_DEPENDENT_RULES);
+
   const details: string[] = [];
+  const skipped: string[] = [];
   for (let i = 0; i < canonTable.length; i++) {
     const canon = canonTable[i];
     const prod = productTable[i];
     if (!canon || !prod) continue;
-    const sevCanon = canon.severity ?? -1;
-    const sevProd = prod.severity ?? -1;
+    if (outOfScope.has(canon.rule)) {
+      // 対象外は**黙って飛ばさない**（隠れた不検査を作らないため・G-6 の趣旨）。
+      if (!skipped.includes(canon.rule)) skipped.push(canon.rule);
+      continue;
+    }
+    // ルール不在（severity null）と off（0）は**同じ実効挙動**（そのルールは走らない）。
+    // 不在を -1 に落とすと「canonical が off・製品が不在」を緩和と誤検出する（#178 実測: origin の
+    // `no-restricted-globals: 実効 -1 < canonical 0`）。緩和とは「canonical が走らせるものを
+    // 製品が走らせない/弱める」ことなので、走らない同士の比較は差ではない。
+    const sevCanon = canon.severity ?? 0;
+    const sevProd = prod.severity ?? 0;
     // 緩和（canonical より弱い severity）= FAIL。強化は oracle 正本（O-5）に反し得るが
     // gate-integrity の管轄は「差異登録なき緩和」— 強化の是非は check:tw-oracle 側。
     if (sevProd < sevCanon) {
@@ -173,7 +240,39 @@ export async function checkGateIntegrity(options: GateIntegrityOptions): Promise
     }
   }
 
-  return details.length === 0 ? { state: 'green' } : { state: 'red', details };
+  // 対象外にしたルールは green/red のどちらでも必ず出す（「何を見ていないか」を隠さない）。
+  const scopeNote =
+    skipped.length > 0
+      ? [
+          `照合対象外 ${skipped.length}件（Tailwind 非依存艦のため）: ${skipped.join(', ')}` +
+            ` — 判定根拠: ${tailwind.reason}。Tailwind 実 entry を要する検査器は非 Tailwind 艦では` +
+            `検査不能であって緩和ではない（#163）。`,
+        ]
+      : [];
+
+  // green の KeyState はスキーマ（nene2-conformance/1）が details を持たないので、
+  // green のときは付けられない。**代わりに `gateIntegrityScope()` で機械可読に外へ出す**
+  // （呼び出し側＝レポートや他レーンが「何を見ていないか」を取れる）。
+  // green に details を持たせるのはスキーマ変更＝凍結明けの案件（本 PR の射程外）。
+  if (details.length === 0) return { state: 'green' };
+  return { state: 'red', details: [...details, ...scopeNote] };
+}
+
+/**
+ * この艦で **照合対象から外れるルール**とその根拠（#163）。
+ *
+ * `checkGateIntegrity` が green を返したときは KeyState に details を積めない
+ * （`nene2-conformance/1` の green は details を持たない）ため、「何を見ていないか」は
+ * ここから取る。**黙って飛ばした対象外を作らない**ための問い合わせ口。
+ */
+export function gateIntegrityScope(cwd: string): { excluded: string[]; reason: string } {
+  const tailwind = detectTailwind(cwd);
+  return {
+    excluded: tailwind.present ? [] : [...TAILWIND_DEPENDENT_RULES],
+    reason: tailwind.present
+      ? `Tailwind 依存を実測（${tailwind.reason}）— 全ルールが照合対象`
+      : `Tailwind 非依存（${tailwind.reason}）— Tailwind 実 entry を要する検査器は検査不能であり緩和ではない（#163）`,
+  };
 }
 
 /** src/**' の適用ファイル数（G-6 の空虚合格検査）。 */
