@@ -497,7 +497,25 @@ export function classifyTokenName(
     const key = name.slice(`--${ns}-`.length);
     // キーが空（`--font-` のような末尾ハイフン名）は写像を発明せず reject へ落とす。
     // 旧実装の `(.+)` が担っていた非空要件をここで保つ（fail-closed の維持）。
-    if (key !== '') return { kind: 'rename', name: `--${ns}-x-${key}` };
+    if (key !== '') {
+      const renamed = `--${ns}-x-${key}`;
+      // 🔴 **自分の検査器が拒否する名前を出さない**（#134 / #88 同族の一般形）。
+      // x- 送りの結果が拡張トークン名として不正なら、そのまま出すと
+      // ①generate / validate がその名前を refuse する（extract と generate の自己矛盾）
+      // ②再実行で更に x- が積まれる（double-x・非冪等）
+      // のどちらかになる。実測（2026-07-30）: `--text-x-body---line-height` のような不正キーは
+      // 旧実装で `--text-x-x-body---line-height` を生成していた。発明せず reject へ落とす。
+      if (!isExtensionTokenName(renamed)) {
+        return {
+          kind: 'reject',
+          reason:
+            `cannot x-send ${name} — the result ${renamed} is not a valid extension token name ` +
+            `(key must be [a-z0-9-] segments with at most one '--' compound separator; ` +
+            `no invented names: the codemod must not emit a name its own checker rejects)`,
+        };
+      }
+      return { kind: 'rename', name: renamed };
+    }
   }
 
   // 7. 未知 namespace・単一セグメント等の未知名 — 発明せず reject（(i)reject・C part-1 #92）

@@ -146,9 +146,19 @@ export function tailwindNamespaceOf(token: string): string | null {
  * 手書きの正規表現に戻さないこと: #49 まで cat 部を `[a-z][a-z0-9]*` と独自に決めていたため
  * multi-segment namespace（`font-weight`）を弾き、**#35 が是正した生成側の出力 `--font-weight-x-medium`
  * を検査側が拒否していた**（道具が自分の生成物を拒否する）。表から導出すれば構造的に追随する。
+ *
+ * 🔴 **複合キー**（Tailwind v4 の `--text-<key>--line-height` 形）も受理する（#134 / #88 同族）。
+ * 受理していなかったため、**x- 送り済みの複合キーが「拡張トークンではない」と判定され、
+ * codemod が x- を再挿入して double-x に壊していた**（実測 2026-07-30）:
+ *   `--text-x-body--line-height` → isExtensionTokenName=false → `--text-x-x-body--line-height`
+ * その名前は当然どこにも属さないので generate が refuse する ＝ **extract と generate の自己矛盾**
+ * （#134 の症状）として現れていた。根は「道具が自分の生成物を認識できない」＝#49/#35 と同型。
+ *
+ * 区切りは `--`（2連ハイフン）ちょうど1回まで。`---` や末尾 `--` は受理しない（発明しない）。
  */
+const EXT_KEY = String.raw`[a-z0-9]+(?:-[a-z0-9]+)*`;
 export const EXTENSION_TOKEN_PATTERN = new RegExp(
-  `^--(${TAILWIND_V4_NAMESPACES.join('|')})-x-([a-z0-9]+(?:-[a-z0-9]+)*)$`,
+  `^--(${TAILWIND_V4_NAMESPACES.join('|')})-x-(${EXT_KEY}(?:--${EXT_KEY})?)$`,
 );
 
 /**

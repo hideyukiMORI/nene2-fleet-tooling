@@ -392,3 +392,34 @@ describe('FIELD_TABLE — field 語彙表正本化（C part-2・#127）', () => 
     expect(mapTokenName('--color-fg-muted-2', 'field')).toBe('--color-x-fg-muted-2');
   });
 });
+
+describe('classifyTokenName — 自分の生成物を壊さない（#134 / #88）', () => {
+  const nameOf = (r: ReturnType<typeof classifyTokenName>): string | null =>
+    r.kind === 'reject' ? null : r.name;
+
+  it('x- 送り済みの複合キーは no-op（再送りで double-x にしない）', () => {
+    const r = classifyTokenName('--text-x-body--line-height');
+    expect(r.kind).not.toBe('reject');
+    expect(nameOf(r)).toBe('--text-x-body--line-height');
+  });
+
+  it('複合キーの x- 送りは 2巡目で不動（冪等）', () => {
+    const first = nameOf(classifyTokenName('--text-lg--line-height'));
+    expect(first).toBe('--text-x-lg--line-height');
+    expect(nameOf(classifyTokenName(first as string))).toBe(first);
+  });
+
+  it('🔴 x- 送りの結果が不正な名前になるなら reject（発明せず止める）', () => {
+    const r = classifyTokenName('--text-x-body---line-height');
+    expect(r.kind).toBe('reject');
+    if (r.kind === 'reject') {
+      expect(r.reason).toContain('not a valid extension token name');
+    }
+  });
+
+  it('🔴 陽性対照: 未知 namespace は従来どおり reject（#92 の (i)reject が生きている）', () => {
+    for (const t of ['--space-x-nav-w', '--r-x-base']) {
+      expect(classifyTokenName(t).kind).toBe('reject');
+    }
+  });
+});
