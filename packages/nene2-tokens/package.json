@@ -14,7 +14,8 @@
     "./codemod-transform": {
       "types": "./dist/codemod-transform.d.ts",
       "default": "./dist/codemod-transform.js"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "bin": {
     "nene2-tokens": "dist/cli.js"
