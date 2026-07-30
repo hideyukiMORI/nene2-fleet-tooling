@@ -236,3 +236,35 @@ function msgText(m: Linter.LintMessage, name: string): boolean {
   // no-restricted-imports のメッセージにパッケージ名が含まれない ESLint 版のフォールバック
   return (m.message.match(/'[^']+'/)?.[0] ?? '').includes(name);
 }
+
+describe('検出プローブ — 制定した本人を罰しない（#118 / #130）', () => {
+  const messageTexts = (rel: string): string[] => messagesFor(rel).map((m) => m.message);
+
+  it('I18nProvider 実装での lang 付与は検知しない（#118・AM-18 が許す唯一の座席）', () => {
+    const texts = messageTexts('src/shared/i18n/i18n-context.tsx');
+    expect(texts.some((t) => t.includes('lang 属性の設定は'))).toBe(false);
+  });
+
+  it('🔴 provider でも lang 以外は検知する（1ルール丸ごと off にしていない）', () => {
+    const texts = messageTexts('src/shared/i18n/i18n-context.tsx');
+    expect(texts.some((t) => t.includes('Intl 直呼び'))).toBe(true);
+  });
+
+  it('登録テーマモジュールでの data-theme 付与／読み取りは検知しない（#130・R2⑥/R5 が許す唯一の座席）', () => {
+    const texts = messageTexts('src/shared/theme/index.ts');
+    expect(texts.some((t) => t.includes('data-theme の JS 付与'))).toBe(false);
+    expect(texts.some((t) => t.includes('data-theme 読み取り'))).toBe(false);
+  });
+
+  it('🔴 テーマモジュールでも data-theme 以外は検知する（1ルール丸ごと off にしていない）', () => {
+    const texts = messageTexts('src/shared/theme/index.ts');
+    expect(texts.some((t) => t.includes('t() 経由'))).toBe(true);
+  });
+
+  it('🔴 陽性対照: 座席の外では lang / data-theme を今も検知する（免除が広がっていない）', () => {
+    const intl = messageTexts('src/features/probe-slice/intl-probe.ts');
+    const styling = messageTexts('src/features/probe-slice/styling-probe.tsx');
+    expect(intl.some((t) => t.includes('lang 属性の設定は'))).toBe(true);
+    expect(styling.some((t) => t.includes('data-theme'))).toBe(true);
+  });
+});
