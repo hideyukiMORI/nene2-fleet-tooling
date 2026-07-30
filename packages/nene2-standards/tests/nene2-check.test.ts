@@ -19,6 +19,7 @@ import { checkGateIntegrity } from '../src/checks/gate-integrity.js';
 import { checkScanCoverage, enumerateStyleSources } from '../src/checks/scan-coverage.js';
 import {
   initCheck,
+  initRemeasure,
   initScan,
   initScanEntries,
   ledgersAlreadyInitialized,
@@ -37,6 +38,8 @@ const checkApp = dir('./fixtures/check-app/');
 const checkAppBad = dir('./fixtures/check-app-bad/');
 const checkAppEmpty = dir('./fixtures/check-app-empty/');
 const initApp = dir('./fixtures/init-app/');
+const gateCrashApp = dir('./fixtures/gate-crash-app/');
+const gateUninstalledApp = dir('./fixtures/gate-uninstalled-app/');
 
 // fleet-tooling#28 の実測形（clear legacy 隔離パイロット: E2E ハーネスの dist-e2e/ が
 // build のたびに生成する css）を模す。build 出力そのものは commit しない（.gitignore に
@@ -141,6 +144,52 @@ describe('gate-integrity（05 §5.2 #15 — 実効 severity / オプション欠
     expect(result.state).toBe('red');
     if (result.state === 'red') {
       expect(result.details.some((d) => d.includes('後勝ち全置換'))).toBe(true);
+    }
+  }, 60_000);
+
+  it('crashed は落ちた側を details に書く（#193・陽性対照 = 武装した未定義プラグイン）', async () => {
+    // ESLint は severity>0 のルールのプラグインを解決できないと config 読み込みを拒否する
+    // （off なら通る＝#189 実測）。フィクスチャはそれを製品 config 側で意図的に踏む。
+    // 2026-07-30 に origin で観測した crashed は再現条件が特定できず（5通りの統制条件で再現せず）、
+    // **次に出たときにどちら側か分からない**ことが調査を止めた。そこを塞ぐ回帰テスト。
+    const result = await checkGateIntegrity({ cwd: gateCrashApp });
+    expect(result.state).toBe('unknown');
+    if (result.state === 'unknown') {
+      expect(result.reason).toBe('crashed');
+      // 落ちた側が名指しされている（分類は crashed のまま = G-6・丸めない）
+      expect(result.details?.some((d) => d.includes('製品 config'))).toBe(true);
+      expect(result.details?.some((d) => d.includes('製品側'))).toBe(true);
+      // 取り違えの禁止: 製品側で落ちたのに canonical 側と書いてはいけない
+      expect(result.details?.some((d) => d.includes('canonical 表の導出'))).toBe(false);
+      // 原因メッセージ自体も残す（切り分けの一次情報）
+      expect(result.details?.some((d) => d.includes('@stylistic'))).toBe(true);
+    }
+  }, 60_000);
+
+  it('適用ファイル数 0 の details に測り直し手順が出る（field 実測の cwd 取り違え）', async () => {
+    // src/** を持たないディレクトリ（= リポ直下から測った形）を渡す。
+    const result = await checkGateIntegrity({ cwd: dir('./fixtures/') });
+    expect(result.state).toBe('unknown');
+    if (result.state === 'unknown') {
+      expect(result.reason).toBe('not-installed');
+      expect(result.details?.some((d) => d.includes('適用ファイル数 0'))).toBe(true);
+      // 「測り方の誤り」と「艦の欠陥」を読み手が切り分けられる情報が入っている
+      expect(result.details?.some((d) => d.includes('測り直す'))).toBe(true);
+      expect(result.details?.some((d) => d.includes('frontend/'))).toBe(true);
+    }
+  }, 60_000);
+
+  it('配布パッケージ未 install は crashed でなく not-installed（#193・field 実測の形）', async () => {
+    // 導入済みの艦でも、測定した checkout で npm install が未実行だとこの形になる。
+    // 「壊れている」ではなく「依存が無い」なので reason を分ける（unknown のままなので
+    // fail-closed は維持＝G-6 に反しない）。
+    const result = await checkGateIntegrity({ cwd: gateUninstalledApp });
+    expect(result.state).toBe('unknown');
+    if (result.state === 'unknown') {
+      expect(result.reason).toBe('not-installed');
+      expect(result.details?.some((d) => d.includes('配布パッケージを解決できない'))).toBe(true);
+      // 測り直しの手順が出ている（次に踏んだ人が止まらないため）
+      expect(result.details?.some((d) => d.includes('npm install'))).toBe(true);
     }
   }, 60_000);
 
@@ -407,6 +456,146 @@ describe('init --scan（T-3/AM-10 — 走査生成・一度きり・--check 読�
       // 実測が raw 行数と一致してしまうと、raw で登録された cap との差が見えなくなる。
       // 尺度が違うことをテストで固定する（一致する場合はフィクスチャを空行入りに直すこと）。
       expect(live.maxLines).not.toBe(rawLineCount);
+    });
+  });
+
+  // #176 --remeasure。**上げ方向が拒否される陽性対照を必ず持つ**（hub 受入条件 2026-07-30）。
+  // この道具の唯一の危険は「cap を上げて超過を追認できてしまう」ことなので、そこを負テストで塞ぐ。
+  describe('init --remeasure（既存 cap の引き下げ専用・#176）', () => {
+    const legacyPath = 'src/legacy-styles.css';
+    const capOf = (maxLines: number, maxBytes: number): ReturnType<typeof registriesWith> =>
+      registriesWith([
+        {
+          kind: 'legacy-manifest',
+          id: 'x-legacy',
+          repo: 'nene-x',
+          path: legacyPath,
+          maxLines,
+          maxBytes,
+        },
+      ]);
+    const capIn = (result: { entries: unknown[] }): { maxLines: number; maxBytes: number } => {
+      const e = (result.entries as Array<Record<string, unknown>>).find(
+        (x) => x['kind'] === 'legacy-manifest',
+      );
+      return { maxLines: e?.['maxLines'] as number, maxBytes: e?.['maxBytes'] as number };
+    };
+
+    it('cap が実測より大きい（drain 後）: 実測値へ引き下げる', async () => {
+      const scan = await initScan(initApp);
+      const live = scan.legacyManifest.find((e) => e.path === legacyPath)!;
+      const r = await initRemeasure(
+        initApp,
+        'nene-x',
+        capOf(live.maxLines + 50, live.maxBytes + 500),
+      );
+      expect(r.refused).toEqual([]);
+      expect(r.lowered).toHaveLength(1);
+      expect(capIn(r)).toEqual({ maxLines: live.maxLines, maxBytes: live.maxBytes });
+    });
+
+    it('🔴 陽性対照: 実測が cap を超えていたら更新を拒否する（cap を上げて追認しない）', async () => {
+      const scan = await initScan(initApp);
+      const live = scan.legacyManifest.find((e) => e.path === legacyPath)!;
+      const r = await initRemeasure(initApp, 'nene-x', capOf(live.maxLines - 1, live.maxBytes - 1));
+      expect(r.refused).toHaveLength(1);
+      expect(r.lowered).toEqual([]);
+      // 拒否時は現 cap が保持される＝出力を使っても cap は上がらない（二重の歯止め）
+      expect(capIn(r)).toEqual({ maxLines: live.maxLines - 1, maxBytes: live.maxBytes - 1 });
+    });
+
+    it('🔴 陽性対照: 行だけ超過・byte だけ超過のどちらでも拒否する', async () => {
+      const scan = await initScan(initApp);
+      const live = scan.legacyManifest.find((e) => e.path === legacyPath)!;
+      const linesOver = await initRemeasure(
+        initApp,
+        'nene-x',
+        capOf(live.maxLines - 1, live.maxBytes + 500),
+      );
+      expect(linesOver.refused).toHaveLength(1);
+      const bytesOver = await initRemeasure(
+        initApp,
+        'nene-x',
+        capOf(live.maxLines + 50, live.maxBytes - 1),
+      );
+      expect(bytesOver.refused).toHaveLength(1);
+    });
+
+    it('cap ちょうど: 変更なし（lowered にも refused にも入らない）', async () => {
+      const scan = await initScan(initApp);
+      const live = scan.legacyManifest.find((e) => e.path === legacyPath)!;
+      const r = await initRemeasure(initApp, 'nene-x', capOf(live.maxLines, live.maxBytes));
+      expect(r.lowered).toEqual([]);
+      expect(r.refused).toEqual([]);
+    });
+
+    it('台帳にあってファイルが無い＝台帳腐敗として報告（呼び出し側が中止する）', async () => {
+      const r = await initRemeasure(
+        initApp,
+        'nene-x',
+        registriesWith([
+          {
+            kind: 'legacy-manifest',
+            id: 'x-gone',
+            repo: 'nene-x',
+            path: 'src/does-not-exist.css',
+            maxLines: 10,
+            maxBytes: 100,
+          },
+        ]),
+      );
+      expect(r.missing).toEqual(['src/does-not-exist.css']);
+    });
+
+    it('🔴 他 repo・他 kind には一切触らない（G-7 隔離・cap 専用）', async () => {
+      const scan = await initScan(initApp);
+      const live = scan.legacyManifest.find((e) => e.path === legacyPath)!;
+      const mixed = registriesWith([
+        {
+          kind: 'legacy-manifest',
+          id: 'other-legacy',
+          repo: 'nene-other',
+          path: legacyPath,
+          maxLines: 1,
+          maxBytes: 1,
+        },
+        { kind: 'components-allowlist', id: 'x-ca', repo: 'nene-x', classes: ['.keep'] },
+        {
+          kind: 'legacy-manifest',
+          id: 'x-legacy',
+          repo: 'nene-x',
+          path: legacyPath,
+          maxLines: live.maxLines + 50,
+          maxBytes: live.maxBytes + 500,
+        },
+      ]);
+      const r = await initRemeasure(initApp, 'nene-x', mixed);
+      const entries = r.entries as Array<Record<string, unknown>>;
+      // 他 repo の cap は 1/1 のまま（実測で上書きされていない）
+      expect(entries.find((e) => e['id'] === 'other-legacy')).toMatchObject({
+        maxLines: 1,
+        maxBytes: 1,
+      });
+      // components-allowlist は素通し
+      expect(entries.find((e) => e['id'] === 'x-ca')).toMatchObject({ classes: ['.keep'] });
+      // 自 repo の cap だけが実測値へ
+      expect(entries.find((e) => e['id'] === 'x-legacy')).toMatchObject({
+        maxLines: live.maxLines,
+        maxBytes: live.maxBytes,
+      });
+    });
+
+    it('出力は registries-valid（貼れる正本形）', async () => {
+      const scan = await initScan(initApp);
+      const live = scan.legacyManifest.find((e) => e.path === legacyPath)!;
+      const r = await initRemeasure(
+        initApp,
+        'nene-x',
+        capOf(live.maxLines + 5, live.maxBytes + 50),
+      );
+      expect(
+        validateRegistries(JSON.stringify({ schema: REGISTRIES_SCHEMA_ID, entries: r.entries })),
+      ).toEqual([]);
     });
   });
 

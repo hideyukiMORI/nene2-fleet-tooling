@@ -114,3 +114,25 @@ describe('#49 — 生成側の出力を検査側が受理する（道具が自�
     }
   });
 });
+
+describe('isExtensionTokenName — 複合キー（#134 / #88 同族）', () => {
+  it('x- 送り済みの複合キーを拡張トークンとして受理する（道具が自分の生成物を認識する）', () => {
+    expect(isExtensionTokenName('--text-x-body--line-height')).toBe(true);
+    expect(isExtensionTokenName('--text-x-body--letter-spacing')).toBe(true);
+  });
+
+  it('単純キーは従来どおり受理する（回帰なし）', () => {
+    expect(isExtensionTokenName('--text-x-body')).toBe(true);
+    expect(isExtensionTokenName('--font-weight-x-medium')).toBe(true);
+  });
+
+  it('🔴 区切りを発明しない: `---` / 末尾 `--` / 2回以上の複合は受理しない', () => {
+    expect(isExtensionTokenName('--text-x-body---line-height')).toBe(false);
+    expect(isExtensionTokenName('--text-x-body--')).toBe(false);
+    expect(isExtensionTokenName('--text-x-a--b--c')).toBe(false);
+  });
+
+  it('🔴 namespace は表の実在名のみ（複合キーでも緩めない）', () => {
+    expect(isExtensionTokenName('--space-x-nav--w')).toBe(false);
+  });
+});
