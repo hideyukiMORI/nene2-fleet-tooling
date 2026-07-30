@@ -13,7 +13,6 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import baseStylelintConfig from '../stylelint/index.js';
-import stylelintPlugins from '../stylelint/plugin.js';
 import { classTokens, layerParamsInclude } from '../stylelint/helpers.js';
 import type {
   ComponentsAllowlistEntry,
@@ -58,6 +57,10 @@ export async function scanLintBaselines(cwd: string): Promise<InitScanResult['li
   const sources = enumerateStyleSources(cwd).filter((p) => p.endsWith('.css'));
   if (sources.length === 0) return [];
   const stylelint = (await import('stylelint')).default;
+  // plugin.js は `stylelint` を静的 import するので、ここでも遅延読み込みする。
+  // 静的 import にすると root entry（ESLint 用 config）から stylelint へ到達し、
+  // eslint だけ配線する艦で ERR_MODULE_NOT_FOUND になる（#189 摩擦1）。
+  const stylelintPlugins = (await import('../stylelint/plugin.js')).default;
   const runnable = { ...baseStylelintConfig, plugins: stylelintPlugins };
   const { results } = await stylelint.lint({
     files: sources.map((rel) => path.join(cwd, rel)),

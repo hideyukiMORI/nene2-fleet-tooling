@@ -8,7 +8,7 @@
  * - 台帳（registries）が与えられない場合は unknown(not-installed) — fail-closed（G-6）。
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 import type { RegistriesDocument } from '../registries/schema.js';
@@ -81,6 +81,48 @@ export function enumerateStyleSources(cwd: string): string[] {
   return found.sort();
 }
 
+/**
+ * HTML 埋め込み `<style>` の実測（#164）。
+ *
+ * 現行の**測定経路**（`init --scan` / lint-baseline / run）は `.css` だけを見る。一方 scan-coverage は
+ * `index.html` を `CANONICAL_ALLOWED` で**無条件に allowed** にしていたため、
+ * **埋め込み `<style>` が台帳にも lint にも載らないまま green** になっていた
+ * （＝不可視領域があるのに green・G-6 の現物）。実在例: concierge
+ * `public_html/admin/index.html`（52KB・`<style>` 1ブロック・fleet 実測 2026-07-30）。
+ *
+ * 依存を増やさずに済む範囲で検出する（走査対象としての抽出＝postcss-html 経路は別作業）。
+ * コメント内の `<style` は拾いうるが、**過検出は fail-closed 側に倒れる**ので許容する
+ * （見落として green を返すより安全 — 逆向きの誤りは G-6 違反になる）。
+ */
+export function htmlEmbeddedStyle(cwd: string, rel: string): { blocks: number; lines: number } {
+  let text: string;
+  try {
+    text = readFileSync(path.join(cwd, rel), 'utf8');
+  } catch {
+    return { blocks: 0, lines: 0 };
+  }
+  const re = /<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi;
+  let blocks = 0;
+  let lines = 0;
+  for (const m of text.matchAll(re)) {
+    const body = (m[1] ?? '').trim();
+    if (body === '') continue; // 空 <style> は不可視領域ではない
+    blocks++;
+    lines += body.split('\n').length;
+  }
+  return { blocks, lines };
+}
+
+/** `cwd` 配下の HTML のうち、埋め込み `<style>` を持つもの（#164 の不可視領域の列挙）。 */
+export function htmlEmbeddedStyleSources(
+  cwd: string,
+): Array<{ path: string; blocks: number; lines: number }> {
+  return enumerateStyleSources(cwd)
+    .filter((rel) => rel.endsWith('.html'))
+    .map((rel) => ({ path: rel, ...htmlEmbeddedStyle(cwd, rel) }))
+    .filter((e) => e.blocks > 0);
+}
+
 export interface ScanCoverageOptions {
   cwd: string;
   repo: string;
@@ -113,20 +155,53 @@ export function checkScanCoverage(options: ScanCoverageOptions): KeyState {
     }
   }
 
+  // 測定経路が `.css` だけを見るため、**台帳に載っていても実測できない**領域（#164）。
+  // 「登録されていない」（= red）と「登録されているが測れない」（= unknown）は別物なので分ける。
+  const unmeasurable: string[] = [];
+
   const sources = enumerateStyleSources(cwd);
   for (const rel of sources) {
     if (BANNED_EXT.test(rel)) {
       details.push(`css/html 以外の style 拡張子は即 red（R5(5)）: ${rel}`);
       continue;
     }
-    const allowed =
-      CANONICAL_ALLOWED.some((re) => re.test(rel)) ||
-      manifestPaths.includes(rel) ||
-      widgetEntryFiles.includes(rel);
+    const registered = manifestPaths.includes(rel) || widgetEntryFiles.includes(rel);
+    // 🔴 HTML は**埋め込み `<style>` を持つ限り無条件 allowed にしない**（#164）。
+    // 正準配置（index.html）であっても、中の CSS は台帳にも lint にも載らない。
+    const embedded = rel.endsWith('.html') ? htmlEmbeddedStyle(cwd, rel) : { blocks: 0, lines: 0 };
+    if (embedded.blocks > 0) {
+      if (!registered) {
+        details.push(
+          `HTML 埋め込み <style> が台帳外（${embedded.blocks}ブロック・約${embedded.lines}行）: ${rel}` +
+            ` — 正準配置でも中の CSS は themes / 許可リスト / legacy manifest のいずれにも載らない（#164）`,
+        );
+      } else {
+        // 台帳には載っているが、`.css` しか見ない測定経路では cap も違反数も実測できない。
+        unmeasurable.push(
+          `${rel}（${embedded.blocks}ブロック・約${embedded.lines}行）— 台帳登録済みだが測定経路が .css のみ`,
+        );
+      }
+      continue;
+    }
+    const allowed = CANONICAL_ALLOWED.some((re) => re.test(rel)) || registered;
     if (!allowed) {
       details.push(`台帳外の style ソース（themes ∪ 許可リスト ∪ legacy manifest に不在）: ${rel}`);
     }
   }
 
-  return details.length === 0 ? { state: 'green' } : { state: 'red', details };
+  if (details.length > 0) return { state: 'red', details };
+  // 🔴 不可視領域があるなら green ではなく unknown（fail-closed・G-6）。
+  // 「red が無い」を「全部見えた」と読ませない。
+  if (unmeasurable.length > 0) {
+    return {
+      state: 'unknown',
+      reason: 'not-installed',
+      details: [
+        'HTML 埋め込み <style> を実測できる走査経路が未実装のため green を返さない（#164・G-6）:',
+        ...unmeasurable,
+        '解消条件: postcss-html 経由の抽出を測定経路（init --scan / lint-baseline）に追加すること。',
+      ],
+    };
+  }
+  return { state: 'green' };
 }

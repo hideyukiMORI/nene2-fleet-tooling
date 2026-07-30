@@ -23,7 +23,9 @@ import type { Linter } from 'eslint';
 
 import {
   API_FETCH_SYNTAX,
+  I18N_LANG_SYNTAX,
   I18N_RUNTIME_SYNTAX,
+  STYLING_DATA_THEME_SYNTAX,
   STYLING_SYNTAX,
   TESTING_SYNTAX,
   type SyntaxSelector,
@@ -65,6 +67,21 @@ export const CLIENT_TS = 'src/shared/api/client.ts';
 export const MESSAGES_GLOB = 'src/shared/i18n/messages/**/*.{ts,tsx}';
 export const SLICES_GLOB = 'src/{features,pages,entities}/**/*.{ts,tsx}';
 export const SHARED_UI_GLOB = 'src/shared/ui/**/*.{ts,tsx}';
+/**
+ * I18nProvider 実装の正準座席（#118）。AM-18 は「lang の設定は I18nProvider の scope 同期のみ」
+ * なので、**この1ファイルだけ** lang 群を外す（他の禁止は全部かける）。
+ * フリート実測（2026-07-30）: payout / deal / vault / invoice がこの配置。
+ */
+export const I18N_PROVIDER_GLOB = 'src/shared/i18n/i18n-context.{ts,tsx}';
+/**
+ * 登録テーマモジュールの正準座席（#130）。会議R2⑥/R5 は「data-theme の付与・読み取りは
+ * 登録テーマモジュールのみ」なので、**このモジュール配下だけ** data-theme 群を外す。
+ * フリート実測（2026-07-30・`setAttribute('data-theme')` の実在ファイル）:
+ * contact / deal / serve = `src/shared/theme/index.ts`・origin = `src/shared/theme/ThemeProvider.tsx`
+ * ＝**ファイル名は艦ごとに違うがモジュール（ディレクトリ）は共通**なので、条文の語（「テーマモジュール」）
+ * に合わせてディレクトリ単位で表現する。
+ */
+export const THEME_MODULE_GLOB = 'src/shared/theme/**/*.{ts,tsx}';
 export const TEST_FILE_GLOBS = [
   'src/**/*.test.{ts,tsx}',
   'src/**/*.stories.{ts,tsx}',
@@ -86,7 +103,13 @@ export const restrictions: Linter.Config[] = [
   {
     name: 'nene2/restrictions/syntax-app',
     files: [APP_GLOB],
-    ignores: [CLIENT_TS, MESSAGES_GLOB, ...TEST_IGNORE_GLOBS],
+    ignores: [
+      CLIENT_TS,
+      MESSAGES_GLOB,
+      I18N_PROVIDER_GLOB,
+      THEME_MODULE_GLOB,
+      ...TEST_IGNORE_GLOBS,
+    ],
     rules: {
       'no-restricted-syntax': syntaxRule([
         ...API_FETCH_SYNTAX,
@@ -124,6 +147,39 @@ export const restrictions: Linter.Config[] = [
       // gate-integrity canonical 表に登録済みの off（05 §2.2 冒頭の唯一の例外）
       'no-restricted-globals': 'off',
       'no-restricted-imports': 'off',
+    },
+  },
+  {
+    // I18nProvider 実装（#118）。AM-18 が唯一許している座席なので **lang 群だけ**外す。
+    // 条文意図は「I18nProvider 以外が lang を触るのを禁止」であり、provider 本体が同じルールで
+    // 罰されるのは条文と逆だった（payout C3a-3 で実害・各艦が file override で退避していた）。
+    // 他の禁止（fetch / styling / Intl / JP）は**かけたまま**——「1ルール丸ごと off」にしない。
+    name: 'nene2/restrictions/syntax-i18n-provider',
+    files: [I18N_PROVIDER_GLOB],
+    ignores: TEST_IGNORE_GLOBS,
+    rules: {
+      'no-restricted-syntax': syntaxRule([
+        ...API_FETCH_SYNTAX,
+        ...STYLING_SYNTAX,
+        ...I18N_RUNTIME_SYNTAX.filter((s) => !I18N_LANG_SYNTAX.includes(s)),
+        ...I18N_JP_SYNTAX,
+      ]),
+    },
+  },
+  {
+    // 登録テーマモジュール（#130）。会議R2⑥/R5 が唯一許している座席なので **data-theme 群だけ**外す。
+    // #118 と同型（制定した本人が自分の条文で罰される形）。deal C3a-3 で実害。
+    // arbitrary value / dark: variant 等の styling 禁止は**かけたまま**。
+    name: 'nene2/restrictions/syntax-theme-module',
+    files: [THEME_MODULE_GLOB],
+    ignores: TEST_IGNORE_GLOBS,
+    rules: {
+      'no-restricted-syntax': syntaxRule([
+        ...API_FETCH_SYNTAX,
+        ...STYLING_SYNTAX.filter((s) => !STYLING_DATA_THEME_SYNTAX.includes(s)),
+        ...I18N_RUNTIME_SYNTAX,
+        ...I18N_JP_SYNTAX,
+      ]),
     },
   },
   {
