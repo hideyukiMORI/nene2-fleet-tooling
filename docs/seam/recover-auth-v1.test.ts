@@ -16,20 +16,36 @@ function extractTsBlocks(md: string): string[] {
   return [...md.matchAll(/```ts\n([\s\S]*?)```/g)].map((m) => m[1] ?? '');
 }
 
+const fileName = '/virtual/spec.ts';
+
+// モジュールスコープの定数。lib SourceFile キャッシュのキーが name+target だけで足りるのは、
+// 全 typecheck() 呼び出しがこの同一 options を使うため（options を可変にするならキーも見直すこと）。
+const options: ts.CompilerOptions = {
+  strict: true,
+  noEmit: true,
+  target: ts.ScriptTarget.ES2022,
+  types: [],
+};
+
+// typecheck() の所要はほぼ全部が lib d.ts の読み込み（#156 実測: createProgram 1回あたり
+// 約 0.8〜1.0 秒）。仮想ファイル以外は呼び出しをまたいで同一なので SourceFile を使い回す。
+const libSourceFiles = new Map<string, ts.SourceFile | undefined>();
+
 function typecheck(source: string): string[] {
-  const fileName = '/virtual/spec.ts';
-  const options: ts.CompilerOptions = {
-    strict: true,
-    noEmit: true,
-    target: ts.ScriptTarget.ES2022,
-    types: [],
-  };
   const host = ts.createCompilerHost(options);
   const getSourceFile = host.getSourceFile.bind(host);
-  host.getSourceFile = (name, languageVersion, ...rest) =>
-    name === fileName
-      ? ts.createSourceFile(name, source, ts.ScriptTarget.ES2022, true)
-      : getSourceFile(name, languageVersion, ...rest);
+  host.getSourceFile = (name, languageVersion, ...rest) => {
+    if (name === fileName) {
+      return ts.createSourceFile(name, source, ts.ScriptTarget.ES2022, true);
+    }
+    const target =
+      typeof languageVersion === 'object' ? languageVersion.languageVersion : languageVersion;
+    const key = `${name}::${target}`;
+    if (!libSourceFiles.has(key)) {
+      libSourceFiles.set(key, getSourceFile(name, languageVersion, ...rest));
+    }
+    return libSourceFiles.get(key);
+  };
   const fileExists = host.fileExists.bind(host);
   host.fileExists = (name) => name === fileName || fileExists(name);
   const program = ts.createProgram([fileName], options, host);
@@ -38,8 +54,14 @@ function typecheck(source: string): string[] {
     .map((d) => ts.flattenDiagnosticMessageText(d.messageText, '\n'));
 }
 
+// TypeScript コンパイラをテストプロセス内で起動するため、vitest 既定の 5000ms では
+// 負荷下（npm run check の直列実行で type-check→lint→format:check の後に回る）に落ちる。
+// #156 実測: 単体 1.8 秒 / check 経由で 4回中2回タイムアウト。上限は明示的に与える
+// （リポ全体の testTimeout 引き上げは本物のハングを見逃すので採らない）。
+const TYPECHECK_TIMEOUT_MS = 30_000;
+
 describe('seam 仕様 v1（recoverAuth）— 仕様書の機械検査', () => {
-  it('§1 interface 定義ブロックが型検査を通る', () => {
+  it('§1 interface 定義ブロックが型検査を通る', { timeout: TYPECHECK_TIMEOUT_MS }, () => {
     const blocks = extractTsBlocks(spec);
     expect(blocks.length).toBeGreaterThanOrEqual(1);
     for (const block of blocks) {
@@ -47,9 +69,13 @@ describe('seam 仕様 v1（recoverAuth）— 仕様書の機械検査', () => {
     }
   });
 
-  it('故意 fail: 壊れた TS は検査器が検知する（検査器の空虚合格防止）', () => {
-    expect(typecheck('export type Broken = (x: Missing) => Nope;').length).toBeGreaterThan(0);
-  });
+  it(
+    '故意 fail: 壊れた TS は検査器が検知する（検査器の空虚合格防止）',
+    { timeout: TYPECHECK_TIMEOUT_MS },
+    () => {
+      expect(typecheck('export type Broken = (x: Missing) => Nope;').length).toBeGreaterThan(0);
+    },
+  );
 
   it('config キーは recoverAuth 1個のみ・経路除外 config の不在が明文', () => {
     expect(spec).toContain('config キーは **`recoverAuth` 1個のみ**');
