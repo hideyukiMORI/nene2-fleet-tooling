@@ -31,7 +31,8 @@
 
 > spec をリポ直下 `tests/e2e/` へ移す PR は、**移設後に lint / format の対象から外れていないこと**を受入条件に含める（MUST）。
 >
-> - ESLint は**自分の config ファイルより上のディレクトリを lint できない**。リポ直下に「**E2E ブロックのみ**」を再エクスポートする config を置く。
+> - ESLint は**自分の config ファイルより上のディレクトリを lint できない**。リポ直下に config を置く。
+> - 🔴 **その config が読むのは、独立モジュールへ切り出した E2E ブロックだけ**（`frontend/eslint.e2e.config.js`）とする（MUST）。app config（`frontend/eslint.config.js`）は**名前付き export 経由でも読まない**。app 側はその独立モジュールを import して合流させる。
 > - **全体の再エクスポートは MUST NOT** — typed な `tests/**` ブロックが `tests/e2e/**` に当たり parse error になる。
 > - prettier は `--config` で正本を明示する（リポ直下に `.prettierrc` を新設すると**正本が二重化する** MUST NOT）。
 > - **受入は負テストで確認する**: 移設後に spec へわざと未使用変数を入れ、`npm run lint` が**落ちること**を見る。
@@ -74,15 +75,45 @@ Error: [nene2/styling] Tailwind entry point not found: <repo>/src/shared/ui/them
 
 **「移設だけ」または「合成形だけ」なら気づかない。両方入れた瞬間に `lint:e2e` だけが落ちる。**
 
-**機序（fleet が実コードで確認・2026-07-31）**: `stylingWith()` の entry throw は**意図的な fail-loud**（`configs/styling.ts:56-72`・G-6 の適用。silent fallback すると payout#161 の 218件偽陽性になる）。問題は throw ではなく**それがモジュール評価時に起きる**こと — ESM は名前付き export を1つ取るだけでも**モジュール本体を評価する**ので、**部分再エクスポートでは回避できない**。
+**機序**: `stylingWith()` の entry throw は**意図的な fail-loud**（`configs/styling.ts:56-72`・G-6 の適用。silent fallback すると payout#161 の 218件偽陽性になる）。問題は throw ではなく**それがモジュール評価時に起きる**こと — ESM は名前付き export を1つ取るだけでも**モジュール本体を評価する**。
 
-🔴 **これは #192（root entry が optional peer の stylelint を静的に巻き込む・配布側で根治済み）と同型**なので、**艦側の回避で終わらせず配布側の是正を検討する**のが筋。→ **#211 に分離**（選択肢 A〜D と fleet の推し＝暫定 A・恒久 C を整理済み・**要裁定**）。
+🔴 **invoice が再現を取った**（2026-07-31・#211 のタスク1消化。一時 config を置いて測り直後に削除・tracked ファイル無変更）。**何も再エクスポートせず副作用 import だけ**した config で throw することを確認:
 
-**暫定の条文**（#211 の裁定が出るまで）:
+```js
+import './frontend/eslint.config.js'
+export default []
+```
+→ `Error: [nene2/styling] Tailwind entry point not found: <repo>/src/…` **rc=2**（スタックは `nene2-standards/dist/configs/styling.js:48`）
+陽性対照 = 現行の着地（独立モジュールを読む形）は **rc=0**。
 
-> 合成形を採用している艦は、**e2e ブロックを独立モジュール**（`frontend/eslint.e2e.config.js`）へ切り出し、リポ直下 config は**それだけ**を読む（root から評価してよいのは e2e ブロックだけ）。
+＝ **config から何も取り出さなくても throw する**。「部分再エクスポートで回避できない」が実測で確定した。
 
-⚠️ ただしこれは**全艦が同じ回避を手で書く形**で、**G-7（合成を被検査者の手から取り上げる）の趣旨に逆行する**。恒久形は #211 で決める。
+### 🔴 失敗原因は2つあり、**独立している**（invoice 訂正・重要）
+
+| | 原因 | 現れ方 | (b) を配布側で直したら消えるか |
+|---|---|---|---|
+| **(a)** | app config を丸ごと読むと typed な `tests/**` ブロックが root base path から `tests/e2e/**` に当たる | spec が `parserOptions.project` の parse error で全滅 | 🔴 **消えない** |
+| **(b)** | styling 断片の**評価時 throw** | `[nene2/styling] Tailwind entry point not found` | 🟢 消える |
+
+**(a) がある限り「リポ直下 config は e2e ブロックだけを読む」は回避策ではなく構造上の要件**である。したがって:
+
+- 🔴 **fleet の当初の評価「A は全艦が同じ回避を手で書く形＝G-7 逆行」は、(b) の面だけを見た誤り**だった。(a) を入れると「**配布側が何をしても艦側に独立モジュールは要る**」になる。
+- 🔴 **C（`nene2/e2e` subpath）も (a) は解かない。** C の利得は「e2e 用ルールを配布側から供給できる」ことであって throw 回避ではない、と整理し直す。
+
+### 🟢 案 E（invoice 提案・実測つき）— `cwd` を渡すだけで (b) は閉じる・**publish 不要**
+
+`StylingOptions.cwd` は既存なので、艦側が config 自身のディレクトリを渡す:
+
+```js
+const here = path.dirname(fileURLToPath(import.meta.url))
+export default [...nene2.stylingWith({ cwd: here })]
+```
+
+invoice 実測: リポ直下から評価しても **throw が出ない**（`{ cwd: here }` を外すと即 throw に戻る＝対照済み）。
+
+**E の射程は e2e に限らない**: **エディタ／IDE の ESLint 統合はリポ直下を cwd にして走ることがある**ので、entry 解決が `process.cwd()` 依存だと「**エディタでだけ config が壊れる**」経路が全艦に開いている。
+
+→ **#211 の現在の推し（invoice 提案・fleet 同意）**: 暫定 = **A を「回避」ではなく (a) 由来の構造要件として条文化**（根拠が「気をつける」でなく parse error の実測になる）／(b) = **E（`cwd` を渡す作法）で閉じる**（配布側コード変更なし・publish 不要・エディタ経路も同時に塞がる）／**C は「e2e ルールの配布」として別建てで判断**。**裁定は hub。**
 
 ---
 
@@ -99,6 +130,8 @@ Error: [nene2/styling] Tailwind entry point not found: <repo>/src/shared/ui/them
 > 3. そのジョブが **required contexts に入っている** — `gh api repos/:owner/:repo/branches/main/protection`
 >
 > **1 だけで C6 を ✅ にしない**（MUST NOT）。
+>
+> 🔴 **3 は branch protection の参照権限が要る**（`gh api …/branches/main/protection`）。権限が無くて**測れない場合は `unknown`（＝未達）**とする（MUST）。「測れないから ✅」にしない — **G-6 の適用**（invoice 指摘）。
 
 ### 根拠（invoice 実測・fleet では再実測していない）
 
@@ -174,6 +207,8 @@ contact の blanket override `"brace-expansion": "^5.0.8"` を写したら `npm 
 
 > **設計則（#155 ③'）と受入手順（本節 ④）は別条文として両方置く**（MUST）。
 > 一方を他方の「補足」に格下げしない — **設計と受入は違う人が違う時点で読む**（設計は写す前・受入は PR を出す前）。相互参照だけ張る。
+
+🔴 **2026-07-31 に invoice 側で実例が1件増えた**（#741 → PR #742・invoice 実測）: `check`（required）が**本番 build を一度も走らせていなかった**。`.storybook` の stories 射程が `src/shared/ui/**` だけなので、`main.tsx` からしか到達しない `.tsx` **92本**がどのゲートからもバンドルされていなかった。**負テスト**（`src/fonts.ts` に実在しないフォント weight を1行注入）で `type-check` / `lint` / `build-storybook` / `check` が**すべて rc=0**、**`build` だけ rc=1**。＝「全ゲート緑」と「壊れていない」が独立であることの実測。**EX-6 のメンバーでもある**（#210）。
 
 🔴 さらに serve が示した**判定基準の上書き**（#161 §4 の根拠）を両方に効かせる: **ゲート実行（lint / check / codegen）の緑は判定材料にしない**。serve は4経路中3経路が破壊されたまま全ゲート exit 0 を実測している。判定は**直接プローブ**か **deal の恒久ガードテスト（EX-4）**のみ。
 
