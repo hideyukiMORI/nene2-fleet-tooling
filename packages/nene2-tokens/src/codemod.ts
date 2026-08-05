@@ -333,6 +333,72 @@ export function reentrantRenames(index: ReadonlyMap<string, string>): readonly R
   return out;
 }
 
+/** apply が触らない CSS に取り残される `var(--old)` 参照（rename 後に未定義参照になる）。 */
+export interface DanglingVarRef {
+  /** 呼び出し側が付けた出所ラベル（ファイルパス等）。 */
+  readonly file: string;
+  /** 1 始まりの行番号。 */
+  readonly line: number;
+  /** 参照されている改名元トークン（`--font-sans`）。 */
+  readonly token: string;
+  /** 改名先（`--font-x-sans`）。 */
+  readonly to: string;
+  /**
+   * `var(--old, fallback)` の形か。
+   *
+   * **fallback 付きも報告する**（除外しない）。無い場合は宣言ごと破棄されて壊れ方が目に見えるが、
+   * **有る場合は黙って fallback 値へ切り替わる**（＝壊れたことが見えない）。開示の価値はむしろ後者が高い。
+   */
+  readonly hasFallback: boolean;
+}
+
+/** `var(` の直後のトークン名と、その次の非空白1文字（`,` なら fallback あり）。 */
+const VAR_REF_RE = /var\(\s*(--[A-Za-z0-9_-]+)\s*([,)])/g;
+
+/**
+ * **取り残される `var(--old)` 参照**を洗い出す（`reentrantRenames` と同型の開示関数）。
+ *
+ * トークンを x- 化すると、テーマ側は codemod が書き換えるが、**apply の対象外にある CSS に残った
+ * `var(--old)` は未定義参照（dangle）になる**。CSS は未定義の `var()` でエラーを出さず、宣言ごと
+ * 破棄して継承値で描画するため、型検査・lint・テストのいずれも通る（field W1 実測: `index.css` の
+ * `var(--font-sans)` 1 件が dangle し、grep で見つけて手当した — fleet-tooling#132）。
+ *
+ * **fail ではなく開示**である（#132 の指定）: 手当は製品側の仕事で、codemod は「どこが外れるか」を
+ * 見せる責任だけを負う。呼び出し側は結果を warning として出す。
+ *
+ * @param index    `buildRenameIndex(plan)` の索引。`--` 始まりのキー（token rename）だけを見る。
+ * @param sources  **apply が書き換えないファイル**を呼び出し側が選んで渡す。テーマ自身や、
+ *                 apply 対象に含めた CSS を渡すと「これから直る参照」を dangle として誤報する。
+ * @throws CodemodError `sources` が空のとき（G-6: 走査対象ゼロで「dangle なし」を返さない）。
+ */
+export function danglingVarReferences(
+  index: ReadonlyMap<string, string>,
+  sources: readonly { readonly file: string; readonly text: string }[],
+): readonly DanglingVarRef[] {
+  if (sources.length === 0) {
+    throw new CodemodError(
+      'no sources to scan — refusing to report "no dangling refs" from an empty scan ' +
+        '(G-6: 検査不能は green ではない)',
+    );
+  }
+  const out: DanglingVarRef[] = [];
+  for (const { file, text } of sources) {
+    const lines = text.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]!;
+      VAR_REF_RE.lastIndex = 0;
+      let m: RegExpExecArray | null;
+      while ((m = VAR_REF_RE.exec(line)) !== null) {
+        const token = m[1]!;
+        const to = index.get(token);
+        if (to === undefined) continue;
+        out.push({ file, line: i + 1, token, to, hasFallback: m[2] === ',' });
+      }
+    }
+  }
+  return out;
+}
+
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

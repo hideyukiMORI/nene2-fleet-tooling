@@ -73,6 +73,7 @@ export {
   buildRenameIndex,
   buildRenameRegex,
   collectDeclaredTokenNames,
+  danglingVarReferences,
   deriveClassRenames,
   namespaceOf,
   reentrantRenames,
@@ -81,6 +82,7 @@ export type {
   ApplyResult,
   ClassRenameResult,
   CodemodPlan,
+  DanglingVarRef,
   Rename,
   UnmappedRename,
 } from './codemod.js';
