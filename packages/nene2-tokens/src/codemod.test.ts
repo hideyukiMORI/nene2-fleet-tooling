@@ -11,6 +11,7 @@ import {
   buildRenameIndex,
   buildRenameRegex,
   collectDeclaredTokenNames,
+  danglingVarReferences,
   deriveClassRenames,
   namespaceOf,
   reentrantRenames,
@@ -294,6 +295,63 @@ describe('reentrantRenames — 2 回撃つと壊れる対の開示（#17 の字�
 
   it('reports nothing re-entrant when no target is itself a source', () => {
     expect(reentrantRenames(new Map([['a', 'b']]))).toEqual([]);
+  });
+});
+
+describe('danglingVarReferences — apply が触らない CSS に残る var(--old) の開示（#132）', () => {
+  const index = buildRenameIndex(buildPlan(payoutMappable, 'common'));
+  // 索引に実在する token rename を1本、テストの前提として固定する（前提が崩れたら気づけるように）
+  const [sampleToken, sampleTo] = [...index.entries()].find(([k]) => k.startsWith('--'))!;
+
+  it('reports a fallback-less var(--old) left in a file the codemod does not rewrite', () => {
+    const found = danglingVarReferences(index, [
+      { file: 'src/index.css', text: `.a { color: var(${sampleToken}); }` },
+    ]);
+    expect(found).toEqual([
+      { file: 'src/index.css', line: 1, token: sampleToken, to: sampleTo, hasFallback: false },
+    ]);
+  });
+
+  it('reports var(--old, fallback) too, flagged — it silently switches to the fallback', () => {
+    const found = danglingVarReferences(index, [
+      { file: 'a.css', text: `.a { color: var(${sampleToken}, red); }` },
+    ]);
+    expect(found).toHaveLength(1);
+    expect(found[0]!.hasFallback).toBe(true);
+  });
+
+  it('reports the 1-based line and finds multiple refs on one line', () => {
+    const text = `/* head */\n.a { color: var(${sampleToken}); border-color: var(${sampleToken}); }`;
+    const found = danglingVarReferences(index, [{ file: 'a.css', text }]);
+    expect(found).toHaveLength(2);
+    expect(found.every((d) => d.line === 2)).toBe(true);
+  });
+
+  it('ignores var() references to tokens that are not being renamed（誤報しない）', () => {
+    const found = danglingVarReferences(index, [
+      { file: 'a.css', text: '.a { color: var(--not-in-the-plan-at-all); }' },
+    ]);
+    expect(found).toEqual([]);
+  });
+
+  it('ignores class-rename keys — only `--` token keys are var() referable', () => {
+    // 索引には class rename（`gap-inline-sm` 等）も入っている。var(gap-inline-sm) は CSS として
+    // 無効なので拾ってはいけない（VAR_REF_RE が `--` 始まりだけを見ることの固定）。
+    const classKey = [...index.keys()].find((k) => !k.startsWith('--'))!;
+    expect(
+      danglingVarReferences(index, [{ file: 'a.css', text: `.a { x: var(${classKey}); }` }]),
+    ).toEqual([]);
+  });
+
+  it('refuses an empty scan — 走査対象ゼロで「dangle なし」を返さない（G-6）', () => {
+    expect(() => danglingVarReferences(index, [])).toThrow(CodemodError);
+  });
+
+  it('故意 fail: 検出器が生きていることの陽性対照（索引が空なら何も出ない）', () => {
+    // 索引を空にすると同じ入力で 0 件になる＝上の検出は索引に依存している（空虚合格の防止）
+    const text = `.a { color: var(${sampleToken}); }`;
+    expect(danglingVarReferences(new Map(), [{ file: 'a.css', text }])).toEqual([]);
+    expect(danglingVarReferences(index, [{ file: 'a.css', text }])).toHaveLength(1);
   });
 });
 
