@@ -12,14 +12,14 @@
  *   nene2-tokens map                                          # CODEMOD_MAP_V1 を JSON で出力
  *   nene2-tokens codemod-plan --theme <theme.css> [--map <table>]
  *                                                             # 写像表から導出した rename 計画（stdout）
- *   nene2-tokens codemod --theme <theme.css> [--map <table>] [--check] <path...>
+ *   nene2-tokens codemod --theme <theme.css> [--map <table>] [--check] [--scan-css <dir|file>[,…]] <path...>
  *                                                             # TSX/TS の class・var(--) 位置を書き換え
  *
  * 終了コード: 0 = green / 1 = 違反あり / 2 = 検査不能（fail-closed — unknown は green ではない）
  */
 
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import jscodeshift from 'jscodeshift';
 import { CONTRACT_TOKENS } from './contract.js';
 import { validateThemeSource, type ValidateOptions } from './validate.js';
@@ -36,6 +36,7 @@ import {
   CodemodError,
   buildPlan,
   buildRenameIndex,
+  danglingVarReferences,
   reentrantRenames,
   type CodemodPlan,
 } from './codemod.js';
@@ -51,7 +52,14 @@ function parseArgs(argv: string[]): Parsed {
   const [command = 'help', ...rest] = argv;
   const flags = new Map<string, string | true>();
   const files: string[] = [];
-  const valued = new Set(['--parent', '--map', '--container-selector', '--theme', '--ext']);
+  const valued = new Set([
+    '--parent',
+    '--map',
+    '--container-selector',
+    '--theme',
+    '--ext',
+    '--scan-css',
+  ]);
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i]!;
     if (a.startsWith('--')) {
@@ -245,6 +253,44 @@ function main(): void {
       }
       for (const u of plan.unmapped) {
         console.log(`WARN  no class rename derived for ${u.from} → ${u.to}: ${u.reason}`);
+      }
+
+      // #132: この codemod は既定で .ts/.tsx しか書き換えないので、CSS に残った var(--old) は
+      // 未定義参照になる。CSS はエラーを出さず宣言ごと破棄するため型検査も lint も通る。
+      // 開示のみ（fail しない）— 手当は製品側。
+      const scanCssFlag = flags.get('--scan-css');
+      if (typeof scanCssFlag === 'string') {
+        const cssSources: { file: string; text: string }[] = [];
+        const themePath = resolve(String(flags.get('--theme')));
+        for (const root of scanCssFlag.split(',')) {
+          for (const file of walkSources(root, ['.css'])) {
+            // テーマ自身は codemod-generate 経路で移行されるので dangle ではない
+            if (resolve(file) === themePath) continue;
+            cssSources.push({ file, text: read(file) });
+          }
+        }
+        if (cssSources.length === 0) {
+          console.log(`NOTE  --scan-css '${scanCssFlag}' matched no .css file — nothing scanned.`);
+        } else {
+          const dangling = danglingVarReferences(index, cssSources);
+          for (const d of dangling) {
+            const kind = d.hasFallback ? 'silently falls back' : 'drops the declaration';
+            console.log(
+              `WARN  ${d.file}:${d.line} var(${d.token}) → ${d.to} is renamed but this file is not rewritten (${kind}).`,
+            );
+          }
+          console.log(
+            `scan-css — ${cssSources.length} file(s), ${dangling.length} dangling var() reference(s)`,
+          );
+        }
+      } else {
+        // 沈黙を「CSS は健全」と読ませない（G-6）
+        console.log(
+          'NOTE  CSS was NOT scanned. var(--old) left in CSS becomes an undefined reference and no gate catches it.',
+        );
+        console.log(
+          '      Pass --scan-css <dir|file>[,…] to have them disclosed (fleet-tooling#132).',
+        );
       }
       if (index.size === 0) {
         console.log('codemod — nothing to rename (theme is already on contract vocabulary)');
