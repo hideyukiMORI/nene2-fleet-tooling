@@ -22,8 +22,12 @@ on:
 # 🔴 group に `github.event_name` を含めるのが要点: 含めないと schedule / workflow_dispatch の run が
 # main への push と同じ group に入り、**push に cancel される**。
 # 「設定したのに走らない」という最も質の悪い失敗になる（origin が実装時に踏んだ罠）。
+#
+# group に前置（`check-` / `ci-`）は付けない。`github.workflow` が既に workflow を一意にするので
+# 冗長であるうえ、正本スニペットとして配るときに**艦ごとに違う値を書く余地**が生まれる。
+# 前置を持たない形なら、どの艦でも1文字も変えずに貼れる（#258）。
 concurrency:
-  group: check-${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
@@ -43,13 +47,24 @@ jobs:
       - run: npm run check:cli
       # 依存脆弱性ゲート（#255）。設定・例外の作法は `audit-ci.jsonc` の冒頭に書いてある。
       #
-      # `if: always()` は意図的: コードが赤い日でも advisory の信号は独立に見たい。
-      # ここを既定の挙動（前ステップが赤なら skip）にすると、型エラーが1件あるだけで
-      # 「世界が動いたか」の検査が止まり、定期再検査の目的そのものが失われる。
+      # 🔴 `if` を既定の挙動（前ステップが赤なら skip）にしない理由 —— この行は理由ごと残すこと。
+      # 理由の無い設定は次の人に元へ戻される。
+      # advisory は**我々のコミットではなく向こう側の時計で公開される**。既定の挙動だと、
+      # 型エラーが1件あるだけで「世界が動いたか」の検査が止まり、定期再検査の目的が失われる。
+      # だからコードの赤とは独立に、この信号だけは出したい。
+      #
+      # 🔴 ただし `always()` ではなく `!cancelled()` を使う（#258）。
+      # `always()` は **cancelled のときも true** になり、上の `cancel-in-progress: true` により
+      # cancel は日常的に起きる。その run で audit だけが走って落ちると
+      # 「キャンセルされた run の赤」という**無意味な信号**が出て、
+      # 「無視してよい赤」としてゲートが鈍る（records の Stop hook 観測 = 実欠陥検出 S/N 0 と同じ壊れ方）。
+      # `!cancelled()` なら success / failure では走り、cancel では走らない。上の意図はそのまま保たれる。
       #
       # 🔴 `npm run check` には含めていない。check は手元で回すループ（Stop hook パイロットの
       # 対象でもある）で、そこへネットワーク依存の検査を混ぜると、回線都合の赤が
       # 「無視してよい赤」として定着する。ゲートは CI に置く。
+      # ※ 正本として配るときはここが2ケースに割れる:
+      #   Stop hook を持つ艦 = CI に置く／持たない艦 = `check` に入れてよい。
       - name: Audit (fail on high/critical)
-        if: always()
+        if: ${{ !cancelled() }}
         run: npm run audit
