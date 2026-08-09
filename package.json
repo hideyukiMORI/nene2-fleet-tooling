@@ -16,7 +16,8 @@
     "check:cli": "node packages/nene2-tokens/dist/cli.js validate packages/nene2-tokens/themes/reference.css",
     "check": "npm run type-check && npm run lint && npm run format:check && npm run test && npm run check:cli && npm run check:nene2-check && npm run check:am2-gate",
     "check:nene2-check": "cd packages/nene2-standards/tests/fixtures/check-app && node ../../../dist/checks/cli.js conformance --repo nene-check-smoke",
-    "check:am2-gate": "node scripts/am2-release-gate.mjs"
+    "check:am2-gate": "node scripts/am2-release-gate.mjs",
+    "audit": "audit-ci --config audit-ci.jsonc"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.0",
@@ -24,6 +25,7 @@
     "@types/node": "^22.20.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "audit-ci": "^7.1.0",
     "eslint": "^9.30.0",
     "jsdom": "^25.0.1",
     "prettier": "3.6.2",

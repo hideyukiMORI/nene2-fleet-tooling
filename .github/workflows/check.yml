@@ -4,6 +4,27 @@ on:
   push:
     branches: [main]
   pull_request:
+  # 定期再検査（#255）。push 契機だけだと「誰も触らない週は何も検査されない」状態になり、
+  # 艦の健全性が「最近誰かが作業したか」に依存してしまう。advisory は我々のコミットではなく
+  # 向こう側の時計で公開されるので、`main` がまだ緑かどうかを push から切り離す必要がある。
+  #
+  # 実測（2026-08-09・hub）: 週次 schedule を持つのはフリート25リポ中 origin 1つだけだった。
+  # このリポ自身も持っておらず、しかも走査の述語（`nene-*`）にマッチしないため
+  # **その1艦のカウントにも入っていなかった**。
+  #
+  # 月曜 00:00 UTC = 09:00 JST（稼働週の頭）。参照実装 = nene-origin #412。
+  schedule:
+    - cron: '0 0 * * 1'
+  # schedule を待たずに手で叩くための口。これが無いと「配ったこと自体を検証できない」。
+  workflow_dispatch:
+
+# 同じ ref への連続 push で古い run を畳む。
+# 🔴 group に `github.event_name` を含めるのが要点: 含めないと schedule / workflow_dispatch の run が
+# main への push と同じ group に入り、**push に cancel される**。
+# 「設定したのに走らない」という最も質の悪い失敗になる（origin が実装時に踏んだ罠）。
+concurrency:
+  group: check-${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
 
 jobs:
   check:
@@ -20,3 +41,15 @@ jobs:
       - run: npm run format:check
       - run: npm run test
       - run: npm run check:cli
+      # 依存脆弱性ゲート（#255）。設定・例外の作法は `audit-ci.jsonc` の冒頭に書いてある。
+      #
+      # `if: always()` は意図的: コードが赤い日でも advisory の信号は独立に見たい。
+      # ここを既定の挙動（前ステップが赤なら skip）にすると、型エラーが1件あるだけで
+      # 「世界が動いたか」の検査が止まり、定期再検査の目的そのものが失われる。
+      #
+      # 🔴 `npm run check` には含めていない。check は手元で回すループ（Stop hook パイロットの
+      # 対象でもある）で、そこへネットワーク依存の検査を混ぜると、回線都合の赤が
+      # 「無視してよい赤」として定着する。ゲートは CI に置く。
+      - name: Audit (fail on high/critical)
+        if: always()
+        run: npm run audit
