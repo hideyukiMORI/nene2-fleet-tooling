@@ -1,0 +1,31 @@
+{
+  // 依存脆弱性ゲート（CI）。素の `npm audit --audit-level=high` を置き換える形は
+  // フリートの参照実装（nene-origin `frontend/audit-ci.jsonc`）に合わせてある。
+  // 素の npm audit には「理由のある例外」を記録する場所が無い、というのが置き換えの理由。
+  //
+  // ゲートは鈍らせない: 下に挙がっていない high/critical は必ずビルドを落とす。
+  // `allowlist` は **advisory 単位（GHSA id）** であって severity 単位ではない。閾値は下げない。
+  //
+  // 🔴 エントリを足すときは、このファイルの中に4点そろえること（EX-9）:
+  //   (1) advisory id
+  //   (2) **このコードベースに当てはまらない理由を、執筆時点で実測して**書く（仮定を書かない）
+  //   (3) 失効日
+  //   (4) 何が起きればこの例外が不要になるか
+  // 失効したエントリは「更新するもの」ではなく **タスク**。反射的に延長せず、測り直す。
+  //
+  // 🔴 このリポは配布元である、という固有の事情:
+  // ここは npm 3パッケージ（tokens / standards / i18n）を艦隊へ配る。
+  // `@hideyukimori/nene2-standards` は `postcss` を **runtime dependencies** で宣言しており、
+  // ここの依存ツリーは各艦の install 経路の一部になる（#255）。
+  // したがって **ここでの例外は自艦だけの話で終わらない**。
+  // 「dev でしか使わないから」を理由にする前に、その依存が published package の
+  // `dependencies` 側に居ないことを実測すること。
+  "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
+  "moderate": false,
+  "high": true,
+  "critical": true,
+  // 2026-08-09 時点で **空**。#255 の導入時、`npm audit fix --package-lock-only` だけで
+  // 当時の5件（high 4 / moderate 1）が全て閉じ、例外を1件も必要としなかった〔実測〕。
+  // 逃げ道ゼロで始まっている状態を、そのまま維持したい。
+  "allowlist": [],
+}
