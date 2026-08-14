@@ -3,88 +3,101 @@
 > **このファイルの役割**: 次に座る人が**最初に読む1枚**。「いまの現況」を現在形で書き、**上書きしていく**（履歴は残さない）。
 > その日に何をしたかの記録は `docs/daily/<YYYY-MM-DD>.md`（過去形・追記しない）。**役割を混ぜない。**
 > 詳細は issue へリンクし、ここには**状態と手番**だけを置く。数字は実測のみ・推測には（推測）と付ける。
-> 🔴 **自分の PR は、番号も状態も本数も書かない**（`gh pr list --state open` で数える、と書く）。
-> **マージの瞬間に自分で自分を古くする記述は、粒度を落としても古くなる** — 本数も 1本 → 0本 で同じ（08-14 実測）。
-> hub 裁定 2026-08-05（#254）を **08-14 に更新**：当初は「本数までは可」だったが、**本数も同じ性質を持つ**。
+>
+> 🔴 **自艦の可変な計数は書かない。取り方（コマンド）を書く。**
+> 対象 = **自艦の open PR（番号・状態・本数）／ open issue 数 ／ main の SHA**。
+> これらは**自分でそれを動かした瞬間に古くなる**（この current.md を載せた PR がマージされれば main も PR 数も動く）。
+> 粒度を落としても直らない — 本数も 1本 → 0本 で同じ〔08-14 実測〕。**個別に禁止を足すと次は別の計数で再演する**ので、
+> 「自艦の可変な計数」でまとめて禁じる（hub 裁定 2026-08-05 #254 → 08-14 に #266 で一般形へ）。
+> - `gh pr list --state open` ／ `gh issue list --state open` ／ `git log -1` で見ること。
+>
+> 🟢 **他艦・フリートの状態は書く**（他艦へ出した PR の一覧・allowlist の本数・射程の艦数）。
+> あれは自分では動かせないので現況として意味がある。**禁止は自艦の計数だけ。**
+> 線を引かずに一般化すると **current.md が「何も書いていない紙」になる**。
+>
+> 📐 **判定の軸（次に新しい計数が出てきたら、これで自分で判定する）**:
+> **「その記述は、*自分の行動*によって古くなるか」**。
+> 自艦の open PR / issue / SHA は**自分がコミットやマージをした瞬間に自分で古くする** → 書かない。
+> 他艦の状態は**自分の行動では変わらない**（相手が動いたときに古くなる） → **実測日つきで書く**。（hub・08-14）
 
-**最終更新**: 2026-08-14 早朝（依存監査レーンを実施・PR 10本を撃った直後）
+**最終更新**: 2026-08-14 夜（依存監査レーン後半・玉1／玉2 着地）
 
 ---
 
 ## 🏁 いまの状態
 
-- **自艦の open PR はここに書かない**（上記規約）。`gh pr list --state open` で見ること。
-- **他艦に自艦発の PR が 10本**（下記。こちらは他艦の状態なので現況として意味がある）。
-- **main = `261ff6d`**〔実測 08-14〕。自艦のコードは 08-09 から動いていない（今回の作業は全部他艦への PR）。
-- **open issue 55本**〔実測 08-14・#262 / #263 は本セッションの記録用でクローズ済み〕。
+- 自艦のコードは **08-09 から動いていない**。08-13〜14 の仕事は**全部が他艦への PR とフリート横断の実測**。
 - 自艦の CI: 週次 `schedule`（月曜09:00 JST）＋ `workflow_dispatch` ＋ `concurrency`（group に `github.event_name`）＋ audit ゲート。**allowlist 0件**。
 - 配布版（npm）: **この行を信じず** `npm view` と `fleet-baseline.json` を見ること（#152）。
   🔴 **main に未 publish の変更が入っている** — #213（`var(--old)` 参照の開示）＝ **tokens 1.3.0 の材料**。
 
 ---
 
-## 🔴 08-13〜14 に変わったこと（次に座る人が最初に踏む）
+## 🔴 08-14 に着地したこと（次に座る人が最初に踏む）
 
-### 1. hub が **2本立て**になっている
+### 1. 【PHP-AUDIT】が **13艦中 12艦**で着地した
 
-| 宛先 | 担当 | 経路 |
-| --- | --- | --- |
-| **`docker-fc`** | **NeNe ファミリー担当＝リポ・board・CI・フリート配布** | 🔴 **SendMessage で直接**（`ListAgents` で ref を取る） |
-| `docker-f6` | COLD 営業専任 | — |
+`composer.lock` を持つ艦すべてに CI の依存脆弱性ゲート（独立ステップの `composer audit`）を入れるレーン。
 
-🔴 **relay（`relay-send.sh` :8790）を掴んでいるのは COLD 側**。`ok -> :8790` が返っても
-**NeNe 担当には届かない**（08-13 実証・あたしも1通目をここへ投げて COLD 側に着いた）。
-**リポ系の照会は SendMessage 一択。**
+| 状態 | 艦 |
+| --- | --- |
+| ✅ 実装済み（**12艦**） | NENE2 / clear / deal / vault / corpus / contact / invoice / records / mcp / suite / payout ＋ **NeNe**（PR #792・**08-14 マージ済み**・hub が 13艦を `origin/main` 直読みで全数再測して確認） |
+| 🔴 残り（**1艦**） | **`nene-origin`**（#646・**課金でジョブが起動しない**・origin リナへ発令済み＝**こちらは触らない**） |
 
-### 2. 指示書が **2枚** ある（玉番号が衝突していたので片方は記号ラベル）
+🔑 **ステップが実際に走った証跡を run ログで取る**ところまでやった〔実測・#792 の run〕:
+`unit / composer audit / No security vulnerability advisories found.`
+**`composer check` に埋めていたらこの行はログに残らず、「監査が無い」と「監査したが何も出なかった」を外から区別できなかった。**
+→ **痕跡を残さない検査は、欠けている検査と見分けられない**（composer に限らない一般則・board 行119 に転記済み）。
 
-| 出所 | 玉 | 状態 |
-| --- | --- | --- |
-| `_work/handoff-fleet-2026-08-09-work-order.md` | **玉1〜玉5**（数字） | 生きている。ただし**期日は全部動いた**（下表） |
-| `_work/handoff-fleet-tooling-2026-08-14-sec-work-order.md` | **【PHP-AUDIT】【NANOID】【BRACE】【ALLOWLIST】【RR-STALE】**（記号） | 08-14 分は実施済み |
+🔑 **NeNe は 08-14 未明の母集団から漏れていた**（hub が翌日に自分で発見）。母集団の述語＝
+**「`origin/main` に lock が追跡されている × workflow が存在する」** を当てると NeNe は真になる。
+→ **述語の恒久化は GO（hub 裁定 08-14）**。🔴 **述語は `(repo, ecosystem)` の組で持つ** —
+`NeNe` / `nene-trace` は **npm 側で偽・composer 側で真**になるのが正しい挙動。
+回帰テストは**両向き**で置く（「NeNe が composer 側の母集団に入る」＋「NeNe が npm 側の母集団に入らない」）。
 
-🔴 **「玉N」と書いてあれば常に 08-09 order の方**。指示書側は記号へ改名済み（hub が §1b に対応表）。
-**【ALLOWLIST】＝【RR-STALE】＝玉3**（同じ玉の別名）。
+### 2. 🔴 composer ゲートと npm ゲートは**厳しさが非対称**（裁定済み・現状維持）
 
-### 3. 期日は **08-13 の再ペーシング（施主GO）** 後の値が正
+- `composer audit` は**素で全 severity を落とす**。**`--audit-level` というオプションは存在しない**〔実測・陽性対照つき〕。緩めるなら `--ignore-severity`。
+- 対して `audit-ci.jsonc` は `moderate: false`＝**medium 以下を無視**。
+- ⇒ **今日 12艦に入ったゲートは、将来 low が1件出た瞬間に main を赤にする**（npm 側は同じ状況で沈黙する）。
 
-`+SEC`（保安レーン＝依存脆弱性・秘密・再現性）は**期日維持**。`+L3`（品質・リファクタ）は**個別 due 撤去 → 週1の作業デー（金曜）へ集約**。
+**hub 裁定（08-14）**:
+1. **`--ignore-severity` で一律に黙らせない**（艦隊の例外は ID／理由／期限／解除条件つきが作法。severity で黙らせると*なぜ黙っているか*が残らない）
+2. 赤くなったら**是正 or 期限つき allowlist** で受ける。**第1号は sakura FT の `symfony/yaml` low 3件**
+3. **npm 側を low まで引き上げるのは今はやらない**（12艦同時赤はゲートを外す圧力になる）
+4. **この非対称は「意図」ではなく「経緯」**。board 起票と施主への上申は **hub の手番**
 
-| 玉 | 内容 | **due** | 状態 |
-| --- | --- | --- | --- |
-| **玉3**＝【ALLOWLIST】【RR-STALE】 | react-router 7艦の lockfile bump ＋ **allowlist 撤去** | **08-15** | 🔴 **次の一手**。材料は揃っている（下記） |
-| 玉4 | stylelint の前提 = **10艦ぶんの `registries.jsonc`** | **due 撤去・`+L3`** | **08-15（金）の L3 作業デー**。射程は 10艦のまま（hub が §8 の書き方を訂正） |
-| 玉5 | composer.lock 追跡 | 08-16 | 🔴 **@hide 判断待ち・触らない**（対象が4艦→6艦に増えている） |
-| 玉1 | 定期再検査の配布 | 08-18 | **配布は 08-12 に完了済み**（下記）。残 = **(b) 正本の収載 ＋ (c) 第3波9艦の手順書**（hub GO 済み・08-16〜20） |
-| 玉2 | audit 無し艦の棚卸し | 08-19 | 玉1 の残と実質同じ。**board 行94 / 95 / 122 に3重**〔hub 申告〕・統合は hub の手番 |
+### 3. 【BRACE / rgw5】の残りは **`nene2-js` の1つだけ**
 
-### 4. 🔴 玉1 の配布は **08-12 に終わっている**
+`GHSA-rgw5-rvv9-x895`（high・published 2026-08-03）を **GitHub Advisory GraphQL API の一次情報で読み直した**〔実測 08-14〕:
+**`<1.1.18` / `>=2.0.0,<2.1.4` / `>=3.0.0,<3.0.6` / `>=4.0.0,<5.0.9`**。
 
-hub が第1波6艦（clear/deal/field/payout/records/vault）＋第2波7艦（concierge/contact/invoice/profile/serve/suite/nene2-node）へ配布済み。
-**`origin/main` の実体で5艦を抜き取り確認済み**〔実測 08-14〕。cron は艦ごとに分がずれている。
-**「fleet が正本スニペットを起草して各艦が適用する」形は実行不要**。
+**25リポの `origin/main` の lockfile を contents API で直読みして全数実測**した結果:
+
+| 判定 | 対象 |
+| --- | --- |
+| 🔴 未閉じ | **`nene2-js`**（1.1.14 / 2.1.0 / 5.0.6）→ **#136 の作り直し・08-15** |
+| ✅ 充足 | clear / concierge / contact / corpus / deal / field / invoice / origin / payout / profile / records / serve / suite / vault / nene2-node / **自艦** / sakura FT ／ **NENE2**（#1647 マージで解消） |
+| ⚪ brace-expansion 不在 | NENE2(root) / corpus-site / nene-mcp / nene2-dev / nene2-python 🔴 **陽性対照つき**（全て lockfileVersion=3・文字列出現 0回。同じ器械が clear では 8回拾う） |
+| ⚪ lockfile 自体が無い | `NeNe` / `nene-trace`（npm 側は射程外） |
+
+🟢 ついでの確認: **`nene-corpus-site` の `origin/main` の lock は 406 パッケージのまま** = 08-14 未明の書き潰しは**スクラッチの写しだけで push されていない**〔実測〕。
 
 ---
 
-## 🔴 撃ってあって、まだマージされていない PR（10本・全部あたし発）
+## 他艦に出してある PR（自艦発・**他艦の状態なので現況として書く**）
 
-**マージは hub 検収**（8本の機械的追加に施主 GO を要求すると止まるため・hub 裁定 08-14）。
+| リポ | PR | 状態 |
+| --- | --- | --- |
+| nene2-js | #136 | 🔴 **draft**。`vite` 8.0.14→6.4.3 の**メジャー降格**＋24パッケージ消失が混入 → **作り直し（08-15）** |
+| nene-origin | #646 | 🔴 **課金でジョブが起動しない**。**origin リナへ発令済み**（`ci-local.sh` 経路＋同期義務）＝**こちらは触らない** |
+| 08-14 にマージ済み（**9本**） | **NeNe #792**・NENE2 #1647 / #1649・clear #430・corpus #378・deal #211・mcp #122・payout #290・vault #364 | ✅ **マージ実行者は hub**〔hub 申告〕 |
 
-| リポ | Issue | PR | 内容 | CI |
-| --- | --- | --- | --- | --- |
-| NENE2 | #1646 | **#1647** | 既知脆弱性 5件→0件（**7パッケージ更新**・🔴 `react-router 7.18.2` が同乗） | ✅ |
-| nene2-js | #135 | **#136** | 🔴 **draft**。`vite` 8.0.14→**6.4.3 降格**・24パッケージ消失が混入。**作り直し提案中** | ✅（CIは緑・だが docs ビルドは PR で走らない） |
-| NENE2 | #1648 | **#1649** | composer audit ステップ | ✅ |
-| nene-clear | #429 | **#430** | 同上 | ✅ |
-| nene-corpus | #377 | **#378** | 同上 | ✅ |
-| nene-deal | #210 | **#211** | 同上 | ✅ |
-| nene-mcp | #121 | **#122** | 同上 | ✅ |
-| **nene-origin** | #645 | **#646** | 同上 | 🔴 **課金で全ジョブ failure**（下記） |
-| nene-payout | #289 | **#290** | 同上 | ✅ |
-| nene-vault | #363 | **#364** | 同上 | ✅ |
+🔴 **`gh` の実行者名義を「施主がやった」と読まない** — 全リナが施主の資格情報で動くので **GitHub 上は常に `hideyukiMORI`**。
+08-14 に repo-status がこれを踏んで「施主がマージ」と報告し、hub が訂正した。**誰が検収したかの記録が狂う。**
 
-🔴 **マージ後に `git ls-remote --heads origin` でブランチ消滅を確認する**（判例43・worktree 運用のリポで
-`gh pr merge --delete-branch` が失敗してリモートに残る。08-13 にフリートで3回発生）。
+🟢 **判例43（マージ後のブランチ残存）は 08-14 に消化済み** — マージ済み7本の head を
+`gh api repos/<slug>/git/ref/heads/<branch>` で叩き、**7本とも 404＝削除済み**〔実測〕。残存ゼロ。
 
 ---
 
@@ -92,32 +105,29 @@ hub が第1波6艦（clear/deal/field/payout/records/vault）＋第2波7艦（co
 
 | # | 内容 | 手番 |
 | --- | --- | --- |
-| **1** | **`nene-origin` の CI が課金で全面停止**。`The job was not started because recent account payments have failed...`〔実測・check-run annotation〕。origin は **private**（public は Actions 無料枠・private は課金枠＝**課金が止まると private だけ落ちる**）。**最後の成功は 08-10 の週次**で、**次の週次 08-17（月）は失敗する**。
-🔴 **conformance / signing / publish が origin にあるため、課金が戻るまでリリース経路が塞がる**〔hub 裁定〕。
-〔hub 実測〕private は12リポ・workflow 持ちは4つ（origin / hideyuki-mori-site / nene-devto / records-commercial）で、**08-12 の records-commercial は成功**＝**停止は 08-12〜08-13 の間**。🔴 **`ci-watch.md` は origin を 🟢 と判定している**（最後の成功の鮮度しか見ていない＝**run が0本でも緑に見える**） | **施主**（課金）／ci-watch の是正は **hub** |
-| **2** | **`vitepress` → `vite`(high `<=6.4.2`) → `esbuild` の鎖が 4リポで同一**（nene2-python / nene-mcp / NENE2 root / nene2-js）。**`vitepress` の major 更新という判断が1回で4リポぶん片づく** | **施主**（束ねて上げるのは hub） |
-| **3** | 🔴 **`nene-corpus-site` の「6件→0件」は偽物だった**（下記）。**撃っていない**。high 5 / low 1 は**残ったまま**・79日休眠 | **fleet**（測り直し） |
-| **4** | **`nene2-dev` は astro high が再発**。board の「PR#1 で完了」は 6.3.8→6.4.8 の話で、今回は `astro@7.2.1`（major）が要る | **施主** |
-| **5** | **NeNe に smarty medium 2件**。「休眠だが load-bearing」だが**何に対して load-bearing かが未測定**。第一タスクは消費者の実測 | **hub**（別玉として起票済み） |
-| **6** | **sakura FT の composer 側**（symfony/yaml low 3件）。射程に入れる裁定は出ている・**是正が先**・優先度は後 | **fleet**（08-15 以降） |
+| **1** | **`nene-origin` の CI が課金で全面停止**〔実測: 最後の run は 08-13 15:15Z の failure、以降 run が1本も無い〕。origin は private（**public は無料枠なので影響なし・止まるのは private だけ**）。**次の週次 08-17（月）も失敗する**。🔴 **conformance / signing / publish が origin にある**ためリリース経路が塞がる。施主方針（08-14）= **課金は戻さず当面ローカルでカバー** | **施主**／ローカル代替は board 行136 |
+| **2** | **`vitepress` → `vite`(high) → `esbuild` の鎖が4リポで同一**（nene2-python / nene-mcp / NENE2 root / nene2-js）。**1回の判断で4リポ片づく**。🔴 **版の向き（昇格/降格）を全数開示した材料**にしてから上げる（hub GO 済み） | **fleet が材料 → 施主** |
+| **3** | `nene-corpus-site` の high 5 / low 1 は**残ったまま**（79日休眠）。08-14 の「6件→0件」は**偽物**だった | **fleet**（測り直しは 08-15 以降・**workspaces のメンバを揃えた環境で**・hub GO 済み） |
+| **4** | `nene2-dev` は astro high が再発。今回は `astro@7.2.1`（**major**）が要る。🔴 **#2 とは別束**（本体依存で影響範囲が違う・hub 裁定） | **施主** |
+| **5** | **NeNe の smarty medium 2件は #790 で解消済み**〔実測・v5.8.4〕。ただし「**NeNe を今 誰が消費しているか**」の実測玉は**別玉として生きている**（*NeNe に今後投資するか* の材料。security fix とは**別レイヤー**） | **hub** |
+| **6** | **sakura FT の composer 側**（`symfony/yaml` low 3件）。**是正が先**・優先度は後。上記2-2 の「第1号」 | **fleet**（08-15 以降） |
 
 ---
 
 ## 次の一手（08-15）
 
-0. 🔴 **昨夜の後始末が2つ**（hub 裁定 08-14）:
-   - **nene2-js #136 を作り直す** — `brace-expansion` の3件**だけ**を動かす lockfile にする。**`vite` / `esbuild` の降格は持ち込まない**（脆弱性1件を閉じる対価としてビルド系を major 降格させるのは合わない・hub 裁定）。現 PR は draft のまま。
-   - **NENE2 #1647 は据え置き**（作り直さない・hub 裁定。理由 = ①`react-router 7.18.2` は fix 済み版で方向として害がない ②NENE2 は7艦の allowlist 群に含まれない ③巻き添えを戻す作業自体が新しい lockfile 操作＝新しいリスク）。
-     🔴 **ただし玉3 の射程を数え直すこと** — **NENE2 は既に 7.18.2 なので1つズレる**。
-1. 🔴 **玉3 = react-router 7艦**。**1PR で「lockfile bump（7.18.1→7.18.2）」＋「allowlist エントリ撤去」**（手1だけは不可＝閉じた advisory の例外が7艦に残り、expiry 08-31 まで気づかれない）。
-   - 射程は実測済み〔08-14・7艦とも `origin/main` と SHA 一致・未コミット0を確認のうえ〕: **7艦とも caret 範囲内で 7.18.2 に到達**・`react-router-dom@7.18.2` は `react-router: "7.18.2"` の**完全一致ピン**。
+1. 🔴 **玉3 = react-router 7艦（due 08-15）**。**1PR で「lockfile bump（7.18.1→7.18.2）」＋「allowlist エントリ撤去」**
+   （手1だけは不可＝閉じた advisory の例外が7艦に残り、expiry 08-31 まで気づかれない）。
+   - 射程は実測済み〔08-14〕: **7艦とも caret 範囲内で 7.18.2 に到達**・`react-router-dom@7.18.2` は `react-router: "7.18.2"` の**完全一致ピン**。
    - **配布形は fleet 直 PR で確定**（hub 裁定）。各艦で **bump 前後に `npm audit` を自分で実走**して到達を実測してから allowlist を消す。**上がらない艦が出たら止めて照会**（#229 の field/contact 前例）。
-   - **手順・救出記述の中身・`Removed YYYY-MM-DD` 形式は `_work/reports/2026-08-14-react-router-advisory-range-shift.md` §4 に全部書いてある。** 参照実装 = origin PR #628（`a834a31`）。
-2. **玉4（L3 作業デー）** — 10艦ぶんの `registries.jsonc`。🔴 **順序を逆にしない**（先に config を配ると全艦 throw で赤）。
-3. **#239 の清書 → doc PR**（横断規律「テスト環境と本番環境の差異は、差異そのものを検査対象にする」）。
-4. **advisory range 変位の standards-patch 収載**（hub GO 済み・EX-9 の追補）。材料は上記レポート §3。
-5. **#232 / #234 の実装設計**（#234 = L1 共有 lint セット・実測で全14艦とも 0 の更地／🔴 #232 = **統一UT が艦に配布されていない**ため完了条件が現状充足不能・#221 / #76 と同型の3件目）。
-6. **#133 / #132**（codemod の feat）。#213 マージ済みなので **tokens 1.3.0 の publish 準備**は #133 と揃えて。
+   - 手順・救出記述・`Removed YYYY-MM-DD` 形式は **`_work/reports/2026-08-14-react-router-advisory-range-shift.md` §4** に全部ある。参照実装 = origin PR #628（`a834a31`）。
+2. **nene2-js #136 の作り直し** — `brace-expansion` の3件**だけ**を動かす lockfile にする。`vite` / `esbuild` の降格は持ち込まない。
+   🔴 **VitePress の build は PR CI で走らない**（`docs.yml` = Pages デプロイ側）ので、降格は一度も検査されていない。この発見自体を #136 の本文に残す。
+3. **玉4（L3 作業デー・金曜）** — 10艦ぶんの `registries.jsonc`。🔴 **順序を逆にしない**（先に config を配ると全艦 throw で赤）。
+4. **母集団述語の実装**（照会5・GO 済み）— `(repo, ecosystem)` の組・両向きの回帰テストつき。
+5. **#239 の清書 → doc PR**（横断規律「テスト環境と本番環境の差異は、差異そのものを検査対象にする」）。
+6. **advisory range 変位の standards-patch 収載**（EX-9 追補・hub GO 済み）。材料は上記レポート §3。
+7. **#232 / #234 の実装設計**／**#133 / #132**（codemod）。#213 マージ済みなので **tokens 1.3.0 の publish 準備**は #133 と揃えて。
 
 ---
 
@@ -125,9 +135,10 @@ hub が第1波6艦（clear/deal/field/payout/records/vault）＋第2波7艦（co
 
 | 誰の手番 | 何 |
 | --- | --- |
-| **施主** | 🔴 **origin の GitHub 課金**（未着地#1） ／ `vitepress` 鎖4リポ（#2） ／ **玉5 = composer.lock 追跡方針** ／ tokens 1.3.0 の publish（#133 と束ねて） ／ nene2-standards 2.3.0 の publish 判断（#221） |
-| **fleet** | **玉3（08-15）** ／ 玉4（L3 作業デー） ／ 玉1 の (b)(c)（08-16〜20） ／ sakura FT の composer 側 ／ #239 ／ EX-9 追補の収載 ／ #232 / #234 ／ #133 / #132 |
-| **hub** | **PR 10本の検収** ／ ci-watch に「run が発生しているか」の軸を足す ／ board 行94/95/122 の統合 ／ corpus-site を撃つ可否 ／ NeNe の消費者実測 ／ EX-8 の 🔒 → ✅ 昇格 |
+| **施主** | 🔴 **origin の GitHub 課金**（未着地#1・方針は「戻さずローカル代替」）／ `vitepress` 鎖4リポ（#2）／ `astro` major（#4）／ **玉5 = composer.lock 追跡方針**／ tokens 1.3.0 の publish（#133 と束ねて）／ nene2-standards 2.3.0 の publish 判断（#221） |
+| **fleet** | **玉3（08-15）**／ #136 の作り直し／ 玉4（金曜）／ 玉1 の (b)(c)（08-16〜20）／ corpus-site の測り直し／ sakura FT の composer 側／ 述語の実装／ #239／ EX-9 追補／ #232 / #234／ #133 / #132 |
+| **hub** | ゲート非対称の board 起票と施主上申／ `ci-watch` に「**run が発生しているか**」の軸／ board 行94/95/122 の統合／ NeNe の消費者実測／ EX-8 の 🔒 → ✅ 昇格 |
+| **origin リナ** | #646（`ci-local.sh` 経路＋同期義務）。**fleet は触らない** |
 | **W0b（施主判断を含む）** | 🔴 **新章が3件そろっている** — テスト章（#154 §7・#155 §5）／受入・出荷章（#214）／セキュリティ横断章（#170）。束で施主へ上げる方針を hub が承認済み |
 
 ---
@@ -139,11 +150,12 @@ hub が第1波6艦（clear/deal/field/payout/records/vault）＋第2波7艦（co
 | **EX-8** | 本番反映の preflight（「マージされている」≠「本番に入っている」） | **#214 で確定**。台帳は 🔒 のまま＝**✅ 昇格は条文化 PR と同時** |
 | **EX-9** | 例外の「当てはまらない理由」は執筆時点で実測する ＋ 撤去時の知見救出 | **#243 / #251 で確定**（PR #244 マージ済み）。🆕 **追補が要る**（下記） |
 
-🆕 **EX-9 の穴が実例で見つかった**（08-14）。clear の react-router 例外は **08-04 に EX-9 を完全に満たして書かれ、08-07 の advisory 更新で無効化された**。
+🆕 **EX-9 の穴**（08-14 の実例）: clear の react-router 例外は **08-04 に EX-9 を完全に満たして書かれ、08-07 の advisory 更新で無効化された**。
 **執筆時に正しく書くことと、正しさが持続することは別**で、後者には再検証の周期が要る。
 🔴 **expiry は「切れたら気づく」仕掛けであって「途中で無効化されたら気づく」仕掛けではない**／
 **CI の audit ゲートは allowlist に有る advisory については沈黙する**ため、
-**08-07 から expiry の 08-31 まで、どの装置も鳴らない期間が最大24日ある**。→ 正本 = `_work/reports/2026-08-14-react-router-advisory-range-shift.md` §3。
+**08-07 から expiry の 08-31 まで、どの装置も鳴らない期間が最大24日ある**。
+→ 正本 = `_work/reports/2026-08-14-react-router-advisory-range-shift.md` §3。
 
 📌 **採番のときは台帳だけを見ない**（未確定の予約は台帳に載らない・台帳 §1.3 に予約行を足してある）。
 
@@ -155,37 +167,11 @@ hub が第1波6艦（clear/deal/field/payout/records/vault）＋第2波7艦（co
 | --- | --- | --- | --- | --- |
 | allowlist 合計 | 23 | 19 | 7 | **7**（不変） |
 
-**08-14 の内訳**: clear / concierge / field / invoice / payout / serve / vault の7艦、**全艦とも `GHSA-qwww-vcr4-c8h2` 1種類**。
+**内訳**: clear / concierge / field / invoice / payout / serve / vault の7艦、**全艦とも `GHSA-qwww-vcr4-c8h2` 1種類**。
 他8艦（contact / corpus / deal / origin / profile / records / suite / fleet-tooling）は **0件**。
 🔴 **本数は動いていないが、根拠文は無効になっている**（advisory の range が 08-07 に分割された）。**玉3 で 0 にできる。**
 
 **自艦の逃げ道**〔実測 08-14〕: `audit-ci.jsonc` の **allowlist 0件**。
-
----
-
-## 🔴 08-14 に自分が壊した測り方（次に同じ器械を書く前に読む）
-
-**`npm audit fix --package-lock-only` を「安全な lockfile only」として扱ってはいけない。** 08-14 に3件出た。
-
-| # | 何が起きたか | 一般化 |
-| --- | --- | --- |
-| **1** | `nene-corpus-site` は **npm workspaces のモノレポ**。スクラッチにルートの2ファイルだけ置いて回したら、npm が依存ツリーを空と解決し、**lockfile を 406 → 4 パッケージに書き潰した**。`npm audit` は**正常終了して 0 件**を返した | 🔴 **「0件」は検出器が死んでいても出る（既知）が、検査対象が消えても出る。** lockfile を書き換えたら**パッケージ数の前後比較を必ず取る**。縮んでいたら修正ではなく破壊 |
-| **2** | NENE2 #1647 は brace-expansion 3件のつもりが**7件**動いており、**`react-router 7.18.1→7.18.2`**（＝別レーンの玉と同じ版更新）を含んでいた | 🔴 **`npm audit fix` は「起点にした advisory」だけを直すのではなく、直せるものを全部直す。** PR 本文は**版差分を全数開示**してから書く |
-| **3** | nene2-js #136 は **`vite` 8.0.14 → 6.4.3（メジャー降格）**・`esbuild` 降格・**24パッケージ消失**。原因は `vite` が `vitepress` 経由の推移的依存で、`npm audit fix` が advisory 範囲（`<=6.4.2`）を外れる**最も近い版として 6.4.3 を選んだ**こと | 🔴 **降格も「fix」として出てくる。** 版差分は**数だけでなく向き**を見る |
-
-🔴 **CI 緑は反証にならなかった**（#3）: nene2-js の PR CI は `npm ci` → `check` → `publish --dry-run` で、
-**VitePress のビルドは `docs.yml`（Pages デプロイ）側にあり PR では走らない**。
-**「CI が緑」は「その CI が見ている範囲で緑」以上を意味しない。**
-
-**→ この4項目は hub が判例台帳に **判例44** として条文化済み**（`_work/reports/2026-07-21-full-close-playbook.md` §7）。
-⑤として「**裁定側は数字だけでなく測り方を聞く**」が hub 自身の誤りとして追加されている
-（corpus-site の GO は、測り方を聞かずに数字だけで出されたもの）。
-
-**手順として固定する**（次に lockfile を触るとき）:
-1. 変更前後で **`packages` の件数**を比較（縮小＝破壊）
-2. 変更前後で **版が動いた全パッケージを列挙**し、**昇格/降格の向き**を見る
-3. **workspaces / 複数 lockfile の有無**を先に確認する（`packages[""].workspaces`）
-4. PR 本文は 1〜3 の**全数**を書く。「起点の advisory 名」だけを書かない
 
 ---
 
@@ -199,7 +185,7 @@ hub が第1波6艦（clear/deal/field/payout/records/vault）＋第2波7艦（co
 4. **不在の主張には陽性対照を1本。** 「0件」は検出器が死んでいても出る。
 5. **条文化のときは、issue で発見し、正本で確定する。**
 6. **本文を持つ CLI 呼び出しは本文をファイル経由で。**（#215）
-7. **道具の単位を、測りたいものの単位に合わせる。**（jsonc のコメントまで拾う grep）→ #226 / #243
+7. **道具の単位を、測りたいものの単位に合わせる。** → #226 / #243
 8. **空き番の判定は台帳では足りない。**
 9. **自分が配る数字にも「いつの実測か」がある。** → #237 / #245
 10. **「失われた作業の有無」と「リポジトリの健全性」は別の検査。**
@@ -208,12 +194,25 @@ hub が第1波6艦（clear/deal/field/payout/records/vault）＋第2波7艦（co
 13. **注意力は再現しない／経路は再現する。** 設計は「**注意を要求する仕組みを作らない**」。 → #258
 14. **構造から従うことを「観測した」と書かない。** → #255 のコメント
 15. **イベント直後の1確認は競合窓に当たる。** 変化が止まるまで見る。🟡 サンプル2件。
-16. 🆕 **「実在する」は、どこで見たかで意味が変わる。** 08-14 に hub が `composer.lock` の実在を**ローカル作業ツリー**で測り、5艦を射程に入れた。その5艦は `.gitignore` で**未追跡**だった。
-    **内容を主張するなら `origin/main` を見る**（判例43③）。あたしが避けられたのは、**`gh api .../contents/<path>?ref=main` で取る手順を先に固定していたから**であって、注意していたからではない。
-17. 🆕 **不在の主張は、道具が黙って空を返す形にしない。** 同じ夜、jsonc を素朴な正規表現でコメント除去してパースし、全15艦で `PARSE_ERR` を出した。
-    **気づけたのは「エラー」で出たからにすぎない**。空配列を静かに返す実装なら「**フリートの allowlist は 0件**」という嘘の結論になり、玉3 を「もう終わっている」と報告していた。（4 のパーサ版）
-18. 🆕 **「装置が動いているか」は、最後の成功の鮮度では測れない。** `ci-watch` は origin を 🟢「稼働中（最新実行 3.5日前）」と判定していたが、
-    実際は**課金でジョブが起動できず、その後 run が1本も無い**状態だった。**run が発生しているか**を別に見る必要がある。
+16. **「実在する」は、どこで見たかで意味が変わる。** 内容を主張するなら `origin/main` を見る（判例43③）。
+    ローカルの作業ツリーで測ると `.gitignore` された未追跡ファイルを「実在」と数える。
+17. **不在の主張は、道具が黙って空を返す形にしない。** 素朴なパーサが全件 `PARSE_ERR` を出したとき、
+    **気づけたのは「エラー」で出たからにすぎない**。空配列を静かに返す実装なら嘘の結論になっていた。（4 のパーサ版）
+18. **「装置が動いているか」は、最後の成功の鮮度では測れない。** `ci-watch` は origin を 🟢 と判定していたが、
+    実際は課金でジョブが起動できず **run が1本も無い**状態だった。**run が発生しているか**を別に見る。
+19. 🆕 **実行者名義は「道具の資格情報」であって「行為者」ではない。** `gh` は全リナが施主の資格情報で動くので、
+    `mergedBy` は常に `hideyukiMORI`。**誰が検収したかを名義から読むと記録が狂う**（08-14 に実際に狂わせた）。
+20. 🆕 **安全弁は「足さなかった」で終わらせない。外す条件まで測る。** NeNe に audit を足せなかったとき、
+    **止めた時点で報告して終わらせれば1日止まっていた**。「何があれば 0件になるか」を測ったら
+    **緑の dependabot PR が5日待っていた**（#790）。**ブロッカーの解除条件は、ブロッカーと同時に測る。**
+21. 🆕 **ゲートの厳しさはエコシステムごとに違う。** 同じ「依存脆弱性ゲート」でも
+    `composer audit` は全 severity・`audit-ci` は high 以上。**「入れた」だけでは揃っていない。**
+
+🔴 **lockfile を触るときの手順**（判例44・正本 = `_work/reports/2026-07-21-full-close-playbook.md` §7）:
+1. 変更前後で **`packages` の件数**を比較（縮小＝破壊）
+2. 変更前後で **版が動いた全パッケージを列挙**し、**昇格/降格の向き**を見る
+3. **workspaces / 複数 lockfile の有無**を先に確認する（`packages[""].workspaces`）
+4. PR 本文は 1〜3 の**全数**を書く。「起点の advisory 名」だけを書かない
 
 ---
 
@@ -221,7 +220,7 @@ hub が第1波6艦（clear/deal/field/payout/records/vault）＋第2波7艦（co
 
 - 族台帳 = `docs/standards-patch/2026-07-29-serve-conventions.md` §1.3 / §5（EX-1〜EX-9）
 - EX-9 の条文 = `docs/standards-patch/2026-08-05-exception-premise-rule.md`／**追補材料 = `_work/reports/2026-08-14-react-router-advisory-range-shift.md`**
-- 今回の報告 = **`_work/handoff-fleet-tooling-2026-08-14-sec-report.md`**（射程の数え方・棚卸し表・照会5件）
+- 08-14 の依存監査レーンの報告 = `_work/handoff-fleet-tooling-2026-08-14-sec-report.md`（射程の数え方・棚卸し表・照会5件）
 - 艦隊の運用手順 = `_work/fleet-muster.md`（M-1 merge / M-2 配布の数値 / M-3 断の後の起動チェック）
-- 判例台帳 = `_work/reports/2026-07-21-full-close-playbook.md` §7（判例38・39・42・43 が今回の仕事に効いた）
+- 判例台帳 = `_work/reports/2026-07-21-full-close-playbook.md` §7（判例38・39・42・43・**44**）
 - 横断タスクと締切 = `_work/board.txt`（`tools/board.sh today`）
