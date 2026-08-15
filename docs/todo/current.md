@@ -153,7 +153,7 @@ nene2-js #137 / #139 ／ corpus-site #4 ／ nene2-python #778 ／ sakura FT #73 
 
 | 誰の手番 | 何 |
 | --- | --- |
-| **施主** |  `vitepress` 鎖4リポ／ astro（2束）／ sharp／ origin の課金／ tokens 1.3.0・standards 2.3.0 の publish |
+| **施主** | `vitepress` 鎖4リポ／ astro（2束）／ sharp／ origin の課金／ tokens 1.3.0・standards 2.3.0 の publish |
 | **fleet** | 🔴 **`composer.lock` 追跡（concierge 先頭・due 08-18）**／ concierge・corpus の埋め込み→独立ステップ／ 鎖の材料づくり／ 述語の実装／ #239／ EX-9 追補／ README §状態の是正／ #232 / #234／ #133 / #132 |
 | **hub** | `ci-watch` の **steps 軸**（public 艦のみ）＋ **欠陥3件の修正**（文字列マッチのみ／`run:` とコメントを区別しない／`git fetch` しない・board `due:2026-08-18`）／ floor 据え置きの board 起票／ #272 型3 の観測数え上げ |
 | **W0b（施主判断を含む）** | 🔴 **新章が3件そろっている** — テスト章（#154 §7・#155 §5）／受入・出荷章（#214）／セキュリティ横断章（#170） |
