@@ -76,7 +76,14 @@ sakura FT の run ログの env に **`COMPOSER_NO_AUDIT: 1`** が入ってい�
 ⇒ **「install しているから暗黙に監査されている」は成立しない。明示ステップが唯一の監査経路。**
 ⇒ **独立ステップにする動機が一段強い** — 埋め込むと*ログに残らない*だけでなく、**足さなければ監査は一切走らない**。
 
-⚠️ **射程の確認は hub 手番**（13艦が同じ action を使うなら、PHP-AUDIT レーン以前は「監査ゼロ」が文字どおりゼロだった）。
+🔴 **射程は確定した**〔hub 実測 08-15・`origin/main` の workflow を raw で全数〕: **`setup-php` を使うのは 14艦すべて**
+（NENE2 / NeNe / clear / contact / corpus / deal / invoice / mcp / origin / payout / records / suite / vault / sakura FT）。
+⇒ **PHP-AUDIT レーン以前は「監査ゼロ」が文字どおりゼロだった。**
+⇒ **08-12 の「composer.lock を持つリポで composer audit がゼロ」は想定より重い** — 「暗黙には走っていたが可視化されていなかった」
+のではなく、**一度も走っていなかった**。**今日 13艦に配ったものは「可視化」ではなく「新設」**だった。
+🔑 **「入れているから走っている」は、ツールチェーンが黙って止めていることがある。**
+action・ラッパ・フレームワークは善意で既定を上書きし、**その上書きはリポのコードに現れない**（run ログの env にしか出ない）。
+⇒ **暗黙の経路に依存した安全性の主張は、明示的に測るまで保留する。**
 🔑 **ローカルで測るときは影響を受けない** — `composer audit --locked` は明示コマンドなので、この env の有無と無関係。
 
 ### 4. 手順書の穴2型（#272・hub 裁定済み）
@@ -91,13 +98,11 @@ sakura FT の run ログの env に **`COMPOSER_NO_AUDIT: 1`** が入ってい�
 
 ## 他艦に出してある PR（他艦の状態なので現況として書く）
 
-| リポ | PR | 中身 | 状態 |
-| --- | --- | --- | --- |
-| sakura FT | **#75** | backend CI に `composer audit` を**独立ステップ**で追加（追加前 0件を実測） | CI 緑・**マージ待ち** |
+**マージ待ちはゼロ**〔08-15 夜・自艦で実測〕。
 
-**08-15 にマージ済み（12本）**〔マージ実行者は hub・hub 申告／マージ状態は自艦で実測〕:
+**08-15 にマージ済み（13本）**〔マージ実行者は hub・hub 申告／マージ状態は自艦で実測〕:
 玉3 の6本（clear #432 / concierge #228 / field #162 / invoice #761 / serve #213 / vault #366）＋
-nene2-js #137 / #139 ／ corpus-site #4 ／ nene2-python #778 ／ sakura FT #73 ／ 自艦 #275。
+nene2-js #137 / #139 ／ corpus-site #4 ／ nene2-python #778 ／ sakura FT #73 / **#75** ／ 自艦 #275。
 
 🔴 **施主の承認は束ごと**（1つの承認を次の束に流用しない）。
 🔴 **`gh` の実行者名義を「施主がやった」と読まない** — 全リナが施主の資格情報で動くので GitHub 上は常に `hideyukiMORI`。
@@ -148,7 +153,7 @@ nene2-js #137 / #139 ／ corpus-site #4 ／ nene2-python #778 ／ sakura FT #73 
 
 | 誰の手番 | 何 |
 | --- | --- |
-| **施主** | 🔴 **sakura FT #75 の承認**／ `vitepress` 鎖4リポ／ astro（2束）／ sharp／ origin の課金／ tokens 1.3.0・standards 2.3.0 の publish |
+| **施主** |  `vitepress` 鎖4リポ／ astro（2束）／ sharp／ origin の課金／ tokens 1.3.0・standards 2.3.0 の publish |
 | **fleet** | 🔴 **`composer.lock` 追跡（concierge 先頭・due 08-18）**／ concierge・corpus の埋め込み→独立ステップ／ 鎖の材料づくり／ 述語の実装／ #239／ EX-9 追補／ README §状態の是正／ #232 / #234／ #133 / #132 |
 | **hub** | `ci-watch` の **steps 軸**（public 艦のみ）＋ **欠陥3件の修正**（文字列マッチのみ／`run:` とコメントを区別しない／`git fetch` しない・board `due:2026-08-18`）／ floor 据え置きの board 起票／ #272 型3 の観測数え上げ |
 | **W0b（施主判断を含む）** | 🔴 **新章が3件そろっている** — テスト章（#154 §7・#155 §5）／受入・出荷章（#214）／セキュリティ横断章（#170） |
