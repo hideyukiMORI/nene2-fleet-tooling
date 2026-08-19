@@ -15,7 +15,7 @@
 >
 > 📐 **判定の軸**: **「その記述は、*自分の行動*によって古くなるか」**。（hub・08-14）
 
-**最終更新**: 2026-08-19 夜（玉①②③が全部着地・**残りは全部が施主判断待ち**）
+**最終更新**: 2026-08-19 深夜（玉①が**マージまで完了**・②③は判断待ち）
 
 ---
 
@@ -23,23 +23,28 @@
 
 - **自艦の玉は3つとも着地し、いま自艦の手番にあるものは無い。** 動かせるのは施主判断が返ってから。
 - 🟢 **フリートの npm allowlist は 0 件 / 分母 15**〔自艦で実測 08-15〕。**逃げ道ゼロ**。
-- **`composer.lock` 追跡**: 先頭艦 concierge ＋ 3艦へ配布済み（下表）。**4本とも施主承認待ち**。
+- **`composer.lock` 追跡**: 🟢 **完了**。対象4艦（concierge / field / profile / serve）とも
+  **`origin/main` で lock 追跡済み・マージ後の main の CI も緑**〔自艦で実測〕。
 - 自艦のコードは **08-09 から動いていない**。08-13 以降の仕事は**すべて他艦への PR とフリート横断の実測**。
 - 配布版（npm）: **この行を信じず** `npm view` と `fleet-baseline.json` を見ること（#152）。
   🔴 **main に未 publish の変更が入っている**。**取り方**: `git log nene2-standards-v2.2.0..HEAD -- packages/nene2-standards`。
 
 ---
 
-## 他艦に出してある PR（他艦の状態なので現況として書く）
+## 他艦に出した PR（他艦の状態なので現況として書く）
 
-**4本すべて CI 緑・すべて施主承認待ち（マージされていない）**〔08-19 夜・自艦で実測〕。
+**4本ともマージ済み**〔08-19 深夜・自艦で実測。施主 GO 後に自艦が実行〕。**マージ後の `main` の CI も4艦とも緑**。
 
-| 艦 | Issue / PR | 中身 |
-|---|---|---|
-| `nene-concierge` | #229 / **PR #230** | lock 追跡 ＋ `composer audit` 独立ステップ |
-| `nene-field` | #163 / **PR #164** | **lock 追跡のみ**（audit は分離・理由は下記） |
-| `nene-profile` | #134 / **PR #135** | **lock 追跡のみ**（audit は分離） |
-| `nene-serve` | #214 / **PR #215** | lock 追跡 ＋ audit 独立ステップ ＋ schedule コメント更新 |
+| 艦 | Issue / PR | 中身 | merge commit |
+|---|---|---|---|
+| `nene-concierge` | #229 / #230 | lock 追跡 ＋ `composer audit` 独立ステップ | `dc35f82` |
+| `nene-field` | #163 / #164 | **lock 追跡のみ**（audit は分離・理由は下記） | `10406ee` |
+| `nene-profile` | #134 / #135 | **lock 追跡のみ**（audit は分離） | `de9d469` |
+| `nene-serve` | #214 / #215 | lock 追跡 ＋ audit 独立ステップ ＋ schedule コメント更新 | `5327d3d` |
+
+🔴 **audit を新設した concierge / serve は、`main` の push イベントでの実走まで確認済み**
+（`step 8 composer audit → success` ／ `No security vulnerability advisories found.`）。
+**PR イベントでの実走は別物**なので、統合後の main で取り直している（clear #60 の型）。
 
 🔴 **施主の承認は束ごと**（1つの承認を次の束に流用しない）。
 🔴 **`gh` の実行者名義を「施主がやった」と読まない** — 全リナが施主の資格情報で動くので GitHub 上は常に `hideyukiMORI`。
@@ -50,7 +55,7 @@
 
 | # | 内容 | 手番 |
 |---|---|---|
-| **1** | 上表の **PR 4本のマージ** | **施主** |
+| **1** | 🔴 **concierge が A群の7艦目になった**（#230 のマージで確定）。**穴が1つ増えることを承知**で倒した——push/PR で走る audit がゼロより明確に良い、が hub の判断。**是正は #2 の方針が返ってから field / profile の audit 追加とまとめて1回** | **施主**（#2 と同じ） |
 | **2** | 🔴 **A群の穴 = 週次 schedule に PHP 監査が乗っていない艦が 11本**。hub 実測で **A群6艦**（clear / contact / deal / invoice / records / vault）＝schedule と audit が別 workflow ／ **B群5艦**（NENE2 / NeNe / corpus / mcp / sakura-FT）＝schedule 自体が無い。**週次に PHP 監査が実際に乗っているのは origin / payout / suite の3艦だけ**。方針は「**原則＝単一 workflow に寄せる／不可能な艦は backend に schedule を足す**」の二段構えで上程中（**`nene-serve` が動く実例**） | **施主** → 実装は hub と分担 |
 | **3** | **Dependabot 是正の順序**（推し順を上げてある。正本 = `_work/reports/2026-08-19-dependabot-alerts-triage.md`） | **施主** |
 | **4** | **`nene-trace` の生死判定**（`.php` 0本・`composer.lock` が存在しない・`^1.5` の化石）。判定が出るまで lock 追跡は**待機** | **施主**（板 `due:2026-08-21`） |
@@ -79,7 +84,9 @@
 
 ## 次の一手（判断が返ってから）
 
-1. **PR 4本がマージされたら**、`nene-trace` を除く残りは無い（**6艦 → 3艦に確定済み**）。**玉①は閉じる。**
+1. 🟢 **玉①は実質完了**〔`origin/main` を全数実測〕— `type: project` の対象艦4つは**すべて lock 追跡済み**。
+   残る2つは **`records-commercial` = `type: library` で対象外**・**`trace` = 施主の生死判定待ち**。
+   ⇒ **board 行「composer.lock を .gitignore している製品艦」は閉じられる状態**（閉じるのは hub の手番）。
 2. **A群の方針が返ったら**、field / profile の audit ゲートを別 Issue で入れる（**PR 本文に理由を書いてある**ので拾い直せる）。
 3. **Dependabot の順序が返ったら**、`esbuild` / `vite` から材料づくり。
    ⚠️ **`npm audit fix` の出力を「版の向きの全数開示」に使わない**（降格が混ざる＝判例44⑧）。
