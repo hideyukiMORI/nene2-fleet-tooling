@@ -17,12 +17,12 @@ on:
     - cron: '0 0 * * 1'
   # schedule を待たずに手で叩くための口。これが無いと「配ったこと自体を検証できない」。
   workflow_dispatch:
-
     inputs:
       simulate_failure:
         description: 'Intentionally fail the job to verify the failure-notification path'
         type: boolean
         default: false
+
 # 同じ ref への連続 push で古い run を畳む。
 # 🔴 group に `github.event_name` を含めるのが要点: 含めないと schedule / workflow_dispatch の run が
 # main への push と同じ group に入り、**push に cancel される**。
@@ -40,6 +40,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # 🔴 Checkout の「直後」に置く。literally first に置くと working tree が無くて
+      # 落ちるので、意図した exit 1 ではない別の失敗をリハーサルしてしまう（NENE2 実証 2026-08-22）。
+      # 🔴 逆に後ろへ置くのも駄目。前段のどれかが落ちると意図した exit 1 に到達せず、
+      # 「別の理由の赤」で notify が上がる＝陽性対照として何を確かめたのか分からなくなる。
+      - name: Simulate failure (rehearsal only)
+        if: inputs.simulate_failure
+        run: exit 1
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -70,12 +78,6 @@ jobs:
       # 「無視してよい赤」として定着する。ゲートは CI に置く。
       # ※ 正本として配るときはここが2ケースに割れる:
       #   Stop hook を持つ艦 = CI に置く／持たない艦 = `check` に入れてよい。
-      # 🔴 Checkout の「直後」に置く。literally first に置くと working tree が無くて
-      # 落ちるので、意図した exit 1 ではない別の失敗をリハーサルしてしまう（NENE2 実証 2026-08-22）。
-      - name: Simulate failure (rehearsal only)
-        if: inputs.simulate_failure
-        run: exit 1
-
       - name: Audit (fail on high/critical)
         if: ${{ !cancelled() }}
         run: npm run audit
