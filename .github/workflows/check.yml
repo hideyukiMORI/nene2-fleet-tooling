@@ -88,8 +88,20 @@ jobs:
         run: npm run audit
 
   notify-failure:
-    name: Open an issue when the scheduled run fails
-    if: failure() && (github.event_name == 'schedule' || inputs.simulate_failure)
+    name: Open an issue when an unattended run fails
+    # 🔴 通知する event ＝ **この workflow が「無人で走る」event を列挙する**（hub 裁定 2026-08-22・vault 発）。
+    # 参照実装から条件を**文字列として**写さないこと。serve は schedule を持つので
+    # `schedule` だけで足りるが、schedule を持たない艦へそのまま写すと
+    # **装置はあるのに原理的に赤にならない**ものが増える（＝きれいな inert）。
+    #   - `schedule`         … 常に無人
+    #   - `push`             … main へのマージ後。マージした人が立ち去れば無人
+    #   - `pull_request`     … 🔴 **含めない**。作者が見ているのでノイズになる
+    #   - `workflow_dispatch`… 叩いた人が見ているが、`simulate_failure` は陽性対照専用なので通す
+    # この artifact は `on.push.branches: [main]` を持つ＝**マージ後の赤が無人になりうる**ので push を含める。
+    if: >-
+      failure() && (github.event_name == 'schedule'
+      || github.event_name == 'push'
+      || inputs.simulate_failure)
     needs: [check]
     runs-on: ubuntu-latest
     # gh の API 呼び出し2本だけなので短くてよい。ここが吊ると「赤が通知されない」に化ける。
@@ -97,7 +109,7 @@ jobs:
     permissions:
       issues: write
     env:
-      ISSUE_TITLE: '🔴 fleet-tooling: 週次 CI（schedule）が失敗しています'
+      ISSUE_TITLE: '🔴 fleet-tooling: CI（無人実行）が失敗しています'
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -113,7 +125,7 @@ jobs:
           #    （vault #379 発見・NENE2 #1656 起票・2026-08-22 の横断実測では最大 61 件）
           existing="$(gh issue list --state open --limit 1000 --json number,title \
             | jq -r --arg t "$ISSUE_TITLE" 'map(select(.title == $t)) | .[0].number // empty')"
-          body="週次の schedule 実行が失敗しました。 実行: ${RUN_URL}"
+          body="無人実行（${{ github.event_name }}）で CI が失敗しました。 実行: ${RUN_URL}"
           if [ -n "$existing" ]; then
             gh issue comment "$existing" --body "$body"
           else
