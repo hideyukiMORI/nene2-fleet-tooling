@@ -58,6 +58,8 @@ jobs:
       - run: npm run format:check
       - run: npm run test
       - run: npm run check:cli
+      # 【捨て枝・陰性対照専用】check を確実に赤にするためだけの行。マージしない。
+      - run: exit 1
       # 依存脆弱性ゲート（#255）。設定・例外の作法は `audit-ci.jsonc` の冒頭に書いてある。
       #
       # 🔴 `if` を既定の挙動（前ステップが赤なら skip）にしない理由 —— この行は理由ごと残すこと。
