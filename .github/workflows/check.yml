@@ -38,6 +38,11 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # 🔴 タイムアウトは検査ではなく損切り。値の正確さより「設定されていること」が効く（hub・板 L111）。
+    # 既定は 360分（6時間）で、吊ったジョブがその間 PR をブロックし runner 時間を焼く。
+    # 実測（2026-08-22・直近8 run）: この check は 40〜54秒。10分は桁で余裕がある。
+    # 発火実績: invoice / profile が `npx playwright install` の吊りで長時間ブロックされた（08-19 深夜）。
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       # 🔴 Checkout の「直後」に置く。literally first に置くと working tree が無くて
@@ -87,6 +92,8 @@ jobs:
     if: failure() && (github.event_name == 'schedule' || inputs.simulate_failure)
     needs: [check]
     runs-on: ubuntu-latest
+    # gh の API 呼び出し2本だけなので短くてよい。ここが吊ると「赤が通知されない」に化ける。
+    timeout-minutes: 5
     permissions:
       issues: write
     env:
