@@ -295,6 +295,25 @@ a missing component — open an issue, so every product gets the answer.
 **Products: apply the same check to your own theme.** The kit can only police its own file;
 the rule is the same one, and the regular expression above is the whole implementation.
 
+## 🔴 Migrating a screen to the kit
+
+**`<div>` → `<Stack>` is not a no-op.** The wrapper changes from block flow to flex, and
+inline-level children — `Button`, `<label>`, `<span>` — change size because of it:
+
+| what you see                                 | why                                                                                     |
+| -------------------------------------------- | --------------------------------------------------------------------------------------- |
+| a button suddenly spans the row              | `Stack` is `align-items: stretch`, so an inline-block child is stretched                |
+| a choice label goes from 112px wide to 582px | the same stretch                                                                        |
+| an icon becomes a tall rectangle             | an `<svg>` with no width/height attribute has no intrinsic size and lays out at 300×150 |
+
+The first two are flexbox working as specified; reach for `self-start` (which now lands on
+the root — see above) or `items-start` on the `Stack`. The third was the kit's fault and is
+bounded from 0.10.0, but only inside `Button` — **use `Icon` for artwork anywhere else**, or
+give the `<svg>` a size of its own.
+
+🔑 Three regressions in one migration, all from one wrapper swap, all of them visible only
+on screen: **nothing in a diff says that a child used to be inline** (nene-vault, 2026-08-23).
+
 ## What is in scope
 
 **In:** admin console and business-screen UI, page layout scaffolding, form field structure, the

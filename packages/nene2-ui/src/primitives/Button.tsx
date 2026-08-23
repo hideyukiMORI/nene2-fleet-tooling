@@ -34,7 +34,19 @@ const SIZE_CLASS: Record<NonNullable<ButtonProps['size']>, string> = {
 // taller than the others. nene-vault puts a primary and a secondary side by side in seven
 // modal footers, where that shows up as a step (measured 2026-08-23); its own Button carries
 // the same transparent border for the same reason.
-const BASE_CLASS = `rounded-x-slot-button border border-transparent font-sans text-x-slot-button-size font-x-slot-button ${CLICKABLE_CLASS}`;
+// 🔴 `[&_svg]:max-*` bounds a raw `<svg>` child without sizing it. An svg with no width or
+// height attribute lays out at the replaced-element default of 300x150; a `max-height` pulls
+// it back and, because a `viewBox` gives the element an intrinsic ratio, the width follows.
+// `max-width` covers the svg that has no viewBox either.
+//
+// 🔴 Not `[&_svg]:size-*`. That would outrank the plain `h-5 w-5` an `Icon` sets on itself
+// — an arbitrary variant compiles to a descendant selector, which is more specific than a
+// single class — so `<Icon size="sm">` inside a button would render at the button's size
+// instead of its own. A maximum cannot collide with a height: different property, and it
+// leaves anything already smaller alone.
+const SVG_BOUND = '[&_svg]:max-h-x-slot-button-icon [&_svg]:max-w-x-slot-button-icon';
+
+const BASE_CLASS = `rounded-x-slot-button border border-transparent font-sans text-x-slot-button-size font-x-slot-button ${SVG_BOUND} ${CLICKABLE_CLASS}`;
 
 export function Button({
   variant = 'primary',

@@ -16,6 +16,7 @@ import { Textarea } from './Textarea.js';
 import { Checkbox } from './Checkbox.js';
 import { Radio } from './Radio.js';
 import { Switch } from './Switch.js';
+import { Icon } from './Icon.js';
 
 afterEach(() => {
   document.body.innerHTML = '';
@@ -151,5 +152,41 @@ describe('className lands on the root', () => {
     expect(container.firstElementChild?.getAttribute('class')).not.toContain('ONBOX');
     expect(container.querySelector('input')?.getAttribute('class')).toContain('ONBOX');
     expect(container.querySelector('input')?.getAttribute('class')).not.toContain('ONLABEL');
+  });
+});
+
+describe('a raw <svg> inside a Button', () => {
+  // 🔴 vault の載せ替えで、アップロードボタンが縦230pxの矩形になった（2026-08-23）。
+  // width/height 属性も CSS 寸法も無い <svg> は置換要素の既定 300×150 まで広がる。
+  // <div> → <Stack> でブロックフローから flex へ変わった瞬間に出た。
+  it('is bounded, so it cannot lay out at the replaced-element default', () => {
+    const { container } = render(<Button>x</Button>);
+    const cls = classesOf(container.firstElementChild);
+    expect(cls).toContain('[&_svg]:max-h-x-slot-button-icon');
+    expect(cls).toContain('[&_svg]:max-w-x-slot-button-icon');
+  });
+
+  it('🔴 is bounded and never sized — Icon’s own size must survive', () => {
+    // 任意バリアント由来のセレクタは子孫セレクタへ落ちるので、Icon が自分に付ける
+    // 素のクラス（h-5 w-5）より詳細度が高い。⇒ [&_svg]:size-* を当てると
+    // <Icon size="sm"> がボタン側の寸法で描かれる。max-* なら衝突しない（別プロパティ・
+    // 既に小さいものは触らない）。この区別が消えると、退行は目視でしか出ない。
+    const cls = classesOf(render(<Button>x</Button>).container.firstElementChild);
+    for (const c of cls) {
+      expect(c, `Button must bound its svg, not size it: ${c}`).not.toMatch(
+        /^\[&_svg\]:(size|h|w)-/,
+      );
+    }
+  });
+
+  it('leaves an Icon’s own size class untouched', () => {
+    const { container } = render(
+      <Button>
+        <Icon size="sm" decorative>
+          <path d="M0 0h24v24H0z" />
+        </Icon>
+      </Button>,
+    );
+    expect(classesOf(container.querySelector('svg'))).toContain('h-4');
   });
 });
