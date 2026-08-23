@@ -12,6 +12,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { Button } from './Button.js';
 import { Input } from './Input.js';
 import { Select } from './Select.js';
+import { Textarea } from './Textarea.js';
+import { Checkbox } from './Checkbox.js';
+import { Radio } from './Radio.js';
+import { Switch } from './Switch.js';
 
 afterEach(() => {
   document.body.innerHTML = '';
@@ -107,5 +111,45 @@ describe('Button', () => {
     const cls = classesOf(container.firstElementChild);
     expect(cls).toContain('bg-x-slot-button-danger-bg');
     expect(cls).toContain('disabled:cursor-not-allowed');
+  });
+});
+
+describe('className lands on the root', () => {
+  // 🔴 `Checkbox` と `Radio` だけ root が <label> なのに className が子の <input> へ
+  // 行っていた（〜0.10.0）。⇒ 呼び出し側は root を指定する手段が無く、flex 行の中で
+  // self-start も幅も margin も言えず、div で包むしか無かった（vault・2026-08-23）。
+  //
+  // 🔑 これは波2 で一度答えた症状の、原因の側。あのときは cursor-pointer を
+  // キットが持つ形で解いたが、「className が root に届かない」ことは残っていた。
+  // 報告された症状を直すことと、報告が指している原因を直すことは別。
+  const CASES = [
+    [
+      'Button',
+      <Button key="b" className="MARK">
+        x
+      </Button>,
+    ],
+    ['Input', <Input key="i" className="MARK" />],
+    ['Textarea', <Textarea key="t" className="MARK" />],
+    ['Checkbox', <Checkbox key="c" label="x" className="MARK" />],
+    ['Radio', <Radio key="r" label="x" name="g" className="MARK" />],
+    [
+      'Switch',
+      <Switch key="s" label="x" checked={false} onCheckedChange={() => {}} className="MARK" />,
+    ],
+  ] as const;
+
+  it.each(CASES)('%s puts the caller’s class on its outermost element', (_n, node) => {
+    const { container } = render(node);
+    const root = container.firstElementChild;
+    expect(root?.getAttribute('class') ?? '').toContain('MARK');
+  });
+
+  it('Checkbox still lets the box itself be reached, separately', () => {
+    const { container } = render(<Checkbox label="x" className="ONLABEL" inputClassName="ONBOX" />);
+    expect(container.firstElementChild?.getAttribute('class')).toContain('ONLABEL');
+    expect(container.firstElementChild?.getAttribute('class')).not.toContain('ONBOX');
+    expect(container.querySelector('input')?.getAttribute('class')).toContain('ONBOX');
+    expect(container.querySelector('input')?.getAttribute('class')).not.toContain('ONLABEL');
   });
 });

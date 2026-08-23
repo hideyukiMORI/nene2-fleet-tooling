@@ -243,6 +243,21 @@ it can be checked with a regular expression exactly as written.
 | `--color-*`                           | scale (palette) references   | same                                                                                                                                                                                  |
 | `--brightness-*` `--opacity-*`        | literals are fine            | **there is no scale to reference.** A hover darkening of 95% is not a step in a series; inventing a "brightness scale" so the rule could cover it would be a scale with one real user |
 
+### 🔴 `className` lands on the root
+
+Every component puts the caller's `className` on its **outermost** element. For `Checkbox`
+and `Radio` that root is the `<label>`, not the `<input>` — use `inputClassName` to reach
+the box itself.
+
+Until 0.10.0 those two were the exception, and the exception was invisible: `className` was
+accepted, applied, and landed somewhere the caller could not have wanted. Layout properties
+— `self-start` in a flex row, a width, a margin — belong to the root, so a product had to
+wrap every choice in a `<div>` to say them.
+
+🔑 The kit had already answered a symptom of this in wave 2 (`cursor-pointer` belongs to the
+label, so the kit carries it). That was right and it left the reason in place. **Fixing what
+a report names is not the same as fixing what it is about.**
+
 ### 🔴 What a slot check must cover
 
 The rule above — _every design value a component uses comes from a slot_ — was false in 26 of
