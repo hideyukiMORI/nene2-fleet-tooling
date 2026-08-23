@@ -1,4 +1,4 @@
-# Publish 手順 — nene2-tokens / nene2-standards / nene2-i18n
+# Publish 手順 — nene2-tokens / nene2-standards / nene2-i18n / nene2-ui
 
 `nene2-js` の release flow と同型（[nene2-js docs/development/publish.md](https://github.com/hideyukiMORI/nene2-js/blob/main/docs/development/publish.md)）。
 CI は [Trusted Publishing](https://docs.npmjs.com/trusted-publishers/)（OIDC）— 長命 `NPM_TOKEN` は使わない。
@@ -10,15 +10,55 @@ publish の実行は施主（hide）。担当リナは準備と検証まで。
 
 ## 対象
 
-| パッケージ                      | 版                                 | 状態                                                                                                                                                                                                                                                                                                                                                     |
-| ------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@hideyukimori/nene2-tokens`    | ローカル **1.2.0** / npm **1.1.0** | 契約凍結済み（2026-07-14 hide 承認）。**1.0.0・1.0.1・1.1.0 は publish 済み**（1.1.0 = 2026-07-18・#85 束〔npm view 実測〕）。**1.2.0 は未 publish**（#127 準備・下記「1.2.0 節」・minor = C part-2 束: LEGACY_PREFIX_HINTS＋FIELD_TABLE＋§4-4 版乖離吸収）                                                                                              |
-| `@hideyukimori/nene2-standards` | ローカル **2.1.0** / npm **2.0.1** | known-utility warn プレースホルダ等の暫定は README 明記のまま（規約の設計 — O-5/O-6）。**1.0.0・1.0.1・1.1.0・1.2.0・2.0.0・2.0.1 は publish 済み**（2.0.1 = 2026-07-21・patch #116 keyframe 偽陽性修正〔npm view 実測 latest=2.0.1〕）。**2.1.0 は未 publish**（#123 準備・下記「2.1.0 節」・minor = #119 lint-baseline count-ratchet を arm へ届ける） |
-| `@hideyukimori/nene2-i18n`      | ローカル **0.3.0** / npm **0.2.0** | `private` 解除済み（#44 — 施主 hide 2026-07-16 裁定）。**0.1.0・0.2.0 は publish 済み**（0.2.0 = `./testing` subpath・#129／npm view 実測 latest=0.2.0）。**0.3.0 は未 publish**（#137 準備・下記「0.3.0 節」・minor = runtime translator options＋`/react`（I18nProvider）＋`renderWithI18n`）。W0b runtime 昇格レーン（`/format` は別供給・I18N-13）   |
+| パッケージ                      | 何を配るか                                                                                                                                                                     |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `@hideyukimori/nene2-tokens`    | Core Token Contract v1（color 28＋shadow 4）・`validate:themes`・themegen・codemod 写像表。契約凍結済み（2026-07-14 hide 承認）で、契約キー集合の変更は stop-the-line ADR のみ |
+| `@hideyukimori/nene2-standards` | ESLint / Stylelint 配布 config・`nene2-check`（conformance・fail-closed）・registries                                                                                          |
+| `@hideyukimori/nene2-i18n`      | 型付き i18n（ja 権威カタログ・parity・`./format` / `./react` / `./testing` subpath）。`private` 解除済み（#44・2026-07-16 hide 裁定）                                          |
+| `@hideyukimori/nene2-ui`        | フリート共有 React UI キット（token 駆動の部品）。**初回 publish 未実施**                                                                                                      |
+
+### 🔴 この表に版を書かない（#313）
+
+**版の列は 2026-08-23 に落とした。** 3パッケージとも「**未 publish**」と書かれている版が、
+**実際には全部 publish 済み**だったため（`tokens 1.2.0` / `standards 2.1.0`（実測は既に 2.2.0）/
+`i18n 0.3.0`）。しかも文書自身が
+
+> ※各 table 行・版節の「publish 済み」訂正は各パッケージの次 bump PR で（established パターン）
+
+と**訂正の先送りを手順として明記**しており、それが腐敗の機構だった。**publish 手順書に
+「まだ出ていない」と書いてあるものが既に出ている**のは、いちばん危ない腐り方。
+
+これは #55 / #152 で README から手書きの版表を落としたのと**同じ形**（_手書きの版表がある限り再発する_）。
+⇒ **表そのものを持たない。**
+
+**版の取り方**:
+
+| 知りたいこと                  | コマンド                                                                                                                          |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| 公開されている最新版          | `npm view @hideyukimori/<pkg> version`                                                                                            |
+| このツリーのローカル版        | `node -p "require('./packages/<pkg>/package.json').version"`                                                                      |
+| フリートの floor              | `fleet-baseline.json`                                                                                                             |
+| **未 publish の差分があるか** | 上2つを見比べる。同値でも**タグ以降にコミットがあれば未リリースの変更がある**: `git log <pkg>-v<version>..HEAD -- packages/<pkg>` |
+
+**npm 上に実在する版**〔2026-08-23 実測・`npm view <pkg> versions`〕:
+
+```
+nene2-standards  1.0.0 1.0.1 1.1.0 1.2.0 2.0.0 2.0.1 2.1.0 2.1.1 2.2.0
+nene2-tokens     1.0.0 1.0.1 1.1.0 1.2.0
+nene2-i18n       0.1.0 0.2.0 0.3.0
+nene2-ui         （未公開）
+```
+
+🔴 **この一覧も測定時点つきの参考**であって、正本はコマンドの方。**引用するときは日付ごと引くこと。**
+
+**以下の版ごとの節は残す** — あれは「何を出したか」の記録で、過去形なので腐らない。
+🔴 ただし**節の見出しに現在の状態（`✅ publish 済み` / 準備中）を書くと、そこが腐る**。
+状態は上のコマンドで引くこと。
 
 ## publish 束の履歴と現在の待ち
 
-> **現在の未 publish = `nene2-i18n` 0.3.0（#137・minor・下記「0.3.0 節」）**。`nene2-i18n` 0.2.0（#129・`./testing`）は **publish 済み**（npm view 実測 latest=0.2.0）。
+> 🔴 **「現在の未 publish は◯◯」をここに書かない**（#313）。この行はかつて `nene2-i18n 0.3.0` を未 publish と書いていたが、実測では publish 済みだった。**取り方は上表**。
+> `nene2-i18n` 0.2.0（#129・`./testing`）は **publish 済み**（npm view 実測 latest=0.2.0）。
 > standards **2.1.0**（#123・count-ratchet）＋ tokens **1.2.0**（#127・C part-2＋FIELD_TABLE）は **2026-07-21 publish 済み**（npm view 実測 latest=2.1.0 shasum 4921c61d / latest=1.2.0 shasum 8ba2e691）。※各 table 行・版節の「publish 済み」訂正は各パッケージの次 bump PR で（established パターン）。
 > standards **2.0.1** は **2026-07-21 publish 済み**（patch #116 keyframe 修正／npm view 実測 latest=2.0.1・shasum e6ce6b0e）。
 > standards **2.0.0** は **2026-07-21 publish 済み**（BREAKING・per-repo registries／npm view 実測 latest=2.0.0・shasum 20e4f3e0）。
@@ -34,7 +74,7 @@ publish の実行は施主（hide）。担当リナは準備と検証まで。
 
 ### `@hideyukimori/nene2-standards` 2.0.0（**major — BREAKING**）✅ publish 済み（2026-07-21・#111 prep）
 
-未 publish コミット（`39e3cb5`（#100）..`1f30dc0`（#108）・5件 — P2 registry 再設計の器）:
+この版に入ったコミット（`39e3cb5`（#100）..`1f30dc0`（#108）・5件 — P2 registry 再設計の器）:
 
 - **feat: lint-baseline (rule,file) grandfather 器**（A1 #100 schema／A2 #109 stylelint 合成が per-file で当該 rule を null 化・語彙内 file 欠落は loud error／A4 #104 init --scan が構造ルール違反を programmatic stylelint で実測して frozenCount を生成）。構造負債（selector-max-specificity 等）を shrink-only で grandfather する（invoice 169 / deal 12 の緑化器）。
 - **🔴 BREAKING（B1 #106）: per-repo registries.jsonc read＋tarball 同梱撤去**。`stylelintConfigFor(repo, opts?)` は既定 `cwd/registries.jsonc` を読む（不在=loud error・空=base・別 repo 混入=loud error）。**`package.json` の `files` から `registries` を除去**＝一般ユーザ配布物に NeNe 台帳を載せない（監査 A-1/A-2 根治・`npm pack --dry-run` で非同梱を実測）。消費側は `<repo>/registries.jsonc` が必要（fleet-tooling cross-review で配備・G-7）。
@@ -43,16 +83,16 @@ publish の実行は施主（hide）。担当リナは準備と検証まで。
 
 ### `@hideyukimori/nene2-standards` 2.0.1（**patch — バグ修正のみ**）✅ publish 済み（2026-07-21・#121 prep）
 
-未 publish コミット（`95eedb0`（#117）・1件 — pilot 発見の欠陥修正）:
+この版に入ったコミット（`95eedb0`（#117）・1件 — pilot 発見の欠陥修正）:
 
 - **fix: `nene2/layer-components-allowlist` が @layer components 内の @keyframes フレーム（from/to/percentage）を class 誤検知して reject するのを修正**（#116）。兄弟ルール（noUnlayeredCss 等）と一貫した keyframe スキップを追加。init-scan も keyframe を class 収集しないため、罰する側だけが keyframe を見る非対称＝生成 baseline で緑到達不能を潰す。回帰テスト3件同梱（keyframes-allowlist.test.ts）。
 - 発見経緯: **D-invoice pilot（実証1例目）**。invoice の index.css の `@keyframes csv-spin{to{}}` が唯一の偽陽性で赤だった。修正版 standards を pack→invoice clone install→`stylelint 'src/**/*.css'` で rc=0（緑・168 構造違反は registries.jsonc で grandfather・新規未登録クラスは赤）をエンドツーエンド実測。
 - API 変更なし（patch）。BREAKING の per-repo registries（2.0.0）はそのまま。**D-invoice 本体 PR の緑化前提**。
 - 検証: 統合 main で `npm run check` 緑（401 tests・AM-2 PASS）〔実測〕。`npm pack --dry-run` で version 2.0.1・registries 非同梱を確認〔実測〕。
 
-### `@hideyukimori/nene2-standards` 2.1.0（**minor — 機能追加**・#123 準備）
+### `@hideyukimori/nene2-standards` 2.1.0（**minor — 機能追加**・#123）
 
-未 publish コミット（`c046eac`（#122）・1件 — lint-baseline count-ratchet）:
+この版に入ったコミット（`c046eac`（#122）・1件 — lint-baseline count-ratchet）:
 
 - **feat: `init --check` に lint-baseline count-ratchet を配線**（#119）。baselined な (rule,file) の `frozenCount` ceiling を実強制（AM-14 縮小単調検査器の実装本体）。`InitCheckReport` に `lintBaselineRegressions`（実測 live > frozenCount＝**FAIL**）＋`lintBaselineShrinkable`（live < frozenCount＝縮小歓迎の advisory・非 FAIL）を追加。CLI `init --check` の exit を「未分類 + 回帰 > 0 で FAIL」へ拡張。
 - なぜ minor: report field 追加＋新 FAIL 条件＝機能追加。既存 arm は `init --check` 未配線ゆえ非破壊（semver 正直・hub 裁定 2026-07-21）。
@@ -72,9 +112,9 @@ release note 明記2点（hub 依頼・正直表記）:
 1. **適用済みリポ re-run の idempotence（no-op）保証範囲**〔#90 で実測訂正〕: 保証されるのは (a) themegen `fill` の不動点（**テストで保証** — `themegen.test.ts`「fill is idempotent」）と (b) **契約 namespace の x-送り済みトークン**（`--spacing-x-*`・`--font-weight-x-*` 等 — contract 扱いで不変〔dist 実測〕）。**一般には no-op ではない**: (i) **未知 namespace の x-送り済みトークンは loud reject**（`--line-x-height-body` / `--z-x-modal` とも `kind:'reject'`〔dist 実測 **2026-07-30**〕）。🔴 **2026-07-18 版のこの記述（「silent 二重送り」）は現行実装では誤り**——C part-1 の fallback 除去（#92）が landed し、`tailwindNamespaceOf` は未知 namespace で `null` を返すため step 7 の reject へ落ちる。**silent に壊れるのではなく、撃つ前に止まる**。 (ii) 字面衝突の再入 pair（`gap-x-*` 等）は `reentrantRenames` が plan で**開示**する（既知・#17）。加えて x- 送りの結果が拡張トークン名として不正になる場合も **reject**（#134/#88 — 「自分の検査器が拒否する名前を出さない」）。**運用条項: re-run 時は plan を必ず確認し、reentrant を含む rename があれば撃たない**（`-x-x-` は現行実装では生成されない＝reject 側に落ちる）。
 2. **dead/unknown-namespace token（`--line-x-height-body` 等）の挙動**: 写像側は未知名を **reject（fail-closed・null → 呼び出し側 error・写像を発明しない）**が実装・テスト済み。**生成側の loud reject（(i)reject＝`tailwindNamespaceOf` regex fallback 除去）も実装済み**〔#92 受入確認 2026-07-30 実測〕: `tailwindNamespaceOf` に fallback は無く（未知は `null`）、#92 が挙げた6トークン（`--line-height-body` / `--z-dropdown` / `--z-modal` / `--z-toast` / `--border-width-default` / `--border-width-emphasis`）はすべて **reject**。※2026-07-18 時点の「未実装」記述をここで訂正した（実装状況を誇称しない原則は、**遅れて実装された事実を書き漏らさない**ことも含む）。
 
-### `@hideyukimori/nene2-tokens` 1.2.0（**minor — C part-2 束**・#127 準備）
+### `@hideyukimori/nene2-tokens` 1.2.0（**minor — C part-2 束**・#127）
 
-未 publish コミット（C part-1 #93〔`6c6cc36`〕/ C part-2 impl #126 / FIELD_TABLE＋版 #127）:
+この版に入ったコミット（C part-1 #93〔`6c6cc36`〕/ C part-2 impl #126 / FIELD_TABLE＋版 #127）:
 
 - **feat: C part-1（#92/#93）＝未知 namespace の x-送り fallback 除去→loud reject**（1.1.0 publish 後にマージ済み・本 1.2.0 で初めて npm に載る）。
 - **feat: C part-2 impl（#125/#126）＝`LEGACY_PREFIX_HINTS`（hint 付き reject 表・step 5.5）**。fallback 非経由の silent 受理（`--font-size-*` が font-family に食われる #17 型）を止める。font-size は activeFrom W3（既定 W1 は現行 x-送り維持）・z/border-width は plain var 誘導。
@@ -83,18 +123,18 @@ release note 明記2点（hub 依頼・正直表記）:
 - 検証: 統合 main で `npm run check` 緑（415 tests・AM-2 PASS）〔実測〕。CODEMOD_MAP_VERSION 1.2.0＝package version と一致。
 - 後続: 本 publish 後に origin/field 同時解禁（origin=#300 の栓解除・field=FIELD_TABLE pin＋(C)-style 手前処理→W1 再開）。
 
-### `@hideyukimori/nene2-i18n` 0.2.0（**minor — `./testing` subpath**・#129 準備）
+### `@hideyukimori/nene2-i18n` 0.2.0（**minor — `./testing` subpath**・#129）
 
-未 publish コミット（#129・ティア1）:
+この版に入ったコミット（#129・ティア1）:
 
 - **feat: `./testing` subpath export（`expectCatalogParity`）**（#76 の批准前提(b) 最小解除）。規約 04 §0 API 表の正本 import 経路 `@hideyukimori/nene2-i18n/testing` の実体。payout の [X] exemplar アンカー3本（I18N-6/20/22）が要る `expectCatalogParity` を、この subpath から解決可能にする。`.`（ルート）からの export はそのまま維持（非破壊）。
 - スコープ外（分離）: `renderWithI18n` は `/react`（I18nProvider）依存＝**0.3.0 W0b レーン**（「無いものを配らない」— I18N-22 の沈黙 fallback を再生産しないため react は設計してから）。payout B-2 は B-2a（本 0.2.0）/ B-2b（format 0.3.0）分割。
 - 検証: 統合 main で `npm run check` 緑（28 files / 418 tests・AM-2 PASS）〔実測〕。`npm pack --dry-run` で version 0.2.0・`dist/testing.{js,d.ts}` 同梱。`import { expectCatalogParity } from '@hideyukimori/nene2-i18n/testing'` が実解決（node exports 解決 OK）〔実測〕。
 - 後続: 本 publish 後、payout 側で [X] アンカー3本植栽＋`check:exemplars --ref origin/main`（fetch あり・A-10 正）で green を取り直す（payout レーン同時）。
 
-### `@hideyukimori/nene2-i18n` 0.3.0（**minor — runtime 昇格レーン W0b**・#137 準備）
+### `@hideyukimori/nene2-i18n` 0.3.0（**minor — runtime 昇格レーン W0b**・#137）
 
-未 publish コミット（#137 ＝ 1本の `/react` PR・vault C4b 実測の runtime 昇格ブロッカー3点＋`/react`）:
+この版に入ったコミット（#137 ＝ 1本の `/react` PR・vault C4b 実測の runtime 昇格ブロッカー3点＋`/react`）:
 
 - **feat: `createTranslator(catalog, options?)` に第2引数**（§6-①）。`onMissing`（`'throw'` 既定 / `'key-echo'` 可視 fallback I18N-22 / 関数）・`interpolation`（`'single'` 既定 `{name}` / `'double'` `{{name}}`）・`catalogShape`（`'flat'` 既定・完全一致 / `'nested'` dot-path）。**既定引数は 0.2.0 と byte 同一挙動＝既存テスト不変・回帰0**。コア `t()` は分岐を持たず 3 strategy を注入（コアは薄く）。nested の key 型は `string` に緩め（`LooseTranslator`・DotPaths 型は 0.3.x 別 issue・hub 裁定）。
 - **feat: `/react` subpath 新設**（§6-②）＝`I18nProvider` + `useTranslation`。`useSyncExternalStore` で locale 購読（vault auth-store 同型）・scope 要素（既定 `<div lang>`・`as` 差替）に lang（AM-18）・provider 外/未知 locale は throw（fail-closed I18N-22）。JSX 不使用（createElement）・react は **optional peerDependency**。
@@ -107,8 +147,12 @@ publish 手順は「2回目以降（GitHub Actions）」（下記）。dry_run �
 
 ## 初回 publish（パッケージごとに1回・hide のローカル操作）
 
-> ✅ **基盤3パッケージとも初回 publish 済み＝残る初回はない**（tokens / standards = 2026-07-14・i18n = 2026-07-16）。
-> 以後の版上げは全て「2回目以降（GitHub Actions）」の手順。本節は**来歴の記録**として残す。
+> 🔴 **`@hideyukimori/nene2-ui` の初回 publish が残っている**〔2026-08-23 実測: `npm view` が 404〕。
+> 基盤3パッケージ（tokens / standards = 2026-07-14・i18n = 2026-07-16）は初回 publish 済みで、
+> 以後の版上げは「2回目以降（GitHub Actions）」の手順。**本節は nene2-ui でもう一度使う。**
+>
+> ⚠️ 状態を断定する行はここに置かない。**残る初回があるかは `npm view @hideyukimori/<pkg> version` で引く**
+> （この行はかつて「残る初回はない」と書いており、nene2-ui が加わった時点で偽になった）。
 
 Trusted Publisher は **既存パッケージにしか設定できない**（npm の package settings 画面が
 初回 publish 後にしか存在しない）ため、初回はローカルから account 2FA で publish した:
