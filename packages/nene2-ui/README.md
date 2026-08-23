@@ -104,27 +104,35 @@ loading/empty/error state set, read-only detail displays.
 screens (invoice previews, kanban boards, reports), and anything in the `model/` layer — data
 fetching and state are governed by `@hideyukimori/nene2-standards`, not by this kit.
 
-## Components (v0.1)
+## Components
 
-Promoted verbatim from `nene-payout`, the fleet's only conformance-violation-free product, with
-one correctness fix: `className` now composes instead of replacing.
+🔴 **This table is generated from `src/index.ts`.** Regenerate it when you add a component —
+a component list that lags the code is how a product ends up writing a part that already exists.
 
 | Group        | Components                                                  |
 | ------------ | ----------------------------------------------------------- |
-| `primitives` | `Button` `Input` `Select` `Spinner` `Text`                  |
-| `layout`     | `PageHeader`                                                |
+| `primitives` | `Button` `Input` `Select` `Spinner` `Text` `Textarea`       |
+| `layout`     | `PageHeader` `Stack` `Grid` `Box` `Section` `Card`          |
 | `forms`      | `FormField`                                                 |
-| `states`     | `EmptyState` `ErrorState`                                   |
+| `states`     | `LoadingState` `EmptyState` `ErrorState`                    |
+| `overlay`    | `Modal` `ConfirmDialog`                                     |
+| `feedback`   | `Badge` `InlineAlert`                                       |
 | `data`       | `DetailList`                                                |
 | `theme`      | `tokens` (read-only `var()` accessors for canvas/chart use) |
 
-`Input` and `Select` use `forwardRef`, so they drop straight into `react-hook-form`'s `register`.
+`Input`, `Select` and `Textarea` use `forwardRef`, so they drop straight into
+`react-hook-form`'s `register`, and pick up their `id` / `aria-describedby` from the
+`FormField` around them.
 
 ### Not yet here
 
-`Modal` `ConfirmDialog` `Toast` `Badge` `Card` `Stack` `DataTable` `Pagination` `Textarea`
-`Checkbox` `Alert` `LoadingState` — all measured as recurring across ≥3 products. They land as
-migrating products contribute their implementation upward, rather than being designed up front.
+`Toast` `DataTable` `Pagination` `Checkbox` `Radio` `Switch` `Icon` — all measured as recurring
+across ≥3 products. They land as migrating products contribute their implementation upward,
+rather than being designed up front.
+
+Until one lands, a product writing its own control can import `CONTROL_CLASS` so that at least
+the focus ring and the disabled treatment match the rest of the kit. **What each product imports
+it for is the measured list of what the kit is still missing.**
 
 ## Contributing a component
 
