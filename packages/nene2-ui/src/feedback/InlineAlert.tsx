@@ -24,7 +24,7 @@ export function InlineAlert({ tone = 'info', children }: InlineAlertProps) {
   return (
     <div
       role={tone === 'danger' ? 'alert' : 'status'}
-      className={cx('rounded-x-md border p-x-2xs font-sans', TONE_CLASS[tone])}
+      className={cx('rounded-x-slot-alert border p-x-slot-alert-pad font-sans', TONE_CLASS[tone])}
     >
       {children}
     </div>

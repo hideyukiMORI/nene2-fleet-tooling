@@ -150,6 +150,39 @@ publish 手順は「2回目以降（GitHub Actions）」（下記）。dry_run �
 nene-payout の `shared/ui` から10部品を昇格（新規設計ゼロ）＋ `cx()` 是正。
 Button / Input / Select / Spinner / Text / PageHeader / FormField / EmptyState / ErrorState / DetailList。
 
+### `@hideyukimori/nene2-ui` 0.3.0（**minor — 意匠値を2層トークンへ**・#328）
+
+🔴 **既存部品の見た目が変わる**（ラベルの既定値を意図的に変えている・下記）。
+
+**テーマを2層にした**:
+
+| 層             |                                                                          | 艦                    |
+| -------------- | ------------------------------------------------------------------------ | --------------------- |
+| ① **スケール** | `--spacing-x-3xs` … `--spacing-x-2xl`（9段）・radius・色                 | 🔒 **上書きしない**   |
+| ② **スロット** | `--spacing-x-slot-<部品>-<役割>` ほか **35本**。既定は全部スケールを指す | 🟢 **上書きしてよい** |
+
+**部品はスロットしか参照しない。** ⇒ 艦は**割り当てを変えられるが、段を発明できない**
+（`--spacing-x-slot-card-pad: var(--spacing-x-lg)` は書けるが `1.375rem` は書けない）。
+スロットは**部品ごと**に切ってある（施主裁定 2026-08-23 — **共有は後から寄せられるが、
+分けるのは後からだと全艦に影響する**）。
+
+- `FormField` のラベル: `--color-x-slot-field-label` / `--text-x-slot-field-label-size` /
+  `--font-weight-x-slot-field-label`。**既定値も変えた** — 0.2.0 は本文サイズ・`text-primary`
+  （部品への直書き）、0.3.0 は **0.75rem・`text-muted`・500**。
+  理由: 0.2.0 の値は**設計判断ではなく初期実装の残り**で、0.3.0 の値は `nene-vault` の
+  `.field-label`（同艦の意匠再生成 #361 で確定）に合わせた。**設計を経た値を既定に置いた。**
+- `Input` / `Select` / `Textarea`: `--text-x-slot-control-size`（既定 `max(1rem, 16px)`）。
+  **iOS Safari は 16px 未満の入力にフォーカスするとページごと拡大する**
+- README に**両方**書いた（🟢 スロットは上書きしてよい／🔒 スケールは上書きしない）。
+  **片方だけだと次の艦が反対側で迷う**
+
+🔴 **色とサイズに同じ suffix を使わないこと。** Tailwind は `text-<name>` を `--color-*` から
+先に解決するので、`--color-x-slot-field-label` と `--text-x-slot-field-label` を両方定義すると
+**サイズが到達不能になる**（コンパイルは通る）。`-size` を付けている理由。テストで固定した。
+
+🔴 **スロットは Tailwind の名前空間の中に置くこと**（`--spacing-x-slot-…`）。
+名前空間の外（`--x-slot-…`）に置くと**ユーティリティが1つも生成されない**〔実測〕。
+
 ### `@hideyukimori/nene2-ui` 0.2.0（**minor — 部品 10→28本**・#315）
 
 W0.5〜W0.7（#298 / #300 / #302 / #304 / #306 / #308 / #311 / #312）。

@@ -5,7 +5,7 @@ export interface EmptyStateProps {
 
 export function EmptyState({ message }: EmptyStateProps) {
   return (
-    <div className="py-x-stack-lg font-sans text-text-muted" role="status">
+    <div className="py-x-slot-state-pad-y font-sans text-text-muted" role="status">
       {message}
     </div>
   );

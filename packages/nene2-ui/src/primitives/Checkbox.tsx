@@ -8,7 +8,7 @@ export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement
   label: ReactNode;
 }
 
-const BOX_CLASS = `rounded-x-md border border-border accent-accent ${CONTROL_CLASS}`;
+const BOX_CLASS = `rounded-x-slot-control border border-border accent-accent ${CONTROL_CLASS}`;
 
 /**
  * A checkbox and its label, as one part.
@@ -33,7 +33,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
   const wiring = useFieldWiring({ id, ariaInvalid, ariaDescribedBy, ariaRequired });
 
   return (
-    <label className="inline-flex items-center gap-x-2xs font-sans text-text-primary">
+    <label className="inline-flex items-center gap-x-slot-choice-gap font-sans text-text-primary">
       <input ref={ref} type="checkbox" className={cx(BOX_CLASS, className)} {...wiring} {...rest} />
       {label}
     </label>

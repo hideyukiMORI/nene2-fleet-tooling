@@ -92,7 +92,7 @@ export function ToastProvider({
       aria-live={live}
       aria-label={regionLabel}
       role="region"
-      className="flex flex-col gap-x-2xs"
+      className="flex flex-col gap-x-slot-toast-gap"
     >
       {toasts
         .filter((toast) => toast.tone === tone)
@@ -100,7 +100,7 @@ export function ToastProvider({
           <div
             key={toast.id}
             className={cx(
-              'flex items-start gap-x-2xs rounded-x-md border p-x-2xs font-sans shadow-sm',
+              'flex items-start gap-x-slot-toast-gap rounded-x-slot-toast border p-x-slot-toast-pad font-sans shadow-sm',
               TONE_CLASS[toast.tone],
             )}
           >
@@ -109,7 +109,7 @@ export function ToastProvider({
               type="button"
               aria-label={dismissLabel}
               onClick={() => dismiss(toast.id)}
-              className={cx('rounded-x-md px-x-3xs', CONTROL_CLASS)}
+              className={cx('rounded-x-slot-toast px-x-slot-toast-dismiss-pad-x', CONTROL_CLASS)}
             >
               {dismissLabel}
             </button>

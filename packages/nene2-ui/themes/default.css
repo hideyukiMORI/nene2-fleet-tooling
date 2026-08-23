@@ -21,6 +21,73 @@
 
   --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.06);
 
+  /* Typography. Until 0.3.0 the kit had none of these and the components carried
+   * `font-medium` and a colour choice inline — which is a design value living outside this
+   * file, the one thing the rule at the top forbids. It showed up the first time a product
+   * migrated: nene-vault's field labels went from small-and-muted to body-size-and-dark,
+   * silently, because the kit had no opening to say otherwise (found by hide on a real
+   * screen, 2026-08-23). The old value came from `.field-label`, regenerated during that
+   * product's design pass — so the migration overwrote a decision, not an accident.
+   *
+   * 🔴 Colour and size must not share a suffix. Tailwind resolves `text-<name>` against
+   * `--color-*` first, so defining `--color-x-label` and `--text-x-label` together makes the
+   * size unreachable while everything still compiles (verified against tailwindcss 4.3.2).
+   * Hence `-size`. Same family as the `gap-x-2` collision noted below. */
+
+  /* Form controls. `max(1rem, 16px)` rather than `1rem`: iOS Safari zooms the page when a
+   * focused input is under 16px, and a product whose body text is 14px would inherit that.
+   * Keeping a control readable is the control's job, not the product's. */
+
+  /* ─────────────────────────────────────────────────────────────────────────
+   * ② SLOTS — a product may redefine these.
+   *
+   * Every design value a component uses comes from here, and every slot's default points
+   * back at the scale above. That split is the whole idea: a product decides **which step
+   * a part uses**, and cannot invent a step. Change `--spacing-x-slot-card-pad` to
+   * `var(--spacing-x-lg)` and cards get roomier everywhere; you still cannot write `2.25`.
+   *
+   * Named per component rather than per role (hide's ruling, 2026-08-23): sharing one slot
+   * between `Modal` and `Card` can be arranged later by pointing both at the same value,
+   * but splitting a shared slot afterwards changes every product at once.
+   * ───────────────────────────────────────────────────────────────────────── */
+  --spacing-x-slot-button-pad-x: var(--spacing-x-sm);
+  --spacing-x-slot-button-pad-y: var(--spacing-x-xs);
+  --spacing-x-slot-control-pad-x: var(--spacing-x-2xs);
+  --spacing-x-slot-control-pad-y: var(--spacing-x-xs);
+  --spacing-x-slot-field-gap: var(--spacing-x-2xs);
+  --spacing-x-slot-choice-gap: var(--spacing-x-2xs);
+  --spacing-x-slot-badge-pad-x: var(--spacing-x-2xs);
+  --spacing-x-slot-badge-pad-y: var(--spacing-x-3xs);
+  --spacing-x-slot-switch-pad-x: var(--spacing-x-2xs);
+  --spacing-x-slot-switch-pad-y: var(--spacing-x-3xs);
+  --spacing-x-slot-alert-pad: var(--spacing-x-2xs);
+  --spacing-x-slot-toast-pad: var(--spacing-x-2xs);
+  --spacing-x-slot-toast-gap: var(--spacing-x-2xs);
+  --spacing-x-slot-toast-dismiss-pad-x: var(--spacing-x-3xs);
+  --spacing-x-slot-modal-pad: var(--spacing-x-sm);
+  --spacing-x-slot-table-cell-pad-x: var(--spacing-x-2xs);
+  --spacing-x-slot-table-cell-pad-y: var(--spacing-x-3xs);
+  --spacing-x-slot-detail-gap: var(--spacing-x-xs);
+  --spacing-x-slot-detail-row-gap: var(--spacing-x-2xs);
+  --spacing-x-slot-detail-row-pad-y: var(--spacing-x-xs);
+  --spacing-x-slot-state-pad-y: var(--spacing-x-xl);
+  --spacing-x-slot-state-action-pad-y: var(--spacing-x-xs);
+  --spacing-x-slot-page-header-pad-y: var(--spacing-x-md);
+
+  --radius-x-slot-button: var(--radius-x-md);
+  --radius-x-slot-control: var(--radius-x-md);
+  --radius-x-slot-badge: var(--radius-x-md);
+  --radius-x-slot-switch: var(--radius-x-md);
+  --radius-x-slot-alert: var(--radius-x-md);
+  --radius-x-slot-toast: var(--radius-x-md);
+  --radius-x-slot-modal: var(--radius-x-md);
+  --radius-x-slot-card: var(--radius-x-md);
+
+  --color-x-slot-field-label: var(--color-text-muted);
+  --text-x-slot-field-label-size: 0.75rem;
+  --font-weight-x-slot-field-label: 500;
+  --text-x-slot-control-size: max(1rem, 16px);
+
   /* Sentinel for the consumer's build (#316). Zero-width, so applying it does nothing.
    * Its only job is to exist: `p-x-source-probe` appears nowhere except this kit's `dist`,
    * so a build that generates it has the kit in its `@source`, and a build that does not

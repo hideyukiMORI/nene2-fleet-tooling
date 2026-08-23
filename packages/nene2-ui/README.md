@@ -131,6 +131,82 @@ Regenerate a theme from the token contract with:
 npx @hideyukimori/nene2-tokens themegen
 ```
 
+## 🔴 What a product may redefine, and what it may not
+
+The theme has two layers, and the line between them is the point.
+
+### ② Slots — 🟢 redefine these
+
+Every design value a component uses comes from a slot, and slots are named per component:
+
+```css
+/* your product's theme, loaded after the kit's */
+@theme {
+  --spacing-x-slot-card-pad: var(--spacing-x-lg); /* roomier cards, everywhere */
+  --color-x-slot-field-label: var(--color-text-primary); /* darker field labels */
+  --radius-x-slot-control: var(--radius-x-md);
+}
+```
+
+This is where your product decides how it looks. Change a slot and every instance of that
+component follows.
+
+### ① The scale — 🔒 do not redefine
+
+`--spacing-x-3xs` … `--spacing-x-2xl`, and the radius and colour tokens they point at.
+
+```css
+--spacing-x-slot-card-pad: 1.375rem; /* 🔴 no */
+--spacing-x-md: 1.375rem; /* 🔴 no */
+```
+
+**A slot chooses a step; it may not invent one.** That is the whole mechanism: a product can
+make its cards roomier, and cannot end up with `2.25` again.
+
+### Why the scale is locked
+
+Measured in nene-vault before its migration: **128 spacing utilities using 19 distinct
+values**, five of which appeared exactly once. That is drift, not design. Retuning the scale
+to match it also fits _worse_, not better:
+
+| scale                           | exact match | within 2px |  worst case |
+| ------------------------------- | ----------: | ---------: | ----------: |
+| **the kit's nine**              |         47% |    **99%** |     **4px** |
+| nine chosen to fit this product |         84% |        95% | 🔴 **24px** |
+
+More exact matches, five times the worst error — a scale bent toward one histogram drops its
+own ends.
+
+🔑 **The scale is the set you keep to. The slots are what your brand looks like.**
+
+### Composing a slot
+
+A slot can hold several steps — four-sided padding is just CSS:
+
+```css
+--spacing-x-slot-login-form-pad: var(--spacing-x-xl) var(--spacing-x-md) var(--spacing-x-lg)
+  var(--spacing-x-md);
+```
+
+🔴 **There is no shorthand for this, on purpose.** The kit's tokens are written by tooling,
+not typed by hand, so brevity buys nothing — and a shorthand would need an expander, which is
+one more layer that can quietly drop meaning. Plain `var()` composition has no such layer, and
+it can be checked with a regular expression exactly as written: **every value in a slot is a
+`var(--spacing-*)` or `var(--radius-*)`, and nothing else.**
+
+That check is what keeps the scale from leaking. `--spacing-x-slot-field-gap: 0.5625rem`
+compiles, looks reasonable, and reintroduces the drift the scale exists to stop — so it fails
+here, including when it is hidden among three legitimate references in a composition.
+
+### Both halves are enforced
+
+A slot whose default contains a literal, or a component that reaches past the slots into the
+scale, fails the test suite. If a screen cannot be expressed this way, it is a missing slot or
+a missing component — open an issue, so every product gets the answer.
+
+**Products: apply the same check to your own theme.** The kit can only police its own file;
+the rule is the same one, and the regular expression above is the whole implementation.
+
 ## What is in scope
 
 **In:** admin console and business-screen UI, page layout scaffolding, form field structure, the

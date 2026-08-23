@@ -129,7 +129,12 @@ describe('Card', () => {
   it('carries surface, border and radius from the theme — none of them props', () => {
     const { container } = render(<Card>x</Card>);
     expect(classesOf(container.firstElementChild)).toEqual(
-      expect.arrayContaining(['bg-surface-raised', 'border', 'border-border', 'rounded-x-md']),
+      expect.arrayContaining([
+        'bg-surface-raised',
+        'border',
+        'border-border',
+        'rounded-x-slot-card',
+      ]),
     );
   });
 
