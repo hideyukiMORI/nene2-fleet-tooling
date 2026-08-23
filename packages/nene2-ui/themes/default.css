@@ -21,6 +21,27 @@
 
   --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.06);
 
+  /* Typography. Until 0.3.0 the kit had none of these and the components carried
+   * `font-medium` and a colour choice inline — which is a design value living outside this
+   * file, the one thing the rule at the top forbids. It showed up the first time a product
+   * migrated: nene-vault's field labels went from small-and-muted to body-size-and-dark,
+   * silently, because the kit had no opening to say otherwise (found by hide on a real
+   * screen, 2026-08-23). The old value came from `.field-label`, regenerated during that
+   * product's design pass — so the migration overwrote a decision, not an accident.
+   *
+   * 🔴 Colour and size must not share a suffix. Tailwind resolves `text-<name>` against
+   * `--color-*` first, so defining `--color-x-label` and `--text-x-label` together makes the
+   * size unreachable while everything still compiles (verified against tailwindcss 4.3.2).
+   * Hence `-size`. Same family as the `gap-x-2` collision noted below. */
+  --color-x-label: var(--color-text-muted);
+  --text-x-label-size: 0.75rem;
+  --font-weight-x-label: 500;
+
+  /* Form controls. `max(1rem, 16px)` rather than `1rem`: iOS Safari zooms the page when a
+   * focused input is under 16px, and a product whose body text is 14px would inherit that.
+   * Keeping a control readable is the control's job, not the product's. */
+  --text-x-control-size: max(1rem, 16px);
+
   /* Sentinel for the consumer's build (#316). Zero-width, so applying it does nothing.
    * Its only job is to exist: `p-x-source-probe` appears nowhere except this kit's `dist`,
    * so a build that generates it has the kit in its `@source`, and a build that does not

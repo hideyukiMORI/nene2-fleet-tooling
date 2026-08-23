@@ -75,3 +75,35 @@ describe('the @source instruction', () => {
     expect(index).toContain('SOURCE_PROBE_CLASS');
   });
 });
+
+describe('typography tokens', () => {
+  const theme = readFileSync(path.join(root, 'themes/default.css'), 'utf8');
+
+  it.each([
+    '--color-x-label',
+    '--text-x-label-size',
+    '--font-weight-x-label',
+    '--text-x-control-size',
+  ])('defines %s', (token) => {
+    expect(theme).toContain(`${token}:`);
+  });
+
+  it('never gives a colour and a text size the same suffix', () => {
+    // 🔴 Tailwind resolves `text-<name>` against --color-* first, so a matching pair makes
+    // the size unreachable while everything still compiles (verified on tailwindcss 4.3.2).
+    const colours = new Set([...theme.matchAll(/--color-(x-[a-z0-9-]+):/g)].map((m) => m[1]));
+    const sizes = [...theme.matchAll(/--text-(x-[a-z0-9-]+):/g)].map((m) => m[1]);
+    const clash = sizes.filter((s) => colours.has(s));
+    expect(clash, `colour and text-size share a suffix: ${clash.join(', ')}`).toEqual([]);
+  });
+});
+
+describe('the override boundary', () => {
+  it('says which tokens a product may redefine, and which it may not', () => {
+    // 🔴 機構上は艦が全部上書きできる（読み込み順で勝つ）。書かないと、±2px で困った艦が
+    // **善意で spacing を上書きし、9段という語彙だけ残して規律が消える**。
+    const section = readme.slice(readme.indexOf('## 🔴 What a product may redefine'));
+    expect(section).toContain('--spacing-x-3xs');
+    expect(section).toMatch(/Do not redefine/);
+  });
+});

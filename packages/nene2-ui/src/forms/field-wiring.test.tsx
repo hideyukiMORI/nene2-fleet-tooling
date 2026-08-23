@@ -198,3 +198,55 @@ describe('required', () => {
     expect(container.querySelector('input')?.getAttribute('aria-required')).toBeNull();
   });
 });
+
+describe('label typography', () => {
+  it('reads its colour, size and weight from the theme, not from the component', () => {
+    // 🔴 0.2.0 は font-medium と色の選択を部品に直書きしていた。艦から変える口が無く、
+    // vault の載せ替えで **意匠再生成（#361）で決まったラベルの値が黙って上書きされた**
+    // （施主が実機で発見・2026-08-23）。
+    const { container } = render(
+      <FormField id="email" label="Email">
+        <Input />
+      </FormField>,
+    );
+    const cls = (container.querySelector('label')?.getAttribute('class') ?? '').split(/\s+/);
+    expect(cls).toEqual(
+      expect.arrayContaining(['text-x-label', 'text-x-label-size', 'font-x-label']),
+    );
+  });
+
+  it('hard-codes no typography of its own', () => {
+    const { container } = render(
+      <FormField id="email" label="Email">
+        <Input />
+      </FormField>,
+    );
+    for (const cls of (container.querySelector('label')?.getAttribute('class') ?? '').split(
+      /\s+/,
+    )) {
+      // font-sans は family（テーマ側の1本）なので許す。size / weight / 色は許さない。
+      expect(cls).not.toMatch(/^text-(xs|sm|base|lg|xl|\dxl)$/);
+      expect(cls).not.toMatch(/^font-(thin|light|normal|medium|semibold|bold)$/);
+      expect(cls).not.toMatch(/^text-text-(primary|muted)$/);
+    }
+  });
+});
+
+describe('control font size', () => {
+  it.each([
+    ['Input', <Input key="i" />],
+    ['Textarea', <Textarea key="t" />],
+    [
+      'Select',
+      <Select key="s">
+        <option>a</option>
+      </Select>,
+    ],
+  ])('%s carries a size of its own, so iOS does not zoom on focus', (_n, control) => {
+    // 🔴 vault の body は 14px。フォーカスした入力が 16px 未満だと iOS Safari は
+    // ページごと拡大する。旧実装は 16px を持っていた。トークンの値は max(1rem, 16px)。
+    const { container } = render(control);
+    const el = container.querySelector('input, select, textarea');
+    expect((el?.getAttribute('class') ?? '').split(/\s+/)).toContain('text-x-control-size');
+  });
+});

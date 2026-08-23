@@ -150,6 +150,26 @@ publish 手順は「2回目以降（GitHub Actions）」（下記）。dry_run �
 nene-payout の `shared/ui` から10部品を昇格（新規設計ゼロ）＋ `cx()` 是正。
 Button / Input / Select / Spinner / Text / PageHeader / FormField / EmptyState / ErrorState / DetailList。
 
+### `@hideyukimori/nene2-ui` 0.3.0（**minor — 意匠値を部品からテーマへ出す**・#328）
+
+🔴 **既存部品の見た目が変わる**（0.2.0 の値を意図的に変えている・下記）。
+
+- `FormField` のラベルが `--color-x-label` / `--text-x-label-size` / `--font-weight-x-label` を参照する。
+  **既定値も変えた**: 0.2.0 は本文サイズ・`text-primary`（部品への直書き）だったが、
+  0.3.0 は **0.75rem・`text-muted`・500**。理由は下記
+- `Input` / `Select` / `Textarea` が `--text-x-control-size`（既定 `max(1rem, 16px)`）を持つ。
+  **iOS Safari は 16px 未満の入力にフォーカスするとページごと拡大する**ので、
+  本文が 14px の製品では旧実装の見た目に戻せない
+- README に**上書きしてよいトークンと、いけないトークン**（spacing の9段）の境界
+
+**既定値を変えた理由**: 0.2.0 の値は**設計判断ではなく初期実装の残り**だった。
+0.3.0 の値は `nene-vault` の `.field-label`（同艦の意匠再生成 #361 で確定したもの）に合わせている。
+⇒ **「設計を経た値」を既定に置き、経ていない値を捨てた。** 艦は自艦のテーマで再定義できる。
+
+🔴 **色とサイズに同じ suffix を使わないこと。** Tailwind は `text-<name>` を `--color-*` から先に
+解決するので、`--color-x-label` と `--text-x-label` を両方定義すると**サイズが到達不能になる**
+（コンパイルは通る）。`-size` を付けている理由。テストで固定した。
+
 ### `@hideyukimori/nene2-ui` 0.2.0（**minor — 部品 10→28本**・#315）
 
 W0.5〜W0.7（#298 / #300 / #302 / #304 / #306 / #308 / #311 / #312）。

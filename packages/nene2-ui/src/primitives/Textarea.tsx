@@ -5,7 +5,7 @@ import { useFieldWiring } from '../forms/field-context.js';
 
 export type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement>;
 
-const BASE_CLASS = `w-full rounded-x-md border border-border bg-surface-raised px-x-inline-sm py-x-stack-sm font-sans text-text-primary placeholder:text-text-muted ${CONTROL_CLASS}`;
+const BASE_CLASS = `w-full rounded-x-md border border-border bg-surface-raised px-x-inline-sm py-x-stack-sm font-sans text-x-control-size text-text-primary placeholder:text-text-muted ${CONTROL_CLASS}`;
 
 /**
  * Multi-line text input. Deliberately identical to `Input` apart from the element, so the

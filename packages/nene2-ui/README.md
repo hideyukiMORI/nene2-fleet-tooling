@@ -131,6 +131,42 @@ Regenerate a theme from the token contract with:
 npx @hideyukimori/nene2-tokens themegen
 ```
 
+## 🔴 What a product may redefine, and what it may not
+
+Everything in `themes/default.css` is _technically_ overridable — a product's own `@theme`
+loads after the kit's and wins. That is not the same as being free to override it.
+
+|                        |                                                                                                                                                                      |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🟢 **Redefine freely** | **Colour, typography, radius, shadow.** These are your brand. `--color-accent`, `--color-x-label`, `--text-x-label-size`, `--font-weight-x-label`, `--radius-x-md` … |
+| 🔴 **Do not redefine** | **The spacing scale** (`--spacing-x-3xs` … `--spacing-x-2xl`).                                                                                                       |
+
+### Why spacing is different
+
+The nine steps are not a suggestion; they are the thing the kit is for. A product that
+retunes them to match what it wrote before keeps the vocabulary and loses the rule — nine
+names, nine different meanings per product, and no way to say a screen is consistent.
+
+The temptation is real: after migrating, some spacing shifts by up to 2px. That shift is the
+point. Measured in nene-vault before its migration, 128 spacing utilities used **19 distinct
+values**, five of which appeared exactly once. That is drift, not design, and snapping it is
+the correction — not a regression to be tuned away.
+
+Retuning also makes the fit worse, not better (measured across those 128 uses):
+
+| scale                           | exact match | within 2px |  worst case |
+| ------------------------------- | ----------: | ---------: | ----------: |
+| **the kit's nine**              |         47% |    **99%** |     **4px** |
+| nine chosen to fit this product |         84% |        95% | 🔴 **24px** |
+
+More exact matches, five times the worst error — because a scale bent toward one product's
+histogram drops the ends.
+
+🔑 **The kit holds the set you keep to. Your theme holds what your brand looks like.**
+
+If a screen genuinely cannot be expressed on the scale, that is a missing step or a missing
+component — open an issue rather than editing the token, so every product gets the answer.
+
 ## What is in scope
 
 **In:** admin console and business-screen UI, page layout scaffolding, form field structure, the
