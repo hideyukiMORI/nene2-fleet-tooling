@@ -1,0 +1,31 @@
+/* @nene2-contract 1.0 @themegen 1.0.0
+ *
+ * The kit's default theme. Promoted verbatim from nene-payout — the fleet's only
+ * conformance-violation-free product as of 2026-08-23.
+ *
+ * 🔴 This file is the ONLY place a design value may appear. Components reference these
+ * through Tailwind utilities (bg-accent, rounded-x-md, px-x-inline-md). To rebrand,
+ * replace this file — never edit a component.
+ *
+ * Regenerate with: npx @hideyukimori/nene2-tokens themegen
+ */
+@theme {
+  --color-surface: oklch(99% 0.004 260);
+  --color-surface-raised: oklch(100% 0 0);
+  --color-text-primary: oklch(25% 0.02 260);
+  --color-text-muted: oklch(55% 0.02 260);
+  --color-border: oklch(90% 0.01 260);
+  --color-accent: oklch(55% 0.15 250);
+  --color-on-accent: oklch(99% 0 0);
+  --color-danger: oklch(55% 0.2 25);
+
+  --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.06);
+
+  --radius-x-md: 0.5rem;
+
+  --spacing-x-inline-sm: 0.5rem;
+  --spacing-x-inline-md: 1rem;
+  --spacing-x-stack-sm: 0.75rem;
+  --spacing-x-stack-md: 1.25rem;
+  --spacing-x-stack-lg: 2rem;
+}
