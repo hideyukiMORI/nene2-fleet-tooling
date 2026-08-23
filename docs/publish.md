@@ -251,14 +251,56 @@ npm error 404 Not Found - PUT https://registry.npmjs.org/@hideyukimori%2f<pkg>
 npm の各 package settings（`https://www.npmjs.com/package/@hideyukimori/nene2-tokens` →
 Settings → Trusted Publisher）:
 
-| Field             | Value                              |
-| ----------------- | ---------------------------------- |
-| Provider          | GitHub Actions                     |
-| Repository        | `hideyukiMORI/nene2-fleet-tooling` |
-| Workflow filename | `publish.yml`                      |
+| Field                | Value                                              |
+| -------------------- | -------------------------------------------------- |
+| Publisher            | GitHub Actions                                     |
+| Organization or user | `hideyukiMORI`                                     |
+| Repository           | `nene2-fleet-tooling`                              |
+| Workflow filename    | `publish.yml`                                      |
+| **Environment name** | 🔴 **空欄**                                        |
+| **Allowed actions**  | 🔴 **`npm publish`（＋ `npm stage publish`）だけ** |
 
-`nene2-standards` と `nene2-i18n` も同じ値で設定する（Workflow filename は共通 — パッケージ選択は
-workflow_dispatch の input で行う）。**3パッケージとも初回 publish 済み＝npm 側の settings 画面は既に存在する。**
+全パッケージで同じ値（Workflow filename は共通 — パッケージ選択は `workflow_dispatch` の input で行う）。
+
+### 🔴 npm の UI にあって、この表に無かった3項目（2026-08-23・`nene2-ui` の設定で実際に詰まった）
+
+**① `Allowed actions` は必須。**「At least one action must be selected」で先へ進めないので、
+**知らないと設定が完了しない。**
+
+選ぶのは **publish に相当するものだけ**。`publish.yml` が npm に対して行うのは実測でこれだけ:
+
+```
+npm publish --dry-run --workspace packages/<pkg>
+npm publish --workspace packages/<pkg>
+```
+
+`dist-tag` / `deprecate` / `owner` / `unpublish` は**一切使っていない**ので渡さない。
+（2026-08-23 の `nene2-ui` では `npm publish` ＋ `npm stage publish` で設定した。）
+
+**② `Environment name` は空欄。**
+
+`publish.yml` は GitHub Actions の environment を**使っていない**（`environment:` の記述なし）。
+ここに名前を入れると**ワークフロー側にも同名の environment 設定が必要**になり、無いと publish が弾かれる。
+
+**③ パッケージ設定の `Publishing access` は「最も制限の強い」方を選ぶ。**
+
+Trusted Publisher とは別に、パッケージ設定に publishing access の選択がある:
+
+| 選択肢                                                               |               |
+| -------------------------------------------------------------------- | ------------- |
+| **Require two-factor authentication and disallow bypass 2fa tokens** | 🟢 **こちら** |
+| Require 2FA **or** a granular access token with bypass 2fa enabled   | ❌            |
+
+**OIDC で打つので bypass トークンの経路が要らない。** このリポの方針も
+「**長命 `NPM_TOKEN` は使わない**」。npm 自身の注記も
+「trusted publishers ＋ 最も制限の強いトークン設定」を推している。
+
+🔴 **ローカル publish も引き続きできる** — 初回 publish のときのブラウザ認証がまさに 2FA なので、
+この設定にしても「初回はローカルから」の手順は通る。
+
+> 🔑 **この3項目は、npm の UI が後から増やしたもの。** 手順書が実物に追いつかず、
+> **設定しようとした人がその場で止まる**形になっていた。2026-08-23 だけで同じ形が3件出ている
+> （`--provenance=false` が脚注にしかなかった／`404` の実体が認証切れだった／これ）。
 
 ## 2回目以降（GitHub Actions）
 
