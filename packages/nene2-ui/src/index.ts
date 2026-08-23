@@ -20,9 +20,19 @@ export type { Space, Responsive } from './lib/spacing.js';
 // Forms
 export { FormField, type FormFieldProps } from './forms/FormField.js';
 
-// States
+// States — the three ship together (design principle 5). Adding a fourth screen state
+// means adding it here, or the set stops being a set.
+export { LoadingState, type LoadingStateProps } from './states/LoadingState.js';
 export { EmptyState, type EmptyStateProps } from './states/EmptyState.js';
 export { ErrorState, type ErrorStateProps } from './states/ErrorState.js';
+
+// Overlay
+export { Modal, type ModalProps } from './overlay/Modal.js';
+export { ConfirmDialog, type ConfirmDialogProps } from './overlay/ConfirmDialog.js';
+
+// Feedback
+export { Badge, type BadgeProps } from './feedback/Badge.js';
+export { InlineAlert, type InlineAlertProps } from './feedback/InlineAlert.js';
 
 // Data
 export { DetailList, type DetailListProps, type DetailRow } from './data/DetailList.js';
