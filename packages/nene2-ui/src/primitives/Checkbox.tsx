@@ -25,11 +25,12 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
     id,
     'aria-invalid': ariaInvalid,
     'aria-describedby': ariaDescribedBy,
+    'aria-required': ariaRequired,
     ...rest
   },
   ref,
 ) {
-  const wiring = useFieldWiring({ id, ariaInvalid, ariaDescribedBy });
+  const wiring = useFieldWiring({ id, ariaInvalid, ariaDescribedBy, ariaRequired });
 
   return (
     <label className="inline-flex items-center gap-x-2xs font-sans text-text-primary">

@@ -5,6 +5,10 @@ export interface FieldContextValue {
   id: string;
   /** id of the rendered error message, or null when the field is valid. */
   errorId: string | null;
+  /** id of the rendered hint, or null when there is no hint. */
+  hintId: string | null;
+  /** Whether the field must be filled in. */
+  required: boolean;
 }
 
 export const FieldContext = createContext<FieldContextValue | null>(null);
@@ -15,6 +19,7 @@ export interface FieldWiring {
   id?: string | undefined;
   'aria-invalid'?: AriaAttributes['aria-invalid'] | undefined;
   'aria-describedby'?: string | undefined;
+  'aria-required'?: AriaAttributes['aria-required'] | undefined;
 }
 
 /**
@@ -37,8 +42,13 @@ export interface FieldWiring {
  * a comment, so its real count is zero, not one. Both of those wrong numbers reached a draft
  * of this comment — written down here so the next person to recount lands on the same one.)
  *
+ * 🔴 The same is true of hints. nene-invoice, nene-vault and nene-profile each render one,
+ * and none of the three links it — so the help text is visible and never read out. The kit
+ * puts both ids on the control, the error first, because once a field is wrong the reason
+ * matters more than the advice.
+ *
  * A contract a component states in prose and leaves to its callers is a contract that will
- * be half-kept. The kit knows the error's id, so the kit does the wiring.
+ * be half-kept. The kit knows the ids, so the kit does the wiring.
  *
  * Explicit props always win — a caller with its own error region can still say so.
  */
@@ -46,6 +56,7 @@ export function useFieldWiring(explicit: {
   id?: string | undefined;
   ariaInvalid?: AriaAttributes['aria-invalid'] | undefined;
   ariaDescribedBy?: string | undefined;
+  ariaRequired?: AriaAttributes['aria-required'] | undefined;
 }): FieldWiring {
   const field = useContext(FieldContext);
 
@@ -54,12 +65,16 @@ export function useFieldWiring(explicit: {
       id: explicit.id,
       'aria-invalid': explicit.ariaInvalid,
       'aria-describedby': explicit.ariaDescribedBy,
+      'aria-required': explicit.ariaRequired,
     };
   }
+
+  const described = [field.errorId, field.hintId].filter((v): v is string => v !== null).join(' ');
 
   return {
     id: explicit.id ?? field.id,
     'aria-invalid': explicit.ariaInvalid ?? (field.errorId === null ? undefined : true),
-    'aria-describedby': explicit.ariaDescribedBy ?? field.errorId ?? undefined,
+    'aria-describedby': explicit.ariaDescribedBy ?? (described === '' ? undefined : described),
+    'aria-required': explicit.ariaRequired ?? (field.required ? true : undefined),
   };
 }

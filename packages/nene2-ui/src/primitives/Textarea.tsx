@@ -16,10 +16,17 @@ const BASE_CLASS = `w-full rounded-x-md border border-border bg-surface-raised p
  * wanted one set it on the element already.
  */
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
-  { className, id, 'aria-invalid': ariaInvalid, 'aria-describedby': ariaDescribedBy, ...rest },
+  {
+    className,
+    id,
+    'aria-invalid': ariaInvalid,
+    'aria-describedby': ariaDescribedBy,
+    'aria-required': ariaRequired,
+    ...rest
+  },
   ref,
 ) {
-  const wiring = useFieldWiring({ id, ariaInvalid, ariaDescribedBy });
+  const wiring = useFieldWiring({ id, ariaInvalid, ariaDescribedBy, ariaRequired });
 
   return <textarea ref={ref} className={cx(BASE_CLASS, className)} {...wiring} {...rest} />;
 });

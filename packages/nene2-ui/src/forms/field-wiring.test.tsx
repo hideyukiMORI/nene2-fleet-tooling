@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
 /**
- * FormField の配線（#302）— エラーの id を部品が自分で拾うこと。
+ * FormField の配線（#302 / #308）— エラー・hint の id を部品が自分で拾うこと。
  *
  * 🔴 v0.1 は `aria-describedby` の付与を**呼び出し側の責務**と doc コメントで宣言していた。
- * 実測（2026-08-23）では守られていない: nene-vault は `aria-invalid` を **16回**書いて
- * `aria-describedby` を **0回**しか書いていない。⇒「不正だとは言うが、理由は読まれない」。
+ * 実測（2026-08-23・JSX prop のみを数える）では守られていない: nene-vault は
+ * `aria-invalid` を **3箇所**に付けて `aria-describedby` は **0回**。nene-payout は 26 対 0。
+ * ⇒「不正だとは言うが、理由は読まれない」。hint も同じで、invoice / vault / profile の
+ * 3艦とも**描画するだけで参照していない**（見えるが読まれない）。
  * 散文で宣言して呼び出し側に委ねた契約は、半分しか守られない。
  */
 import { render } from '@testing-library/react';
@@ -111,5 +113,88 @@ describe('Textarea', () => {
   it('sets no rows of its own — height is the screen’s decision', () => {
     const { container } = render(<Textarea />);
     expect(container.querySelector('textarea')?.getAttribute('rows')).toBeNull();
+  });
+});
+
+describe('hint', () => {
+  it('is read out with the control, not merely shown', () => {
+    // 🔴 invoice / vault / profile はどれも hint を描画するだけで参照していない。
+    const { container } = render(
+      <FormField id="email" label="Email" hint="Work address">
+        <Input />
+      </FormField>,
+    );
+    const input = container.querySelector('input');
+    expect(input?.getAttribute('aria-describedby')).toBe('email-hint');
+    expect(container.querySelector('#email-hint')?.textContent).toBe('Work address');
+  });
+
+  it('stays visible when there is an error, and is read after it', () => {
+    // profile は error のとき hint を隠す。採らない —— 助けが要るのは間違えた瞬間。
+    const { container } = render(
+      <FormField id="email" label="Email" hint="Work address" error="required">
+        <Input />
+      </FormField>,
+    );
+    expect(container.querySelector('#email-hint')).toBeTruthy();
+    expect(container.querySelector('input')?.getAttribute('aria-describedby')).toBe(
+      'email-error email-hint',
+    );
+  });
+
+  it('renders under the control, while labelAdornment renders beside the label', () => {
+    // 同じ名前で位置が2通りあったので、prop を分けた。
+    const { container } = render(
+      <FormField id="email" label="Email" hint="under" labelAdornment={<em>beside</em>}>
+        <Input />
+      </FormField>,
+    );
+    expect(container.querySelector('label')?.textContent).toBe('Emailbeside');
+    expect(container.querySelector('label em')).toBeTruthy();
+    expect(container.querySelector('#email-hint')?.tagName).toBe('SPAN');
+  });
+});
+
+describe('required', () => {
+  it('marks the control required without needing any words', () => {
+    const { container } = render(
+      <FormField id="email" label="Email" required>
+        <Input />
+      </FormField>,
+    );
+    expect(container.querySelector('input')?.getAttribute('aria-required')).toBe('true');
+  });
+
+  it('shows no marker unless the caller supplies one — the kit ships no strings', () => {
+    const { container } = render(
+      <FormField id="email" label="Email" required>
+        <Input />
+      </FormField>,
+    );
+    expect(container.querySelector('label')?.textContent).toBe('Email');
+  });
+
+  it('renders the caller’s marker after the label when both are given', () => {
+    const { container } = render(
+      <FormField id="email" label="Email" required requiredMarker="＊">
+        <Input />
+      </FormField>,
+    );
+    expect(container.querySelector('label')?.textContent).toBe('Email＊');
+  });
+
+  it('does not show a marker for an optional field, even if one is supplied', () => {
+    const { container } = render(
+      <FormField id="email" label="Email" requiredMarker="＊">
+        <Input />
+      </FormField>,
+    );
+    expect(container.querySelector('label')?.textContent).toBe('Email');
+    expect(container.querySelector('input')?.getAttribute('aria-required')).toBeNull();
+  });
+
+  it('says nothing about requiredness outside a FormField', () => {
+    const { container } = render(<Input />);
+    expect(container.querySelector('input')?.getAttribute('aria-required')).toBeNull();
   });
 });

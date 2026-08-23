@@ -12,10 +12,17 @@ const BASE_CLASS = `w-full rounded-x-md border border-border bg-surface-raised p
  * Visual values come from theme tokens only.
  */
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { className, id, 'aria-invalid': ariaInvalid, 'aria-describedby': ariaDescribedBy, ...rest },
+  {
+    className,
+    id,
+    'aria-invalid': ariaInvalid,
+    'aria-describedby': ariaDescribedBy,
+    'aria-required': ariaRequired,
+    ...rest
+  },
   ref,
 ) {
-  const wiring = useFieldWiring({ id, ariaInvalid, ariaDescribedBy });
+  const wiring = useFieldWiring({ id, ariaInvalid, ariaDescribedBy, ariaRequired });
 
   return <input ref={ref} className={cx(BASE_CLASS, className)} {...wiring} {...rest} />;
 });

@@ -20,11 +20,12 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
     id,
     'aria-invalid': ariaInvalid,
     'aria-describedby': ariaDescribedBy,
+    'aria-required': ariaRequired,
     ...rest
   },
   ref,
 ) {
-  const wiring = useFieldWiring({ id, ariaInvalid, ariaDescribedBy });
+  const wiring = useFieldWiring({ id, ariaInvalid, ariaDescribedBy, ariaRequired });
 
   return (
     <select ref={ref} className={cx(BASE_CLASS, className)} {...wiring} {...rest}>
