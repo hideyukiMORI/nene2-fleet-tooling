@@ -5,6 +5,7 @@ export { Select, type SelectProps } from './primitives/Select.js';
 export { Spinner, type SpinnerProps } from './primitives/Spinner.js';
 export { Text, type TextProps } from './primitives/Text.js';
 export { Textarea, type TextareaProps } from './primitives/Textarea.js';
+export { Icon, type IconProps } from './primitives/Icon.js';
 export { Checkbox, type CheckboxProps } from './primitives/Checkbox.js';
 export { Radio, type RadioProps } from './primitives/Radio.js';
 export { Switch, type SwitchProps } from './primitives/Switch.js';
