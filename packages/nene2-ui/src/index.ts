@@ -5,6 +5,9 @@ export { Select, type SelectProps } from './primitives/Select.js';
 export { Spinner, type SpinnerProps } from './primitives/Spinner.js';
 export { Text, type TextProps } from './primitives/Text.js';
 export { Textarea, type TextareaProps } from './primitives/Textarea.js';
+export { Checkbox, type CheckboxProps } from './primitives/Checkbox.js';
+export { Radio, type RadioProps } from './primitives/Radio.js';
+export { Switch, type SwitchProps } from './primitives/Switch.js';
 
 // Layout
 export { PageHeader, type PageHeaderProps } from './layout/PageHeader.js';
@@ -36,6 +39,8 @@ export { InlineAlert, type InlineAlertProps } from './feedback/InlineAlert.js';
 
 // Data
 export { DetailList, type DetailListProps, type DetailRow } from './data/DetailList.js';
+export { DataTable, type DataTableProps, type DataColumn } from './data/DataTable.js';
+export { Pagination, type PaginationProps } from './data/Pagination.js';
 
 // Theme
 export { tokens } from './theme/tokens.js';
