@@ -7,6 +7,14 @@ export { Text, type TextProps } from './primitives/Text.js';
 
 // Layout
 export { PageHeader, type PageHeaderProps } from './layout/PageHeader.js';
+export { Stack, type StackProps } from './layout/Stack.js';
+export { Grid, type GridProps } from './layout/Grid.js';
+export { Box, type BoxProps } from './layout/Box.js';
+export { Section, type SectionProps } from './layout/Section.js';
+export { Card, type CardProps } from './layout/Card.js';
+
+// Spacing scale — the names a caller may choose from (design principle 3).
+export type { Space, Responsive } from './lib/spacing.js';
 
 // Forms
 export { FormField, type FormFieldProps } from './forms/FormField.js';
