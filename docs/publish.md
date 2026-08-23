@@ -150,6 +150,26 @@ publish 手順は「2回目以降（GitHub Actions）」（下記）。dry_run �
 nene-payout の `shared/ui` から10部品を昇格（新規設計ゼロ）＋ `cx()` 是正。
 Button / Input / Select / Spinner / Text / PageHeader / FormField / EmptyState / ErrorState / DetailList。
 
+### `@hideyukimori/nene2-ui` 0.4.0（**minor — hover/active ＋ 構造の選択肢**・#332）
+
+🔴 **既存部品の見た目が変わる**（0.3.0 まで**ポインタに何も反応しなかった**）。
+
+- **`hover` / `active`**（`--brightness-x-slot-hover` 95% / `--brightness-x-slot-press` 90%）。
+  🔴 **v0.1 の disabled / focus と同じ穴の3つ目**。艦は7艦が持っており、**うち4艦は CSS 側**に
+  書いているので Tailwind クラスだけ数えると 0 に見えていた。
+  **variant ごとの hover 色は持たない** ── 塗りが3種あるので色を持つとトークンが3倍になる。
+  `brightness` なら1本で全部に効き、**白い secondary でも暗くなる**（艦の `brightness-105` は
+  白では効かない）。`disabled:` では打ち消す（**押せないものが押した反応を返さない**）
+- **`className` を7部品に追加**（`Text` / `Spinner` / `PageHeader` / `EmptyState` /
+  `ErrorState` / `LoadingState` / `DetailList`）。🔴 **README の設計原則2「className は合成する」に
+  反していた**（受け取りすらしなかった）。艦の `EmptyState` は6艦とも受ける
+- **構造の選択肢**: `EmptyState` の `align`（**既定 center** ── 実測で6艦中5艦が中央揃え）／
+  `Button` の `size`（`md` / `sm`）と `ghost` variant（vault が持つ）／`InlineAlert` の `warn`
+
+🔑 **原則3 との線引き**: 禁じているのは**意匠値**を props で受けること。
+**その prop に「新しい値」を書けるなら意匠（禁止）、有限の選択肢から選ぶだけなら構造（可）。**
+`align="start"` はテーマでは供給できず、値でもない。
+
 ### `@hideyukimori/nene2-ui` 0.3.0（**minor — 意匠値を2層トークンへ**・#328）
 
 🔴 **既存部品の見た目が変わる**（ラベルの既定値を意図的に変えている・下記）。

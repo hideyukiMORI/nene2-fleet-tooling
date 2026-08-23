@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { cx } from '../lib/cx.js';
 
 export interface DetailRow {
   /** Localized row label. */
@@ -7,6 +8,8 @@ export interface DetailRow {
 }
 
 export interface DetailListProps {
+  /** Composed after the kit's own classes (design principle 2). */
+  className?: string;
   rows: DetailRow[];
 }
 
@@ -14,9 +17,9 @@ export interface DetailListProps {
  * Read-only key/value display for detail screens. Uses a description list so the
  * label/value relationship is conveyed to assistive technology.
  */
-export function DetailList({ rows }: DetailListProps) {
+export function DetailList({ rows, className }: DetailListProps) {
   return (
-    <dl className="flex flex-col gap-x-slot-detail-gap">
+    <dl className={cx('flex flex-col gap-x-slot-detail-gap', className)}>
       {rows.map((row) => (
         <div
           key={row.label}
