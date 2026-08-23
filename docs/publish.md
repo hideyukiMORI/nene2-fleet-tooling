@@ -150,6 +150,39 @@ publish 手順は「2回目以降（GitHub Actions）」（下記）。dry_run �
 nene-payout の `shared/ui` から10部品を昇格（新規設計ゼロ）＋ `cx()` 是正。
 Button / Input / Select / Spinner / Text / PageHeader / FormField / EmptyState / ErrorState / DetailList。
 
+### `@hideyukimori/nene2-ui` 0.7.0（**minor — コントロールの文字サイズを2段に**・#344）
+
+🔴 **既存の見た目が変わる**（0.6.0 は**デスクトップの入力欄も 16px** にしていた）。
+
+施主が実機で発見（2026-08-23）:
+
+> **InputField のフォントサイズと padding が違う気がする。**
+
+0.6.0 は `--text-x-slot-control-size: max(var(--text-x-md), var(--text-x-ios-floor))`。
+🔴 **`max()` は「今どう指されているか」を問えない**ので、**本文 14px の艦でもデスクトップの入力欄が
+16px** になり、周囲より大きく見えていた。
+
+⇒ **スロットを2本に割り、条件は部品が持つ**:
+
+```
+--text-x-slot-control-size: var(--text-x-md)               通常。艦が自由に上書き
+--text-x-slot-control-touch-size: var(--text-x-ios-floor)  タッチ端末のフロア
+```
+
+部品: `text-x-slot-control-size pointer-coarse:text-x-slot-control-touch-size`
+
+🔑 **幅ではなくポインタで分ける。** iOS のズームは**タッチ端末の挙動**なので、
+**横向きの iPad のような「広いタッチ端末」も拾う**必要がある。
+
+🔴 **艦側では解けなかった**（vault が両方の壁に実際にぶつかって確認）——
+`themes/*.css` は `@media` 禁止（AM-9 token-only）／`base.css` は custom property 禁止
+（ST-08 element-only）で、**意図的に排他かつ網羅**。かつ**キットは `@layer utilities` で当てるので
+`@layer base` は詳細度に関係なく負ける**。⇒ **キットが表現するしかない。**
+
+⚠️ **引き換えに、フロアがスロットになった＝艦が下げられる。** ⇒ README に
+**「このスロットは端末の制約であって意匠ではない」**と明記し、**キットの既定が `--text-x-ios-floor`
+を指していることをテストで固定**した。
+
 ### `@hideyukimori/nene2-ui` 0.6.0（**minor — alert の色・型スケール・Button の高さ**・#338）
 
 vault の波2（PR #391）からの上流3件 ＋ #389 の残り。**全部自艦で再測して確認済み。**

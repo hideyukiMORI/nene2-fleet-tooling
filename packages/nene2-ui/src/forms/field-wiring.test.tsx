@@ -251,6 +251,13 @@ describe('control font size', () => {
     // ページごと拡大する。旧実装は 16px を持っていた。トークンの値は max(1rem, 16px)。
     const { container } = render(control);
     const el = container.querySelector('input, select, textarea');
-    expect((el?.getAttribute('class') ?? '').split(/\s+/)).toContain('text-x-slot-control-size');
+    const cls = (el?.getAttribute('class') ?? '').split(/\s+/);
+    // 🔴 二段。`max()` は「今どう指されているか」を問えないので、0.6.0 は
+    // **デスクトップにも 16px を当てていた**（本文 14px の艦で入力欄だけ大きく見える）。
+    expect(cls).toContain('text-x-slot-control-size');
+    expect(cls).toContain('pointer-coarse:text-x-slot-control-touch-size');
+    // 幅ではなくポインタで分ける: iOS のズームは**タッチ端末の挙動**なので、
+    // 横向きの iPad のような「広いタッチ端末」も拾う必要がある。
+    for (const c of cls) expect(c).not.toMatch(/^max-(sm|md):text-x-slot-control/);
   });
 });

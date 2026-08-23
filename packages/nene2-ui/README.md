@@ -179,6 +179,24 @@ own ends.
 
 🔑 **The scale is the set you keep to. The slots are what your brand looks like.**
 
+### 🔴 One slot is not yours to tune
+
+`--text-x-slot-control-touch-size` is a **device constraint, not a design choice**. iOS Safari
+zooms the whole page when a focused control is under 16px, so lowering this brings that back.
+
+It is a slot at all only because the kit cannot know your rem base — not because the value is
+open. Set `--text-x-slot-control-size` to whatever suits your body text; leave the touch one
+pointing at `--text-x-ios-floor`.
+
+Until 0.7.0 the kit wrote this as `max(var(--text-x-md), var(--text-x-ios-floor))`, which is
+the same idea expressed in a way that cannot work: `max()` picks the larger number and cannot
+ask what kind of device it is on, so every desktop control was pushed to 16px too — visibly
+larger than the text beside it in any product whose body is 14px. The two slots split that
+into "the size you chose" and "the floor the device imposes", and the components apply the
+second only under `@media (pointer: coarse)`.
+
+🔑 **Pointer, not width.** An iPad in landscape is wide and still zooms.
+
 ### Composing a slot
 
 A slot can hold several steps — four-sided padding is just CSS:

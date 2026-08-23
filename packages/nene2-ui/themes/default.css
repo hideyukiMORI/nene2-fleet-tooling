@@ -139,7 +139,18 @@
   --text-x-slot-field-error-size: var(--text-x-2xs);
   --text-x-slot-field-label-size: var(--text-x-xs);
   --font-weight-x-slot-field-label: 500;
-  --text-x-slot-control-size: max(var(--text-x-md), var(--text-x-ios-floor));
+  /* Control text. Two slots, because one value cannot answer "how is this being pointed at".
+   *
+   * 0.6.0 used `max(var(--text-x-md), var(--text-x-ios-floor))`, which raised every control
+   * to 16px — including on a desktop whose body text is 14px, where the inputs then look
+   * oversized next to everything else (found by hide on a real screen, 2026-08-23). `max()`
+   * cannot ask what kind of device it is on; it only ever picks the larger number.
+   *
+   * 🔴 The touch slot is a device constraint, not a design choice. iOS Safari zooms the whole
+   * page when a focused control is under 16px, so lowering it re-introduces that. It is a slot
+   * only because the kit cannot know a product's rem base — not because it is yours to tune. */
+  --text-x-slot-control-size: var(--text-x-md);
+  --text-x-slot-control-touch-size: var(--text-x-ios-floor);
 
   /* Sentinel for the consumer's build (#316). Zero-width, so applying it does nothing.
    * Its only job is to exist: `p-x-source-probe` appears nowhere except this kit's `dist`,

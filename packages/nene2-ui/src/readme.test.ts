@@ -178,3 +178,19 @@ describe('the two token layers', () => {
     expect(offenders, `components must use slots, not the scale directly`).toEqual([]);
   });
 });
+
+describe('the touch floor', () => {
+  const theme = readFileSync(path.join(root, 'themes/default.css'), 'utf8');
+
+  it('keeps the touch size on the iOS floor, not on a design step', () => {
+    // 🔴 `max()` を外した引き換えに、フロアがスロットになった＝艦が下げられる。
+    // 下げるとページごと拡大が戻るので、キットの既定が floor を指していることを固定する。
+    expect(theme).toMatch(/--text-x-slot-control-touch-size:\s*var\(--text-x-ios-floor\)/);
+  });
+
+  it('says the touch slot is a device constraint, not a design choice', () => {
+    const readmeSaysSo = /device constraint, not a design choice/.test(readme);
+    const themeSaysSo = /device constraint, not a design choice/.test(theme);
+    expect(readmeSaysSo || themeSaysSo).toBe(true);
+  });
+});
