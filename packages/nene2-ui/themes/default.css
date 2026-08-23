@@ -38,6 +38,22 @@
    * focused input is under 16px, and a product whose body text is 14px would inherit that.
    * Keeping a control readable is the control's job, not the product's. */
 
+  /* The type scale. Six steps, from what the fleet actually writes (measured 2026-08-23):
+   * nene-records uses `sm` 65 times and `xs` 40, nene-field `sm` 59 / `xs` 57 / `base` 21 /
+   * `lg` 13, nene-vault `2xs` 33. Nothing above `xl` recurs.
+   *
+   * 🔴 `--text-x-ios-floor` is not a design step and products should not use it as one. It
+   * is here because iOS Safari zooms the page when a focused control is under 16px, which is
+   * a fact about the device rather than a decision about the product. Slots reference it so
+   * that the rule "a slot contains only scale references" stays true. */
+  --text-x-2xs: 0.6875rem;
+  --text-x-xs: 0.75rem;
+  --text-x-sm: 0.875rem;
+  --text-x-md: 1rem;
+  --text-x-lg: 1.125rem;
+  --text-x-xl: 1.5rem;
+  --text-x-ios-floor: 16px;
+
   /* ─────────────────────────────────────────────────────────────────────────
    * ② SLOTS — a product may redefine these.
    *
@@ -100,10 +116,30 @@
   --brightness-x-slot-press: 90%;
 
   --color-x-slot-choice-accent: var(--color-accent);
+
+  /* Alert colours. `warn` defaults to the same hue as `danger` because this palette has one
+   * alert colour — a second one is a decision a product makes, not something the kit can
+   * invent. Until a product sets these, "warning" and "failure" look alike, and only the
+   * announced urgency differs: role="status" against role="alert". That difference reaches
+   * someone listening and no one looking (nene-vault, 2026-08-23), which is why the slots
+   * exist rather than the tones being hard-coded. */
+  --color-x-slot-alert-info-bg: var(--color-surface);
+  --color-x-slot-alert-info-fg: var(--color-text-primary);
+  --color-x-slot-alert-info-border: var(--color-border);
+  --color-x-slot-alert-warn-bg: var(--color-surface);
+  --color-x-slot-alert-warn-fg: var(--color-danger);
+  --color-x-slot-alert-warn-border: var(--color-danger);
+  --color-x-slot-alert-danger-bg: var(--color-surface);
+  --color-x-slot-alert-danger-fg: var(--color-danger);
+  --color-x-slot-alert-danger-border: var(--color-danger);
   --color-x-slot-field-label: var(--color-text-muted);
-  --text-x-slot-field-label-size: 0.75rem;
+  --color-x-slot-field-hint: var(--color-text-muted);
+  --text-x-slot-field-hint-size: var(--text-x-2xs);
+  --color-x-slot-field-error: var(--color-danger);
+  --text-x-slot-field-error-size: var(--text-x-2xs);
+  --text-x-slot-field-label-size: var(--text-x-xs);
   --font-weight-x-slot-field-label: 500;
-  --text-x-slot-control-size: max(1rem, 16px);
+  --text-x-slot-control-size: max(var(--text-x-md), var(--text-x-ios-floor));
 
   /* Sentinel for the consumer's build (#316). Zero-width, so applying it does nothing.
    * Its only job is to exist: `p-x-source-probe` appears nowhere except this kit's `dist`,

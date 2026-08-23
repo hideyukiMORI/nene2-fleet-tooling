@@ -76,12 +76,19 @@ export function FormField({
         </label>
         {children}
         {hintId === null ? null : (
-          <span id={hintId} className="font-sans text-text-muted">
+          <span
+            id={hintId}
+            className="font-sans text-x-slot-field-hint-size text-x-slot-field-hint"
+          >
             {hint}
           </span>
         )}
         {errorId === null ? null : (
-          <p id={errorId} role="alert" className="font-sans text-danger">
+          <p
+            id={errorId}
+            role="alert"
+            className="font-sans text-x-slot-field-error-size text-x-slot-field-error"
+          >
             {error}
           </p>
         )}

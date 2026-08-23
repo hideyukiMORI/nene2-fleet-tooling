@@ -150,6 +150,28 @@ publish 手順は「2回目以降（GitHub Actions）」（下記）。dry_run �
 nene-payout の `shared/ui` から10部品を昇格（新規設計ゼロ）＋ `cx()` 是正。
 Button / Input / Select / Spinner / Text / PageHeader / FormField / EmptyState / ErrorState / DetailList。
 
+### `@hideyukimori/nene2-ui` 0.6.0（**minor — alert の色・型スケール・Button の高さ**・#338）
+
+vault の波2（PR #391）からの上流3件 ＋ #389 の残り。**全部自艦で再測して確認済み。**
+
+- 🔴 **`Button` の `secondary` だけ 2px 高かった。** 高さは padding 由来で、**border を持つのが
+  `secondary` だけ**だったため。⇒ **BASE に `border border-transparent`**。
+  vault は**モーダルのフッター7箇所で primary と secondary を横に並べている** ⇒ 段差が出ていた
+- 🔴 **`InlineAlert` の `warn` と `danger` が文字列まで完全に同一だった。** `role` は分かれていたが、
+  vault の一文が核: **「role の違いは聞こえる人には届くが、見ている人には届かない」**。
+  ⇒ **`--color-x-slot-alert-{info,warn,danger}-{bg,fg,border}` を9本追加**。
+  **既定は現状のまま**なので、上書きしない艦には何も起きない
+- 🔴 **README の規則とキットのテーマが食い違っていた**（**自分の README に反する4件目**）。
+  vault が README どおりに検査を実装したところ、**キット本体の `--text-x-slot-field-label-size:
+0.75rem` と `--brightness-x-slot-hover: 95%` が落ちた**。
+  ⇒ **型スケールを新設**（`--text-x-2xs` … `--text-x-xl` ＋ `--text-x-ios-floor`）し、
+  **text スロットをスケール参照へ**。**`brightness` / `opacity` は例外**と README に明記
+  （**段を持てる種類の値ではない**）
+- **`FormField` の hint / error にスロット**（#389 の残り。サイズと色）
+
+🔴 **`--text-x-ios-floor: 16px` は意匠の段ではない。** iOS Safari の挙動という**物理的な制約**なので
+スケール層に置き、スロットから参照する（「スロットはスケール参照だけ」を保ったまま扱うため）。
+
 ### `@hideyukimori/nene2-ui` 0.5.0（**minor — 選択系のラベル側とページ送りの2モデル**・#336）
 
 **vault が Tailwind クラスと CSS の両方で測った結果**に基づく（片方だけ見て4回過小を出した反省から、両形式で取ってもらったもの）。
