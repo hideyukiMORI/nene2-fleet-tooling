@@ -10,17 +10,17 @@
 |                  | 値〔すべて自艦で実測〕                                    |
 | ---------------- | --------------------------------------------------------- |
 | `main` の版      | **0.14.0**                                                |
-| npm の latest    | **0.11.0**（provenance 署名つき・`dist.shasum 9689f802`） |
-| `fleet-baseline` | `^0.11.0`                                                 |
+| npm の latest    | **0.14.0**（provenance 署名つき・`dist.shasum c2f273c5`） |
+| `fleet-baseline` | `^0.14.0`（PR #375 で追随）                               |
 | テスト           | **736** / 46ファイル                                      |
-| open な PR       | **0本**                                                   |
+| open な PR       | **1本（#375・baseline 追随）**                            |
 | `npm run check`  | 🟢 全ステップ緑                                           |
 
 ## 🔴 いちばん上にあること
 
-1. 🔴 **0.14.0 が未 publish。** リリースノート（#371）は**マージ済み**、dry-run は**緑2回・実行済み**。⇒ **`gh workflow run publish.yml -f package=nene2-ui -f dry_run=false` が次の一手**（施主の手番）。
-2. **publish 後、`fleet-baseline` を `^0.14.0` へ**。⚠️ **pre-1.0 の caret は minor を固定する**ので `^0.11.0` は 0.14.0 を**積極的に除外する**。上げないと vault に届かない。
-3. ⚠️ **0.12.0〜0.14.0 は描画が変わる**（下記）。艦への周知が要る。
+1. 🔴 **艦への周知**。**0.11.0 → 0.14.0 で描画が変わる4点**（下表）＋**0.11.0 の破壊的変更**。⇒ **`docs/publish.md` の 0.14.0 節先頭の表**を指せば足りる。**hub 経由の周知は未実施**（hub のセッションが終了しているため）。
+2. **PR #375**（`fleet-baseline` を `^0.14.0` へ）が施主のマージ待ち。⚠️ **pre-1.0 の caret は minor を固定する**ので `^0.11.0` は 0.14.0 を**積極的に除外する**。
+3. **vault が 0.14.0 に載れば W1 が閉じる。** 必要なトークンは `--color-x-slot-control-fg`（本番の `--color-x-ink-deep` へ）／`--text-x-slot-{button,choice}-size`（13px）／`--text-x-slot-button-sm-size`（12px）。
 
 ## ⚠️ 0.11.0 → 0.14.0 で見た目が変わる4点
 
