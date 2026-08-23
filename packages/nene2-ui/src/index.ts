@@ -4,6 +4,7 @@ export { Input, type InputProps } from './primitives/Input.js';
 export { Select, type SelectProps } from './primitives/Select.js';
 export { Spinner, type SpinnerProps } from './primitives/Spinner.js';
 export { Text, type TextProps } from './primitives/Text.js';
+export { Textarea, type TextareaProps } from './primitives/Textarea.js';
 
 // Layout
 export { PageHeader, type PageHeaderProps } from './layout/PageHeader.js';

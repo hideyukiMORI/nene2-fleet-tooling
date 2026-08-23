@@ -13,8 +13,10 @@
  * that only shows the ring to keyboard users.
  *
  * 🔴 `outline`, not `ring`. Tailwind's `ring-*` is a box-shadow, so a parent with
- * `overflow-hidden` clips it — a button inside a `Card` loses its focus indicator entirely.
- * `outline` is not clipped and carries its own offset.
+ * `overflow-hidden` clips it away entirely. This kit's own `Card` does not clip — but the
+ * products' existing containers do: `overflow-hidden` appears 12 times in nene-records and
+ * twice each in nene-vault and nene-deal, which are the first two ships to be migrated
+ * (measured 2026-08-23). `outline` is not clipped and carries its own offset.
  */
 
 /** Keyboard focus indicator. Colour comes from the theme, never from a caller. */

@@ -1,6 +1,7 @@
 import { forwardRef, type ReactNode, type SelectHTMLAttributes } from 'react';
 import { cx } from '../lib/cx.js';
 import { CONTROL_CLASS } from '../lib/states.js';
+import { useFieldWiring } from '../forms/field-context.js';
 
 export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   children: ReactNode;
@@ -13,11 +14,20 @@ const BASE_CLASS = `w-full rounded-x-md border border-border bg-surface-raised p
  * Visual values come from theme tokens only.
  */
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
-  { children, className, ...rest },
+  {
+    children,
+    className,
+    id,
+    'aria-invalid': ariaInvalid,
+    'aria-describedby': ariaDescribedBy,
+    ...rest
+  },
   ref,
 ) {
+  const wiring = useFieldWiring({ id, ariaInvalid, ariaDescribedBy });
+
   return (
-    <select ref={ref} className={cx(BASE_CLASS, className)} {...rest}>
+    <select ref={ref} className={cx(BASE_CLASS, className)} {...wiring} {...rest}>
       {children}
     </select>
   );
