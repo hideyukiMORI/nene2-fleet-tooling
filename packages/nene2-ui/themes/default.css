@@ -138,7 +138,12 @@
   --color-x-slot-field-error: var(--color-danger);
   --text-x-slot-field-error-size: var(--text-x-2xs);
   --text-x-slot-field-label-size: var(--text-x-xs);
-  --font-weight-x-slot-field-label: 500;
+  /* 🔴 `var(--font-weight-medium)`, not `500`. Identical output — Tailwind defines that
+   * step as 500 — but a literal here is a weight the kit invented, and the namespace has a
+   * nine-step scale already (thin…black). This one escaped the "slot defaults are scale
+   * references only" check because that check listed the namespaces it knew about; found
+   * while adding the radius scale (#348). */
+  --font-weight-x-slot-field-label: var(--font-weight-medium);
   /* Control text. Two slots, because one value cannot answer "how is this being pointed at".
    *
    * 0.6.0 used `max(var(--text-x-md), var(--text-x-ios-floor))`, which raised every control
@@ -163,7 +168,50 @@
    * gave them nothing (50 x10, 40 x4, 30 x6, measured 2026-08-23 across 20 uses). */
   --opacity-x-disabled: 50%;
 
+  /* The radius scale. Nine steps plus pill, chosen the same way the spacing scale was —
+   * by measuring the fleet, not by taste. Snapping the 266 radius values the fleet actually
+   * applies (`border-radius` declarations and `--radius-*` theme tokens across ten products,
+   * 2026-08-23, #348) onto these nine puts 69.9% exactly on a step and 97.7% within 2px.
+   *
+   * 🔴 This replaces a scale that had ONE step. Eight slots all pointed at `--radius-x-md`,
+   * so a product following the rules could only ever render 8px — and a slot whose value set
+   * has one member is not a slot. The cause is recorded because it generalizes: the kit's
+   * theme was promoted verbatim from nene-payout, and payout is the fleet's only product
+   * with a single radius. Promoting from the product with the fewest conformance violations
+   * exported its poverty as the norm — having no choices is not the same as choosing well.
+   * A component implementation may come from one ship; the SET OF CHOICES may not.
+   *
+   * 🔴 `2px` is its own step because it is the single most common radius in the fleet
+   * (56 of 266). nene-records ships 9 themes at 0px and 3 at 2-3px as separate product
+   * themes — so folding 2px into 0 would not be a rounding error, it would delete a
+   * distinction somebody drew on purpose. Candidate scales were therefore scored on a
+   * second axis besides average error: whether two values that exist by design collapse
+   * onto one step (vault's proposal). The steps kept apart here are 0/2, 6/8 and 10/12;
+   * what still collapses (3-4, 5-6, 9-10) is 1px apart, below a scale's resolution.
+   *
+   * `--radius-x-md` keeps the value it had. Every slot points at it, so changing it would
+   * move every product's appearance silently — the scale gains steps, the default does not
+   * move. */
+  --radius-x-none: 0;
+  --radius-x-2xs: 2px;
+  --radius-x-xs: 4px;
+  --radius-x-sm: 6px;
   --radius-x-md: 0.5rem;
+  --radius-x-lg: 10px;
+  --radius-x-xl: 12px;
+  --radius-x-2xl: 16px;
+  --radius-x-3xl: 24px;
+
+  /* Fully round. A step, not a footnote: `rounded-x-pill` is the most-used radius in
+   * nene-field (48 uses) and appears in five products (64 uses total).
+   *
+   * 🔴 A product whose design language has no rounding does NOT redefine this step — it
+   * points its slots at `--radius-x-none`. nene-records reaches the same end today by
+   * setting its own `--radius-full: 0px`, which works only because its components hard-code
+   * `rounded-full`. Overriding a scale step changes what a name means fleet-wide; overriding
+   * a slot changes one product's choice. The second is the mechanism; the first is the drift
+   * the scale exists to prevent. */
+  --radius-x-pill: 9999px;
 
   /* The spacing scale. Nine steps, chosen by measurement rather than taste: snapping the
    * 944 spacing utilities the fleet writes by hand onto these nine moves 98.2% of them by

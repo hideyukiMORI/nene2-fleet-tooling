@@ -142,7 +142,7 @@ describe('the two token layers', () => {
     // shorthand would need an expander before it could be inspected at all.
     // Covers the namespaces that have a scale. `--brightness-*` and `--opacity-*` hold
     // literals because there is nothing to reference — stated in the README as the exception.
-    const scaled = '(?:spacing|radius|text|color)';
+    const scaled = '(?:spacing|radius|text|color|font-weight)';
     const slots = [
       ...theme.matchAll(new RegExp(`--${scaled}-x-slot-[a-z0-9-]+:\\s*([^;]+);`, 'g')),
     ];
@@ -151,7 +151,8 @@ describe('the two token layers', () => {
       const value = raw!.trim();
       // The palette has no `x-` segment (`--color-accent`), the dimensional scales do
       // (`--spacing-x-md`). Both count as references.
-      const refPattern = /var\(--(?:spacing|radius|text)-x-[a-z0-9-]+\)|var\(--color-[a-z0-9-]+\)/g;
+      const refPattern =
+        /var\(--(?:spacing|radius|text)-x-[a-z0-9-]+\)|var\(--(?:color|font-weight)-[a-z0-9-]+\)/g;
       expect(
         [...value.matchAll(refPattern)].length,
         `slot must reference a scale: ${value}`,
@@ -192,5 +193,95 @@ describe('the touch floor', () => {
     const readmeSaysSo = /device constraint, not a design choice/.test(readme);
     const themeSaysSo = /device constraint, not a design choice/.test(theme);
     expect(readmeSaysSo || themeSaysSo).toBe(true);
+  });
+});
+
+describe('the radius scale', () => {
+  const theme = readFileSync(path.join(root, 'themes/default.css'), 'utf8');
+
+  /**
+   * Scale steps in a namespace — everything in it that is not a slot.
+   *
+   * The dimensional scales carry an `x-` segment (`--radius-x-md`); the colour palette
+   * does not (`--color-accent`). Excluding slots rather than requiring `x-` covers both.
+   */
+  function steps(ns: string): Map<string, string> {
+    const out = new Map<string, string>();
+    for (const [, name, value] of theme.matchAll(
+      new RegExp(`--(${ns}-(?!x-slot-)[a-z0-9-]+):\\s*([^;]+);`, 'g'),
+    )) {
+      out.set(name!, value!.trim());
+    }
+    return out;
+  }
+
+  it('every namespace that has slots offers more than one step to choose from', () => {
+    // 🔴 This is the general form of the 0.7.0 defect, and the only test here that would
+    // have caught it. Eight radius slots all pointed at `--radius-x-md` because it was the
+    // only radius the kit had, so a product following the rules could render exactly one
+    // rounding. Nothing failed: the slots existed, their defaults were scale references,
+    // no component reached past them. Every structural check passed on a layer that could
+    // not express a choice.
+    //
+    // 🔑 A two-layer token system needs a value, a condition and a set of options. The
+    // other two were already tested; this is the third.
+    const slotNamespaces = new Set(
+      [...theme.matchAll(/--([a-z-]+)-x-slot-[a-z0-9-]+:/g)].map((m) => m[1]!),
+    );
+    expect(slotNamespaces.size).toBeGreaterThan(2);
+    for (const ns of slotNamespaces) {
+      // `brightness` and `opacity` hold literals by design — the README states why, and a
+      // scale invented so this rule could cover them would have one real user.
+      if (ns === 'brightness' || ns === 'opacity') continue;
+      const distinct = new Set(steps(ns).values());
+      if (distinct.size > 0) {
+        expect(
+          distinct.size,
+          `--${ns}-x-slot-* has ${distinct.size} step(s) to choose from — a slot with one value is not a slot`,
+        ).toBeGreaterThan(1);
+        continue;
+      }
+      // The kit defines no steps in this namespace, which is fine when the scale comes from
+      // Tailwind (`--font-weight-medium` and its eight siblings). What is then required is
+      // that the slots defer to it: a literal would be a value invented next to a scale
+      // nobody looked at. Checked by reference rather than by reading Tailwind's theme,
+      // since it is a peer dependency and may not be installed beside this test.
+      const defaults = [
+        ...theme.matchAll(new RegExp(`--${ns}-x-slot-[a-z0-9-]+:\\s*([^;]+);`, 'g')),
+      ];
+      for (const [, raw] of defaults) {
+        expect(
+          raw!.trim(),
+          `--${ns}-x-slot-* holds a literal while the kit defines no ${ns} scale — reference the one Tailwind ships`,
+        ).toMatch(/^var\(--/);
+      }
+    }
+  });
+
+  it('keeps 0 and 2px as separate steps', () => {
+    // 🔴 Not a rounding question. nene-records ships nine product themes at 0px and three
+    // at 2–3px; folding 2px into 0 deletes a distinction somebody drew on purpose, and
+    // "no rounding" is a whole design language rather than a tighter corner. 2px is also
+    // the fleet's single most common radius (56 of 266 measured values, #348).
+    const values = new Set(steps('radius').values());
+    expect(values).toContain('0');
+    expect(values).toContain('2px');
+  });
+
+  it('offers pill as a step of its own', () => {
+    // Most-used radius in nene-field (48), present in five products (64 total). A product
+    // with no rounding points its slots at `--radius-x-none` rather than redefining this.
+    expect(steps('radius').get('radius-x-pill')).toBe('9999px');
+  });
+
+  it('leaves --radius-x-md where it was, so no product moves silently', () => {
+    // Every slot points at it. Adding steps must not change what already renders.
+    expect(steps('radius').get('radius-x-md')).toBe('0.5rem');
+  });
+
+  it('gives every step a distinct value', () => {
+    // Two steps with one value is the single-step defect wearing more names.
+    const all = steps('radius');
+    expect(new Set(all.values()).size).toBe(all.size);
   });
 });
