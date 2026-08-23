@@ -23,9 +23,27 @@
 
   --radius-x-md: 0.5rem;
 
-  --spacing-x-inline-sm: 0.5rem;
-  --spacing-x-inline-md: 1rem;
-  --spacing-x-stack-sm: 0.75rem;
-  --spacing-x-stack-md: 1.25rem;
-  --spacing-x-stack-lg: 2rem;
+  /* The spacing scale. Nine steps, chosen by measurement rather than taste: snapping the
+   * 944 spacing utilities the fleet writes by hand onto these nine moves 98.2% of them by
+   * 2px or less (2026-08-23, #298). See src/lib/spacing.ts.
+   *
+   * 🔴 No step may be named numerically (`x-2`) — `gap-x-2` is Tailwind's own column-gap
+   * utility and would take precedence. */
+  --spacing-x-3xs: 0.25rem;
+  --spacing-x-2xs: 0.5rem;
+  --spacing-x-xs: 0.75rem;
+  --spacing-x-sm: 1rem;
+  --spacing-x-md: 1.25rem;
+  --spacing-x-lg: 1.5rem;
+  --spacing-x-xl: 2rem;
+  --spacing-x-2xl: 3rem;
+
+  /* Semantic names used by the primitives that shipped in v0.1. They are aliases, never
+   * second values — two names holding the same literal is exactly the drift this file
+   * exists to prevent. Rebranding still means editing the scale above, once. */
+  --spacing-x-inline-sm: var(--spacing-x-2xs);
+  --spacing-x-inline-md: var(--spacing-x-sm);
+  --spacing-x-stack-sm: var(--spacing-x-xs);
+  --spacing-x-stack-md: var(--spacing-x-md);
+  --spacing-x-stack-lg: var(--spacing-x-xl);
 }
