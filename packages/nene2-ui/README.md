@@ -193,11 +193,11 @@ into `0`, because 2px is a 2px error — but nene-records ships nine themes at 0
 2–3px as separate product themes, so that error deletes a distinction rather than rounding
 one.
 
-| radius scale                | exact match | within 2px | designed values collapsed |
-| --------------------------- | ----------: | ---------: | ------------------------: |
-| **the kit's nine + pill**   |   **69.9%** |  **97.7%** |          **3** (all 1px apart) |
+| radius scale                 | exact match | within 2px | designed values collapsed |
+| ---------------------------- | ----------: | ---------: | ------------------------: |
+| **the kit's nine + pill**    |   **69.9%** |  **97.7%** |     **3** (all 1px apart) |
 | eight, without a `10px` step |       64.3% |      97.7% |                         4 |
-| seven, without `2px`        |       43.2% |      97.7% |                         4 |
+| seven, without `2px`         |       43.2% |      97.7% |                         4 |
 
 🔑 **A scale is judged by what it can still tell apart, not only by how far it moves things.**
 
@@ -242,6 +242,23 @@ it can be checked with a regular expression exactly as written.
 | `--spacing-*` `--radius-*` `--text-*` | 🔒 **scale references only** | each has a scale, so a literal here is a step the product invented                                                                                                                    |
 | `--color-*`                           | scale (palette) references   | same                                                                                                                                                                                  |
 | `--brightness-*` `--opacity-*`        | literals are fine            | **there is no scale to reference.** A hover darkening of 95% is not a step in a series; inventing a "brightness scale" so the rule could cover it would be a scale with one real user |
+
+### 🔴 What a slot check must cover
+
+The rule above — _every design value a component uses comes from a slot_ — was false in 26 of
+28 components until 0.9.0, and the check meant to enforce it was green throughout. It listed
+the utility prefixes it knew about (`p px py … rounded`), so **colour and weight were never
+inspected**: 59 palette reaches across 20 files, plus four inline `font-medium`.
+
+It surfaced when nene-vault compared its production screens against the migrated build in a
+real browser — Playwright, computed styles, element by element (2026-08-23). 73 elements
+matched and 21 differed, and **every difference was inside a kit component**; the product's
+own markup matched on every property. A product cannot make its controls darker than its body
+text while the component writes `text-text-primary` itself.
+
+🔑 **A check written as an enumeration passes everything the enumeration omits.** So the
+colour half of that check is not enumerated: it reads the palette out of the theme. A colour
+added tomorrow is covered today.
 
 🔴 **Check the three namespaces that have scales, not every slot.** Until 0.6.0 this section
 said "and nothing else", while the kit's own theme held `--text-x-slot-field-label-size:

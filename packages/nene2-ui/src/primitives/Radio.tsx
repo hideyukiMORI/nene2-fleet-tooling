@@ -9,7 +9,7 @@ export interface RadioProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
   name: string;
 }
 
-const DOT_CLASS = `size-x-slot-choice-box shrink-0 border border-border accent-x-slot-choice-accent ${CONTROL_CLASS}`;
+const DOT_CLASS = `size-x-slot-choice-box shrink-0 border border-x-slot-choice-border accent-x-slot-choice-accent ${CONTROL_CLASS}`;
 
 /**
  * One option in a radio group, with its label.
@@ -31,7 +31,7 @@ export const Radio = forwardRef<HTMLInputElement, RadioProps>(function Radio(
   ref,
 ) {
   return (
-    <label className="inline-flex cursor-pointer items-center gap-x-slot-choice-gap font-sans text-text-primary">
+    <label className="inline-flex cursor-pointer items-center gap-x-slot-choice-gap font-sans text-x-slot-choice-size text-x-slot-choice-fg">
       <input ref={ref} type="radio" name={name} className={cx(DOT_CLASS, className)} {...rest} />
       {label}
     </label>

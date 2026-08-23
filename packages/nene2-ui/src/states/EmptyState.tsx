@@ -18,7 +18,7 @@ export function EmptyState({ message, align = 'center', className }: EmptyStateP
   return (
     <div
       className={cx(
-        'py-x-slot-state-pad-y font-sans text-text-muted',
+        'py-x-slot-state-pad-y font-sans text-x-slot-empty-state-fg',
         align === 'center' && 'text-center',
         className,
       )}

@@ -23,10 +23,12 @@ export function DetailList({ rows, className }: DetailListProps) {
       {rows.map((row) => (
         <div
           key={row.label}
-          className="flex flex-col gap-x-slot-detail-row-gap border-b border-border py-x-slot-detail-row-pad-y"
+          className="flex flex-col gap-x-slot-detail-row-gap border-b border-x-slot-detail-border py-x-slot-detail-row-pad-y"
         >
-          <dt className="font-sans font-medium text-text-muted">{row.label}</dt>
-          <dd className="font-sans text-text-primary">{row.value}</dd>
+          <dt className="font-sans font-x-slot-detail-term text-x-slot-detail-term-fg">
+            {row.label}
+          </dt>
+          <dd className="font-sans text-x-slot-detail-description-fg">{row.value}</dd>
         </div>
       ))}
     </dl>

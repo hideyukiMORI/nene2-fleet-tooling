@@ -34,7 +34,7 @@ export interface DataTableProps<Row> {
  */
 export function DataTable<Row>({ columns, rows, rowKey, caption }: DataTableProps<Row>) {
   return (
-    <table className="w-full border-collapse font-sans text-text-primary">
+    <table className="w-full border-collapse font-sans text-x-slot-table-fg">
       <caption className="sr-only">{caption}</caption>
       <thead>
         <tr>
@@ -42,7 +42,7 @@ export function DataTable<Row>({ columns, rows, rowKey, caption }: DataTableProp
             <th
               key={col.key}
               scope="col"
-              className={`border-b border-border px-x-slot-table-cell-pad-x py-x-slot-table-cell-pad-y font-medium text-text-muted ${
+              className={`border-b border-x-slot-table-border px-x-slot-table-cell-pad-x py-x-slot-table-cell-pad-y font-x-slot-table-header text-x-slot-table-header-fg ${
                 col.align === 'end' ? 'text-right' : 'text-left'
               }`}
             >
@@ -57,7 +57,7 @@ export function DataTable<Row>({ columns, rows, rowKey, caption }: DataTableProp
             {columns.map((col) => (
               <td
                 key={col.key}
-                className={`border-b border-border px-x-slot-table-cell-pad-x py-x-slot-table-cell-pad-y ${
+                className={`border-b border-x-slot-table-border px-x-slot-table-cell-pad-x py-x-slot-table-cell-pad-y ${
                   col.align === 'end' ? 'text-right' : 'text-left'
                 }`}
               >

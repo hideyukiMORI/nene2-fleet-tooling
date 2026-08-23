@@ -103,9 +103,9 @@ describe('Textarea', () => {
     expect(cls).toEqual(
       expect.arrayContaining([
         'focus-visible:outline-2',
-        'focus-visible:outline-text-primary',
+        'focus-visible:outline-x-slot-focus-ring',
         'disabled:opacity-x-disabled',
-        'placeholder:text-text-muted',
+        'placeholder:text-x-slot-control-placeholder',
       ]),
     );
   });
