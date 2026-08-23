@@ -153,7 +153,16 @@ component follows.
 
 ### ① The scale — 🔒 do not redefine
 
-`--spacing-x-3xs` … `--spacing-x-2xl`, and the radius and colour tokens they point at.
+`--spacing-x-3xs` … `--spacing-x-2xl`, `--radius-x-none` … `--radius-x-3xl` plus
+`--radius-x-pill`, `--text-x-2xs` … `--text-x-xl`, and the colour palette.
+
+🔴 **A namespace with one step has no slots, only aliases.** Until 0.8.0 the radius
+namespace held a single value and eight slots pointed at it, so a product following the
+rules could render exactly one rounding — and every structural check passed, because the
+slots existed and their defaults referenced the scale. The scale had been promoted verbatim
+from the one product with the fewest conformance violations, which turned out to be the
+product with the fewest choices. **A component implementation may come from one ship; the
+set of choices may only come from the fleet's distribution.**
 
 ```css
 --spacing-x-slot-card-pad: 1.375rem; /* 🔴 no */
@@ -176,6 +185,21 @@ to match it also fits _worse_, not better:
 
 More exact matches, five times the worst error — a scale bent toward one histogram drops its
 own ends.
+
+The radius scale was measured the same way, across the 266 radius values ten products apply
+(2026-08-23). Candidates were scored on a second axis as well: whether two values that exist
+**by design** land on the same step. Average error alone would have accepted folding `2px`
+into `0`, because 2px is a 2px error — but nene-records ships nine themes at 0px and three at
+2–3px as separate product themes, so that error deletes a distinction rather than rounding
+one.
+
+| radius scale                | exact match | within 2px | designed values collapsed |
+| --------------------------- | ----------: | ---------: | ------------------------: |
+| **the kit's nine + pill**   |   **69.9%** |  **97.7%** |          **3** (all 1px apart) |
+| eight, without a `10px` step |       64.3% |      97.7% |                         4 |
+| seven, without `2px`        |       43.2% |      97.7% |                         4 |
+
+🔑 **A scale is judged by what it can still tell apart, not only by how far it moves things.**
 
 🔑 **The scale is the set you keep to. The slots are what your brand looks like.**
 
