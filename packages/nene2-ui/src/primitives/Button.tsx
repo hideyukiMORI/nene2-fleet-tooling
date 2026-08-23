@@ -25,10 +25,23 @@ const VARIANT_CLASS: Record<NonNullable<ButtonProps['variant']>, string> = {
 };
 
 const SIZE_CLASS: Record<NonNullable<ButtonProps['size']>, string> = {
-  md: 'px-x-slot-button-pad-x py-x-slot-button-pad-y',
-  sm: 'px-x-slot-button-sm-pad-x py-x-slot-button-sm-pad-y',
+  md: 'px-x-slot-button-pad-x py-x-slot-button-pad-y text-x-slot-button-size',
+  sm: 'px-x-slot-button-sm-pad-x py-x-slot-button-sm-pad-y text-x-slot-button-sm-size',
 };
 
+// 🔴 `inline-flex`, so the button places what is inside it. A `<button>` is `inline-block`
+// by default, which leaves an icon and its label on a shared baseline rather than centred —
+// visible as a half-pixel of drift on every icon button, and invisible in a diff. The kit
+// already takes responsibility for the size of an `<svg>` in here (`SVG_BOUND`); taking
+// responsibility for where it sits is the other half of the same job, and leaving one to the
+// caller while doing the other is the asymmetry nene-vault had to work around by writing
+// `inline-flex` at the call site.
+//
+// ⚠️ This changes rendering. A text-only button is laid out by flex rather than by inline
+// flow, so it no longer sits on the surrounding text's baseline the way an inline-block does.
+// Inside a paragraph that is visible; in the button rows and toolbars these are actually used
+// in, it is not. `inline-flex` rather than `flex` keeps the element from claiming a line.
+//
 // 🔴 `border border-transparent` is load-bearing. Height comes from the padding, so the
 // `secondary` variant — the only one with a visible border — would otherwise stand 2px
 // taller than the others. nene-vault puts a primary and a secondary side by side in seven
@@ -46,7 +59,7 @@ const SIZE_CLASS: Record<NonNullable<ButtonProps['size']>, string> = {
 // leaves anything already smaller alone.
 const SVG_BOUND = '[&_svg]:max-h-x-slot-button-icon [&_svg]:max-w-x-slot-button-icon';
 
-const BASE_CLASS = `rounded-x-slot-button border border-transparent font-sans text-x-slot-button-size font-x-slot-button ${SVG_BOUND} ${CLICKABLE_CLASS}`;
+const BASE_CLASS = `rounded-x-slot-button border border-transparent inline-flex items-center justify-center gap-x-slot-button-gap font-sans font-x-slot-button ${SVG_BOUND} ${CLICKABLE_CLASS}`;
 
 export function Button({
   variant = 'primary',

@@ -94,6 +94,12 @@
   --spacing-x-slot-button-pad-y: var(--spacing-x-xs);
   --spacing-x-slot-button-sm-pad-x: var(--spacing-x-xs);
   --spacing-x-slot-button-sm-pad-y: var(--spacing-x-3xs);
+  /* 🔴 The gap between an icon and its label. It exists because the button became a flex
+   * container in 0.13.0, and a flex container drops the whitespace that used to separate
+   * them: `<Button><Icon /> Save</Button>` renders the text as an anonymous flex item, and
+   * leading whitespace in one is stripped. `3xs` is 0.25rem, which is about the width of
+   * the space that disappears — so the change of display does not also change the spacing. */
+  --spacing-x-slot-button-gap: var(--spacing-x-3xs);
   --spacing-x-slot-control-pad-x: var(--spacing-x-2xs);
   --spacing-x-slot-control-pad-y: var(--spacing-x-xs);
   --spacing-x-slot-field-gap: var(--spacing-x-2xs);
@@ -334,6 +340,12 @@
    * rather than acted on: changing the type scale is its own decision, with its own
    * measurement, and it is not this release's. */
   --text-x-slot-button-size: inherit;
+  /* 🔴 `sm` gets its own, because padding already has one and the pair was asymmetric:
+   * `--spacing-x-slot-button-{,sm-}pad-{x,y}` is four slots, the font was one. nene-vault
+   * shipped md=13px and sm=12px, and on the kit both came out at the same size — its
+   * pagination "Previous" measured 12px in production against 13px on the migrated build.
+   * Defaults to `inherit` like its sibling, so nothing renders differently today. */
+  --text-x-slot-button-sm-size: inherit;
   --text-x-slot-choice-size: inherit;
 
   /* Sentinel for the consumer's build (#316). Zero-width, so applying it does nothing.
