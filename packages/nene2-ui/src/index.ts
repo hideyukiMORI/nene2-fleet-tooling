@@ -5,6 +5,7 @@ export { Select, type SelectProps } from './primitives/Select.js';
 export { Spinner, type SpinnerProps } from './primitives/Spinner.js';
 export { Text, type TextProps } from './primitives/Text.js';
 export { Textarea, type TextareaProps } from './primitives/Textarea.js';
+export { Icon, type IconProps } from './primitives/Icon.js';
 export { Checkbox, type CheckboxProps } from './primitives/Checkbox.js';
 export { Radio, type RadioProps } from './primitives/Radio.js';
 export { Switch, type SwitchProps } from './primitives/Switch.js';
@@ -36,6 +37,13 @@ export { ConfirmDialog, type ConfirmDialogProps } from './overlay/ConfirmDialog.
 // Feedback
 export { Badge, type BadgeProps } from './feedback/Badge.js';
 export { InlineAlert, type InlineAlertProps } from './feedback/InlineAlert.js';
+export { ToastProvider, type ToastProviderProps } from './feedback/ToastProvider.js';
+export {
+  useToast,
+  type ToastApi,
+  type ToastOptions,
+  type ToastTone,
+} from './feedback/toast-context.js';
 
 // Data
 export { DetailList, type DetailListProps, type DetailRow } from './data/DetailList.js';

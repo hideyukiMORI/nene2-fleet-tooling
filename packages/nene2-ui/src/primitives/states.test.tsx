@@ -39,9 +39,22 @@ describe.each(CONTROLS)('%s', (_name, mount) => {
       expect.arrayContaining([
         'focus-visible:outline-2',
         'focus-visible:outline-offset-2',
-        'focus-visible:outline-accent',
+        'focus-visible:outline-text-primary',
       ]),
     );
+  });
+
+  it('does not draw its focus ring in a button fill colour', () => {
+    // 🔴 accent リングは primary ボタンと**同色**（1.00:1・テーマの oklch から計算）。
+    // offset があるので実際に隣接するのは地色だが、offset が消えた瞬間に見えなくなる。
+    for (const cls of classesOf(mount())) {
+      expect(cls).not.toBe('focus-visible:outline-accent');
+      expect(cls).not.toBe('focus-visible:outline-danger');
+    }
+  });
+
+  it('keeps the offset — it is what puts page colour between fill and ring', () => {
+    expect(classesOf(mount())).toContain('focus-visible:outline-offset-2');
   });
 
   it('never uses bare :focus, which also fires on a mouse click', () => {

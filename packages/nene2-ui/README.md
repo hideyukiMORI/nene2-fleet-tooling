@@ -109,16 +109,16 @@ fetching and state are governed by `@hideyukimori/nene2-standards`, not by this 
 🔴 **This table is generated from `src/index.ts`.** Regenerate it when you add a component —
 a component list that lags the code is how a product ends up writing a part that already exists.
 
-| Group        | Components                                                                        |
-| ------------ | --------------------------------------------------------------------------------- |
-| `primitives` | `Button` `Input` `Select` `Spinner` `Text` `Textarea` `Checkbox` `Radio` `Switch` |
-| `layout`     | `PageHeader` `Stack` `Grid` `Box` `Section` `Card`                                |
-| `forms`      | `FormField`                                                                       |
-| `states`     | `LoadingState` `EmptyState` `ErrorState`                                          |
-| `overlay`    | `Modal` `ConfirmDialog`                                                           |
-| `feedback`   | `Badge` `InlineAlert`                                                             |
-| `data`       | `DetailList` `DataTable` `Pagination`                                             |
-| `theme`      | `tokens` (read-only `var()` accessors for canvas/chart use)                       |
+| Group        | Components                                                                               |
+| ------------ | ---------------------------------------------------------------------------------------- |
+| `primitives` | `Button` `Input` `Select` `Spinner` `Text` `Textarea` `Icon` `Checkbox` `Radio` `Switch` |
+| `layout`     | `PageHeader` `Stack` `Grid` `Box` `Section` `Card`                                       |
+| `forms`      | `FormField`                                                                              |
+| `states`     | `LoadingState` `EmptyState` `ErrorState`                                                 |
+| `overlay`    | `Modal` `ConfirmDialog`                                                                  |
+| `feedback`   | `Badge` `InlineAlert` `ToastProvider`                                                    |
+| `data`       | `DetailList` `DataTable` `Pagination`                                                    |
+| `theme`      | `tokens` (read-only `var()` accessors for canvas/chart use)                              |
 
 `Input`, `Select` and `Textarea` use `forwardRef`, so they drop straight into
 `react-hook-form`'s `register`, and pick up their `id` / `aria-describedby` from the
@@ -126,7 +126,7 @@ a component list that lags the code is how a product ends up writing a part that
 
 ### Not yet here
 
-`Toast` `Icon` — measured as recurring
+`BrandMark` — measured as recurring
 across ≥3 products. They land as migrating products contribute their implementation upward,
 rather than being designed up front.
 
