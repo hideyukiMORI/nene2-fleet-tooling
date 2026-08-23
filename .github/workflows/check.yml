@@ -17,6 +17,11 @@ on:
     - cron: '0 0 * * 1'
   # schedule を待たずに手で叩くための口。これが無いと「配ったこと自体を検証できない」。
   workflow_dispatch:
+    inputs:
+      simulate_failure:
+        description: 'Intentionally fail the job to verify the failure-notification path'
+        type: boolean
+        default: false
 
 # 同じ ref への連続 push で古い run を畳む。
 # 🔴 group に `github.event_name` を含めるのが要点: 含めないと schedule / workflow_dispatch の run が
@@ -33,8 +38,21 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # 🔴 タイムアウトは検査ではなく損切り。値の正確さより「設定されていること」が効く（hub・板 L111）。
+    # 既定は 360分（6時間）で、吊ったジョブがその間 PR をブロックし runner 時間を焼く。
+    # 実測（2026-08-22・直近8 run）: この check は 40〜54秒。10分は桁で余裕がある。
+    # 発火実績: invoice / profile が `npx playwright install` の吊りで長時間ブロックされた（08-19 深夜）。
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      # 🔴 Checkout の「直後」に置く。literally first に置くと working tree が無くて
+      # 落ちるので、意図した exit 1 ではない別の失敗をリハーサルしてしまう（NENE2 実証 2026-08-22）。
+      # 🔴 逆に後ろへ置くのも駄目。前段のどれかが落ちると意図した exit 1 に到達せず、
+      # 「別の理由の赤」で notify が上がる＝陽性対照として何を確かめたのか分からなくなる。
+      - name: Simulate failure (rehearsal only)
+        if: inputs.simulate_failure
+        run: exit 1
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -68,3 +86,48 @@ jobs:
       - name: Audit (fail on high/critical)
         if: ${{ !cancelled() }}
         run: npm run audit
+
+  notify-failure:
+    name: Open an issue when an unattended run fails
+    # 🔴 通知する event ＝ **この workflow が「無人で走る」event を列挙する**（hub 裁定 2026-08-22・vault 発）。
+    # 参照実装から条件を**文字列として**写さないこと。serve は schedule を持つので
+    # `schedule` だけで足りるが、schedule を持たない艦へそのまま写すと
+    # **装置はあるのに原理的に赤にならない**ものが増える（＝きれいな inert）。
+    #   - `schedule`         … 常に無人
+    #   - `push`             … main へのマージ後。マージした人が立ち去れば無人
+    #   - `pull_request`     … 🔴 **含めない**。作者が見ているのでノイズになる
+    #   - `workflow_dispatch`… 叩いた人が見ているが、`simulate_failure` は陽性対照専用なので通す
+    # この artifact は `on.push.branches: [main]` を持つ＝**マージ後の赤が無人になりうる**ので push を含める。
+    if: >-
+      failure() && (github.event_name == 'schedule'
+      || github.event_name == 'push'
+      || inputs.simulate_failure)
+    needs: [check]
+    runs-on: ubuntu-latest
+    # gh の API 呼び出し2本だけなので短くてよい。ここが吊ると「赤が通知されない」に化ける。
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    env:
+      ISSUE_TITLE: '🔴 fleet-tooling: CI（無人実行）が失敗しています'
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Create or update the failure issue
+        run: |
+          set -euo pipefail
+          # 🔴 --limit は 100 では足りない。open が 100 件を超えると同名を取りこぼして
+          #    重複起票へフォールバックする。しかも壊れ方が悪い——壊れた側の挙動が
+          #    「毎週新しい issue が立つ」で一見すると装置が動いて見え、かつ発現条件
+          #    （open 100 件超）は「通知が読まれず溜まっている状態」そのもの。
+          #    ＝この仕掛けが守ろうとしているものを、最も必要なときに自分で壊す。
+          #    （vault #379 発見・NENE2 #1656 起票・2026-08-22 の横断実測では最大 61 件）
+          existing="$(gh issue list --state open --limit 1000 --json number,title \
+            | jq -r --arg t "$ISSUE_TITLE" 'map(select(.title == $t)) | .[0].number // empty')"
+          body="無人実行（${{ github.event_name }}）で CI が失敗しました。 実行: ${RUN_URL}"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "$ISSUE_TITLE" --body "$body"
+          fi
