@@ -58,3 +58,5 @@ export { cx } from './lib/cx.js';
 // Controls the kit does not ship yet (Textarea has 7 independent implementations in the
 // fleet) can at least carry the same focus and disabled behaviour instead of inventing it.
 export { CONTROL_CLASS, DISABLED_CLASS, FOCUS_CLASS } from './lib/states.js';
+// Lets a consumer's build prove the kit is in its Tailwind `@source` (#316).
+export { SOURCE_PROBE_CLASS } from './lib/source-probe.js';

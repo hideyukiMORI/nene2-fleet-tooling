@@ -48,3 +48,30 @@ describe('README component table', () => {
     ).toEqual([]);
   });
 });
+
+describe('the @source instruction', () => {
+  // 🔴 Without it Tailwind generates none of the kit's classes, and nothing goes red:
+  // build, types and tests all pass (jsdom does not compute styles). #316.
+  it('is in the Use section, not only in prose further down', () => {
+    const use = readme.slice(readme.indexOf('## Use'), readme.indexOf('## Theming'));
+    expect(use).toContain('@source');
+    expect(use).toContain('@hideyukimori/nene2-ui/dist');
+  });
+
+  it('ships a probe class that the theme actually defines', () => {
+    // A sentinel naming a token that does not exist would never be generated even when the
+    // @source is correct — it would report failure forever, and be switched off.
+    const theme = readFileSync(path.join(root, 'themes/default.css'), 'utf8');
+    const probe = readFileSync(path.join(root, 'src/lib/source-probe.ts'), 'utf8');
+    const cls = probe.match(/SOURCE_PROBE_CLASS = '([^']+)'/)?.[1];
+    expect(cls).toBeTruthy();
+    const token = cls!.replace(/^p-/, '');
+    expect(theme, `--spacing-${token} missing from themes/default.css`).toContain(
+      `--spacing-${token}:`,
+    );
+  });
+
+  it('exports the probe, so a consumer can reference it instead of hard-coding it', () => {
+    expect(index).toContain('SOURCE_PROBE_CLASS');
+  });
+});
