@@ -179,9 +179,33 @@ own ends.
 
 🔑 **The scale is the set you keep to. The slots are what your brand looks like.**
 
-Both halves are enforced: a slot whose default is a literal, or a component that reaches past
-the slots into the scale, fails the test suite. If a screen cannot be expressed this way, it
-is a missing slot or a missing component — open an issue, so every product gets the answer.
+### Composing a slot
+
+A slot can hold several steps — four-sided padding is just CSS:
+
+```css
+--spacing-x-slot-login-form-pad: var(--spacing-x-xl) var(--spacing-x-md) var(--spacing-x-lg)
+  var(--spacing-x-md);
+```
+
+🔴 **There is no shorthand for this, on purpose.** The kit's tokens are written by tooling,
+not typed by hand, so brevity buys nothing — and a shorthand would need an expander, which is
+one more layer that can quietly drop meaning. Plain `var()` composition has no such layer, and
+it can be checked with a regular expression exactly as written: **every value in a slot is a
+`var(--spacing-*)` or `var(--radius-*)`, and nothing else.**
+
+That check is what keeps the scale from leaking. `--spacing-x-slot-field-gap: 0.5625rem`
+compiles, looks reasonable, and reintroduces the drift the scale exists to stop — so it fails
+here, including when it is hidden among three legitimate references in a composition.
+
+### Both halves are enforced
+
+A slot whose default contains a literal, or a component that reaches past the slots into the
+scale, fails the test suite. If a screen cannot be expressed this way, it is a missing slot or
+a missing component — open an issue, so every product gets the answer.
+
+**Products: apply the same check to your own theme.** The kit can only police its own file;
+the rule is the same one, and the regular expression above is the whole implementation.
 
 ## What is in scope
 

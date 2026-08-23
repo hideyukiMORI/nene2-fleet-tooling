@@ -128,15 +128,24 @@ describe('the two token layers', () => {
     return out;
   }
 
-  it('every slot default points at the scale, never at a literal', () => {
+  it('every slot default is built only from scale references', () => {
     // 🔴 A slot holding `0.6875rem` would be a product-invented value living in the kit —
     // exactly the drift the scale exists to stop.
+    //
+    // Compositions are fine and expected: a four-sided padding slot is
+    // `var(--spacing-x-xl) var(--spacing-x-md) var(--spacing-x-lg) var(--spacing-x-md)`.
+    // What is not fine is any literal appearing among them. Checking it this way — rather
+    // than matching one whole `var(...)` — is only possible because the kit deliberately has
+    // no shorthand syntax: plain CSS `var()` composition is directly greppable, while a
+    // shorthand would need an expander before it could be inspected at all.
     const slots = [...theme.matchAll(/--(?:spacing|radius)-x-slot-[a-z0-9-]+:\s*([^;]+);/g)];
     expect(slots.length).toBeGreaterThan(20);
-    for (const [, value] of slots) {
-      expect(value!.trim(), 'slot defaults must reference the scale').toMatch(
-        /^var\(--(spacing|radius)-x-[a-z0-9-]+\)$/,
-      );
+    for (const [, raw] of slots) {
+      const value = raw!.trim();
+      const refs = [...value.matchAll(/var\(--(?:spacing|radius)-x-[a-z0-9-]+\)/g)];
+      expect(refs.length, `slot must reference the scale: ${value}`).toBeGreaterThan(0);
+      const remainder = value.replace(/var\(--(?:spacing|radius)-x-[a-z0-9-]+\)/g, '').trim();
+      expect(remainder, `slot contains a literal outside the scale: ${value}`).toBe('');
     }
   });
 
