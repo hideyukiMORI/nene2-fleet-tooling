@@ -16,8 +16,9 @@ export interface FormFieldProps {
  * validation error that assistive technology can reach.
  *
  * 🔴 The control no longer has to opt in. v0.1 documented that the control was "responsible
- * for setting `aria-describedby`", and the fleet did not do it — nene-vault marks fields
- * invalid 16 times and links the reason zero times (measured 2026-08-23). A field's own
+ * for setting `aria-describedby`", and the fleet did not do it — nene-vault sets
+ * `aria-invalid` on 3 fields and links the reason zero times (measured 2026-08-23; see
+ * field-context.ts for how that number differs from a raw grep). A field's own
  * error message is the field's job, so `FormField` publishes the ids through context and
  * the kit's controls read them. A control from outside the kit still works; it simply gets
  * the label association it always had.
