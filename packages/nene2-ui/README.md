@@ -191,8 +191,22 @@ A slot can hold several steps — four-sided padding is just CSS:
 🔴 **There is no shorthand for this, on purpose.** The kit's tokens are written by tooling,
 not typed by hand, so brevity buys nothing — and a shorthand would need an expander, which is
 one more layer that can quietly drop meaning. Plain `var()` composition has no such layer, and
-it can be checked with a regular expression exactly as written: **every value in a slot is a
-`var(--spacing-*)` or `var(--radius-*)`, and nothing else.**
+it can be checked with a regular expression exactly as written.
+
+### What the rule covers
+
+| namespace                             | slot values                  | why                                                                                                                                                                                   |
+| ------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--spacing-*` `--radius-*` `--text-*` | 🔒 **scale references only** | each has a scale, so a literal here is a step the product invented                                                                                                                    |
+| `--color-*`                           | scale (palette) references   | same                                                                                                                                                                                  |
+| `--brightness-*` `--opacity-*`        | literals are fine            | **there is no scale to reference.** A hover darkening of 95% is not a step in a series; inventing a "brightness scale" so the rule could cover it would be a scale with one real user |
+
+🔴 **Check the three namespaces that have scales, not every slot.** Until 0.6.0 this section
+said "and nothing else", while the kit's own theme held `--text-x-slot-field-label-size:
+0.75rem` and `--brightness-x-slot-hover: 95%` — so a product implementing the rule as written
+built a check that failed the kit (nene-vault did exactly that, 2026-08-23). The type scale
+now exists and the text slots reference it; brightness is stated as the exception it always
+was.
 
 That check is what keeps the scale from leaking. `--spacing-x-slot-field-gap: 0.5625rem`
 compiles, looks reasonable, and reintroduces the drift the scale exists to stop — so it fails

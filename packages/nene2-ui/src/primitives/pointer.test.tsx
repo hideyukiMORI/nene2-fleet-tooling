@@ -124,10 +124,51 @@ describe('EmptyState alignment', () => {
   });
 });
 
-describe('InlineAlert warn', () => {
-  it('exists, and waits its turn like info rather than interrupting', () => {
+describe('InlineAlert tones', () => {
+  it('warn waits its turn like info rather than interrupting', () => {
     const el = render(<InlineAlert tone="warn">x</InlineAlert>).container.firstElementChild;
     expect(el?.getAttribute('role')).toBe('status');
-    expect(classesOf(el)).toContain('text-danger');
+  });
+
+  it.each(['info', 'warn', 'danger'] as const)(
+    '%s reads its colours from the theme, so a product can tell them apart by sight',
+    (tone) => {
+      // 🔴 0.5.0 では warn と danger が**文字列まで完全に同一**だった。role は分かれていたが、
+      // vault の指摘どおり「role の違いは聞こえる人には届き、見ている人には届かない」。
+      const cls = classesOf(
+        render(<InlineAlert tone={tone}>x</InlineAlert>).container.firstElementChild,
+      );
+      expect(cls).toEqual(
+        expect.arrayContaining([
+          `bg-x-slot-alert-${tone}-bg`,
+          `text-x-slot-alert-${tone}-fg`,
+          `border-x-slot-alert-${tone}-border`,
+        ]),
+      );
+    },
+  );
+
+  it('gives warn and danger different slots, even where the defaults match', () => {
+    const warn = classesOf(
+      render(<InlineAlert tone="warn">x</InlineAlert>).container.firstElementChild,
+    );
+    const danger = classesOf(
+      render(<InlineAlert tone="danger">x</InlineAlert>).container.firstElementChild,
+    );
+    expect(warn).not.toEqual(danger);
+  });
+});
+
+describe('Button height', () => {
+  it('reserves the border on every variant, so a row of them lines up', () => {
+    // 🔴 高さは padding 由来。border を持つのが secondary だけだと、上下 1px ずつ増えて
+    // 他 variant より 2px 高くなる。vault はモーダルのフッター7箇所で primary と secondary を
+    // 横に並べており、そこに段差が出る（2026-08-23 実測）。
+    for (const variant of ['primary', 'secondary', 'danger', 'ghost'] as const) {
+      const cls = classesOf(
+        render(<Button variant={variant}>x</Button>).container.querySelector('button'),
+      );
+      expect(cls, `${variant} must reserve the border`).toContain('border');
+    }
   });
 });

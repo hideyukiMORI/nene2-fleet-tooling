@@ -109,6 +109,8 @@ describe('the override boundary', () => {
     expect(section, 'must say the scale is not').toMatch(/The scale — 🔒 do not redefine/);
     expect(section).toContain('--spacing-x-slot-card-pad');
     expect(section).toContain('--spacing-x-3xs');
+    // 🔴 規則の射程を書いていないと、艦がキット本体を落とす検査を作る（vault が実際に踏んだ）。
+    expect(section, 'must name the namespaces the rule covers').toMatch(/--brightness-\*/);
   });
 });
 
@@ -138,13 +140,24 @@ describe('the two token layers', () => {
     // than matching one whole `var(...)` — is only possible because the kit deliberately has
     // no shorthand syntax: plain CSS `var()` composition is directly greppable, while a
     // shorthand would need an expander before it could be inspected at all.
-    const slots = [...theme.matchAll(/--(?:spacing|radius)-x-slot-[a-z0-9-]+:\s*([^;]+);/g)];
-    expect(slots.length).toBeGreaterThan(20);
+    // Covers the namespaces that have a scale. `--brightness-*` and `--opacity-*` hold
+    // literals because there is nothing to reference — stated in the README as the exception.
+    const scaled = '(?:spacing|radius|text|color)';
+    const slots = [
+      ...theme.matchAll(new RegExp(`--${scaled}-x-slot-[a-z0-9-]+:\\s*([^;]+);`, 'g')),
+    ];
+    expect(slots.length).toBeGreaterThan(30);
     for (const [, raw] of slots) {
       const value = raw!.trim();
-      const refs = [...value.matchAll(/var\(--(?:spacing|radius)-x-[a-z0-9-]+\)/g)];
-      expect(refs.length, `slot must reference the scale: ${value}`).toBeGreaterThan(0);
-      const remainder = value.replace(/var\(--(?:spacing|radius)-x-[a-z0-9-]+\)/g, '').trim();
+      // The palette has no `x-` segment (`--color-accent`), the dimensional scales do
+      // (`--spacing-x-md`). Both count as references.
+      const refPattern = /var\(--(?:spacing|radius|text)-x-[a-z0-9-]+\)|var\(--color-[a-z0-9-]+\)/g;
+      expect(
+        [...value.matchAll(refPattern)].length,
+        `slot must reference a scale: ${value}`,
+      ).toBeGreaterThan(0);
+      // `max(...)` and friends are allowed to wrap references; bare lengths are not.
+      const remainder = value.replace(refPattern, '').replace(/[a-z]*\(|\)|,|\s/g, '');
       expect(remainder, `slot contains a literal outside the scale: ${value}`).toBe('');
     }
   });
