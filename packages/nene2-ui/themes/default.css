@@ -58,6 +58,10 @@
   --spacing-x-slot-control-pad-y: var(--spacing-x-xs);
   --spacing-x-slot-field-gap: var(--spacing-x-2xs);
   --spacing-x-slot-choice-gap: var(--spacing-x-2xs);
+  /* The box itself. 1rem = 16px, which is what every product that ships a checkbox uses
+   * (measured 2026-08-23). Sized from the scale so a product that wants a larger hit area
+   * moves a step rather than inventing a length. */
+  --spacing-x-slot-choice-box: var(--spacing-x-sm);
   --spacing-x-slot-badge-pad-x: var(--spacing-x-2xs);
   --spacing-x-slot-badge-pad-y: var(--spacing-x-3xs);
   --spacing-x-slot-switch-pad-x: var(--spacing-x-2xs);
@@ -95,6 +99,7 @@
   --brightness-x-slot-hover: 95%;
   --brightness-x-slot-press: 90%;
 
+  --color-x-slot-choice-accent: var(--color-accent);
   --color-x-slot-field-label: var(--color-text-muted);
   --text-x-slot-field-label-size: 0.75rem;
   --font-weight-x-slot-field-label: 500;

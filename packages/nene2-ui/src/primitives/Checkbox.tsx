@@ -8,7 +8,7 @@ export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement
   label: ReactNode;
 }
 
-const BOX_CLASS = `rounded-x-slot-control border border-border accent-accent ${CONTROL_CLASS}`;
+const BOX_CLASS = `size-x-slot-choice-box shrink-0 rounded-x-slot-control border border-border accent-x-slot-choice-accent ${CONTROL_CLASS}`;
 
 /**
  * A checkbox and its label, as one part.
@@ -17,6 +17,13 @@ const BOX_CLASS = `rounded-x-slot-control border border-border accent-accent ${C
  * `<input>` next to a `<label>` whose `htmlFor` is missing or stale — which loses nothing
  * visible, and loses the ability to click the text to toggle the box, plus the name the
  * control is announced by. Making the label a prop means it cannot be forgotten.
+ *
+ * 🔴 `cursor-pointer` and the gap live here rather than being left to the caller, because
+ * the caller cannot reach them: `className` is forwarded to the `<input>`, and both belong
+ * to the `<label>` that wraps it. nene-vault carries them on the label in its own
+ * implementation (measured 2026-08-23, checking Tailwind classes and CSS both), so a
+ * migration that could not set them would lose the pointer cursor on every choice in the
+ * product — visible to a mouse user, invisible in a diff.
  */
 export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Checkbox(
   {
@@ -33,7 +40,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
   const wiring = useFieldWiring({ id, ariaInvalid, ariaDescribedBy, ariaRequired });
 
   return (
-    <label className="inline-flex items-center gap-x-slot-choice-gap font-sans text-text-primary">
+    <label className="inline-flex cursor-pointer items-center gap-x-slot-choice-gap font-sans text-text-primary">
       <input ref={ref} type="checkbox" className={cx(BOX_CLASS, className)} {...wiring} {...rest} />
       {label}
     </label>

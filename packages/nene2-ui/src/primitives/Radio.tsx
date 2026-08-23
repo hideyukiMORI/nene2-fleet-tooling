@@ -9,7 +9,7 @@ export interface RadioProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
   name: string;
 }
 
-const DOT_CLASS = `border border-border accent-accent ${CONTROL_CLASS}`;
+const DOT_CLASS = `size-x-slot-choice-box shrink-0 border border-border accent-x-slot-choice-accent ${CONTROL_CLASS}`;
 
 /**
  * One option in a radio group, with its label.
@@ -17,6 +17,10 @@ const DOT_CLASS = `border border-border accent-accent ${CONTROL_CLASS}`;
  * 🔴 `name` is required, unlike on a bare `<input type="radio">`. A radio without a name is
  * its own group of one: it can be checked but never unchecked, and arrow keys do not move
  * between the options. Nothing about the rendered page shows this, so it survives review.
+ *
+ * 🔴 `cursor-pointer`, the gap and the box size are the component's, for the same reason as
+ * on `Checkbox`: `className` reaches the `<input>`, and those belong to the `<label>`.
+ * nene-vault's radios share one label style with its checkboxes, so the same hole was here.
  *
  * 🔴 This does not take the `FormField` wiring. A group of radios shares one label and one
  * error, so the id and `aria-describedby` belong on a `<fieldset>` around the group, not on
@@ -27,7 +31,7 @@ export const Radio = forwardRef<HTMLInputElement, RadioProps>(function Radio(
   ref,
 ) {
   return (
-    <label className="inline-flex items-center gap-x-slot-choice-gap font-sans text-text-primary">
+    <label className="inline-flex cursor-pointer items-center gap-x-slot-choice-gap font-sans text-text-primary">
       <input ref={ref} type="radio" name={name} className={cx(DOT_CLASS, className)} {...rest} />
       {label}
     </label>
