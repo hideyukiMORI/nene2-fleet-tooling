@@ -116,7 +116,7 @@ a component list that lags the code is how a product ends up writing a part that
 | `forms`      | `FormField`                                                                       |
 | `states`     | `LoadingState` `EmptyState` `ErrorState`                                          |
 | `overlay`    | `Modal` `ConfirmDialog`                                                           |
-| `feedback`   | `Badge` `InlineAlert`                                                             |
+| `feedback`   | `Badge` `InlineAlert` `ToastProvider`                                             |
 | `data`       | `DetailList` `DataTable` `Pagination`                                             |
 | `theme`      | `tokens` (read-only `var()` accessors for canvas/chart use)                       |
 
@@ -126,7 +126,7 @@ a component list that lags the code is how a product ends up writing a part that
 
 ### Not yet here
 
-`Toast` `Icon` — measured as recurring
+`Icon` — measured as recurring
 across ≥3 products. They land as migrating products contribute their implementation upward,
 rather than being designed up front.
 

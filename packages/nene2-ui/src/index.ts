@@ -36,6 +36,13 @@ export { ConfirmDialog, type ConfirmDialogProps } from './overlay/ConfirmDialog.
 // Feedback
 export { Badge, type BadgeProps } from './feedback/Badge.js';
 export { InlineAlert, type InlineAlertProps } from './feedback/InlineAlert.js';
+export { ToastProvider, type ToastProviderProps } from './feedback/ToastProvider.js';
+export {
+  useToast,
+  type ToastApi,
+  type ToastOptions,
+  type ToastTone,
+} from './feedback/toast-context.js';
 
 // Data
 export { DetailList, type DetailListProps, type DetailRow } from './data/DetailList.js';

@@ -103,7 +103,7 @@ describe('Textarea', () => {
     expect(cls).toEqual(
       expect.arrayContaining([
         'focus-visible:outline-2',
-        'focus-visible:outline-accent',
+        'focus-visible:outline-text-primary',
         'disabled:opacity-x-disabled',
         'placeholder:text-text-muted',
       ]),

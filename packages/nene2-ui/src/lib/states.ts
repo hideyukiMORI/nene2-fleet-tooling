@@ -17,11 +17,26 @@
  * products' existing containers do: `overflow-hidden` appears 12 times in nene-records and
  * twice each in nene-vault and nene-deal, which are the first two ships to be migrated
  * (measured 2026-08-23). `outline` is not clipped and carries its own offset.
+ *
+ * 🔴 The ring is `text-primary`, not `accent`. An accent ring is *the same colour as a
+ * primary button* — contrast 1.00:1 against its own fill, and 1.11:1 against a danger
+ * button (computed from the theme's oklch values, 2026-08-23). The offset keeps the ring
+ * off the fill, so what it actually sits against is the page, and both colours clear 3:1
+ * there; but a ring that disappears the moment the offset does is one layout change away
+ * from being invisible. `text-primary` measures 15.55:1 against `surface`, 16.00:1 against
+ * `surface-raised`, and still 3.30:1 / 2.97:1 against the accent and danger fills.
+ *
+ * No single colour clears 3:1 against *both* fills — accent and danger are both mid
+ * luminance — which is why nene-deal moved to a two-tone box-shadow ring (#183, after a
+ * 1.38:1 indicator went unnoticed because a contrast checker cannot see it). Here the
+ * offset provides the second tone: fill, page-coloured gap, dark ring, page.
+ *
+ * 🔴 `outline-offset` is therefore load-bearing, not decoration. Do not set it to 0.
  */
 
 /** Keyboard focus indicator. Colour comes from the theme, never from a caller. */
 export const FOCUS_CLASS =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary';
 
 /**
  * Disabled appearance. The opacity is a theme token (`--opacity-x-disabled`) because a
