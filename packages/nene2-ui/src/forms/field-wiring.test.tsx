@@ -261,3 +261,67 @@ describe('control font size', () => {
     for (const c of cls) expect(c).not.toMatch(/^max-(sm|md):text-x-slot-control/);
   });
 });
+
+describe('warning — 不正ではないが目を引きたい値（#364）', () => {
+  // 🔴 vault は「保管期間10年未満」に琥珀の枠を出していた。8年は min=7 を満たすので
+  // **正当な値**。⇒ aria-invalid を立てると正当な値を不正と announce し、立てないと
+  // 合図が何も出ない。キットは 0.11.0 まで**どちらの塗りも持っていなかった**。
+  //
+  // 🔑 そして vault のテストは `aria-invalid="true"` を主張していたので**緑のまま**だった。
+  // テストは塗りではなく「塗りの代理」を検査していた。代理と本体が同じ部品に居るあいだは
+  // 等価だが、本体が上流（キット）へ移った瞬間に別物になる。
+  it('warning は aria-invalid を立てない — 正当な値を不正と announce しない', () => {
+    const { container } = render(
+      <FormField id="ret" label="Retention" warning="10年未満です">
+        <Input />
+      </FormField>,
+    );
+    const el = container.querySelector('input');
+    expect(el?.getAttribute('aria-invalid')).toBeNull();
+    expect(el?.getAttribute('data-warn')).toBe('');
+  });
+
+  it('warning は読み上げられる（describedby に載る）', () => {
+    const { container } = render(
+      <FormField id="ret" label="Retention" warning="10年未満です">
+        <Input />
+      </FormField>,
+    );
+    expect(container.querySelector('input')?.getAttribute('aria-describedby')).toBe('ret-warning');
+    // role="alert" にすると入力の途中で割り込む。警告は「止まれ」ではない。
+    expect(container.querySelector('#ret-warning')?.getAttribute('role')).toBe('status');
+  });
+
+  it('error と warning が同時にあるとき、error が先に読まれる', () => {
+    const { container } = render(
+      <FormField id="ret" label="Retention" error="必須です" warning="10年未満です" hint="help">
+        <Input />
+      </FormField>,
+    );
+    expect(container.querySelector('input')?.getAttribute('aria-describedby')).toBe(
+      'ret-error ret-warning ret-hint',
+    );
+  });
+
+  it('🔴 コントロールは妥当性を塗る — 属性だけ立てて見た目が変わらない状態を作らない', () => {
+    // これが vault で消えたもの。属性ではなく**塗りの側**を固定する。
+    const cls = (
+      render(<Input />)
+        .container.querySelector('input')
+        ?.getAttribute('class') ?? ''
+    ).split(/\s+/);
+    expect(cls).toContain('aria-invalid:border-x-slot-control-invalid-border');
+    expect(cls).toContain('aria-invalid:bg-x-slot-control-invalid-bg');
+    expect(cls).toContain('data-[warn]:border-x-slot-control-warn-border');
+    expect(cls).toContain('data-[warn]:bg-x-slot-control-warn-bg');
+  });
+
+  it('warning が無ければ data-warn も無い', () => {
+    const { container } = render(
+      <FormField id="ret" label="Retention">
+        <Input />
+      </FormField>,
+    );
+    expect(container.querySelector('input')?.getAttribute('data-warn')).toBeNull();
+  });
+});

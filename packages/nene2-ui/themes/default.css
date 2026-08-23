@@ -19,6 +19,30 @@
   --color-on-accent: oklch(99% 0 0);
   --color-danger: oklch(55% 0.2 25);
 
+  /* 🔴 Four contract colours the theme did not define. They are not new: `warn`,
+   * `warn-soft`, `on-warn` and `danger-soft` are in the frozen Core Token Contract v1
+   * (28 colours), and this theme defined 8 of them. Twenty are still missing — see the
+   * README — but these four are what a validity state needs.
+   *
+   * Same root cause as the radius scale: the theme was promoted verbatim from nene-payout,
+   * and payout has no warn. Six other ships do (nene-vault, nene-invoice, nene-field,
+   * nene-records, nene-deal, nene-profile), so `--color-x-slot-alert-warn-*` pointed at
+   * `--color-danger` — a warning that renders as an error. Promoting from the product with
+   * the fewest violations exported its missing distinctions along with its consistency.
+   *
+   * Values are the fleet median of the eight `--color-warn` definitions in use
+   * (2026-08-23; nene-field's hex converted to OKLCH to be counted).
+   *
+   * 🔴 `on-warn` is measured, not chosen. Against this `warn` fill: white is 3.48:1 and
+   * `text-primary` is 4.47:1 — which misses the 4.5:1 body-text threshold by 0.03, and is
+   * exactly the kind of near-miss that survives review by eye. The dark amber below is
+   * 4.97:1. The `warn` fill itself is 3.58:1 against `surface-raised`, clearing the 3:1
+   * that WCAG 1.4.11 asks of a non-text boundary. */
+  --color-warn: oklch(63% 0.135 75);
+  --color-warn-soft: oklch(95% 0.035 80);
+  --color-on-warn: oklch(21% 0.04 75);
+  --color-danger-soft: oklch(95% 0.03 30);
+
   --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.06);
 
   /* Typography. Until 0.3.0 the kit had none of these and the components carried
@@ -126,9 +150,11 @@
   --color-x-slot-alert-info-bg: var(--color-surface);
   --color-x-slot-alert-info-fg: var(--color-text-primary);
   --color-x-slot-alert-info-border: var(--color-border);
+  /* 🔴 Changed in 0.12.0: these pointed at `--color-danger`, so a warning rendered as an
+   * error. Not a shade — a different meaning wearing the wrong one. */
   --color-x-slot-alert-warn-bg: var(--color-surface);
-  --color-x-slot-alert-warn-fg: var(--color-danger);
-  --color-x-slot-alert-warn-border: var(--color-danger);
+  --color-x-slot-alert-warn-fg: var(--color-on-warn);
+  --color-x-slot-alert-warn-border: var(--color-warn);
   --color-x-slot-alert-danger-bg: var(--color-surface);
   --color-x-slot-alert-danger-fg: var(--color-danger);
   --color-x-slot-alert-danger-border: var(--color-danger);
@@ -137,6 +163,10 @@
   --text-x-slot-field-hint-size: var(--text-x-2xs);
   --color-x-slot-field-error: var(--color-danger);
   --text-x-slot-field-error-size: var(--text-x-2xs);
+  /* 🔴 `on-warn`, not `warn`. This text sits on the page, not on a warn fill: `--color-warn`
+   * measures 3.58:1 against `surface-raised`, which clears the 3:1 a border needs and misses
+   * the 4.5:1 body text needs. The dark amber clears both. */
+  --color-x-slot-field-warning-fg: var(--color-on-warn);
   --text-x-slot-field-label-size: var(--text-x-xs);
   /* 🔴 `var(--font-weight-medium)`, not `500`. Identical output — Tailwind defines that
    * step as 500 — but a literal here is a weight the kit invented, and the namespace has a
@@ -192,6 +222,25 @@
   --color-x-slot-control-border: var(--color-border);
   --color-x-slot-control-placeholder: var(--color-text-muted);
 
+  /* 🔴 The kit painted nothing for validity until 0.12.0 — an invalid control looked exactly
+   * like a valid one, while `aria-invalid` was set and announced. Seven of nine ships paint
+   * it themselves (Tailwind `aria-invalid:` variants, CSS selectors, or a class name), so a
+   * migration onto the kit silently removed a signal the product already had. nene-vault
+   * lost an amber border on retention periods under ten years, and the test that guarded it
+   * asserted `aria-invalid="true"` — the attribute, not the paint — so it stayed green.
+   *
+   * 🔑 A test can check a stand-in for the thing it cares about. While both live in the
+   * same component that is the same test; the moment the real thing moves upstream, the
+   * stand-in stays behind and keeps passing.
+   *
+   * Border, not a ring: `ring-*` is a box-shadow and a parent with `overflow: hidden` clips
+   * it — the same reason the focus indicator here is an `outline`. The background carries
+   * the rest, and neither competes with the focus outline. */
+  --color-x-slot-control-invalid-border: var(--color-danger);
+  --color-x-slot-control-invalid-bg: var(--color-danger-soft);
+  --color-x-slot-control-warn-border: var(--color-warn);
+  --color-x-slot-control-warn-bg: var(--color-warn-soft);
+
   --color-x-slot-choice-fg: var(--color-text-primary);
   --color-x-slot-choice-border: var(--color-border);
 
@@ -242,7 +291,10 @@
   --color-x-slot-spinner-fg: var(--color-text-muted);
   --color-x-slot-empty-state-fg: var(--color-text-muted);
   --color-x-slot-error-state-fg: var(--color-danger);
-  --color-x-slot-field-error-fg: var(--color-danger);
+  /* 🔴 The required marker, not the error message — that one is `--color-x-slot-field-error`.
+   * Named `-error-fg` when the colour slots were swept in (0.9.0, same day), which reads as
+   * "the error message's colour" and is not. Renamed before anything consumed it. */
+  --color-x-slot-field-required-marker: var(--color-danger);
 
   /* An upper bound for an `<svg>` written directly inside a `Button`.
    *

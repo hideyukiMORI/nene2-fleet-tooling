@@ -70,7 +70,26 @@ export const HOVER_CLASS =
   'hover:brightness-x-slot-hover active:brightness-x-slot-press disabled:hover:brightness-100 disabled:active:brightness-100';
 
 /** Controls that can be focused and disabled — every interactive primitive in the kit. */
-export const CONTROL_CLASS = `${FOCUS_CLASS} ${DISABLED_CLASS}`;
+/**
+ * Validity, painted.
+ *
+ * 🔴 Two states, and only one of them is `aria-invalid`. A value can be worth flagging
+ * without being wrong: nene-vault marks a retention period under ten years, which satisfies
+ * every rule the form has. Setting `aria-invalid` there would announce a legal value as an
+ * error, and not setting it left the field with no signal at all — the kit painted neither.
+ * So the warning is `data-warn`, an attribute that carries no ARIA meaning; the message
+ * beside it is what a screen reader gets, through `aria-describedby`.
+ *
+ * The error keeps `aria-invalid`, which is what it is for.
+ */
+export const VALIDITY_CLASS = [
+  'aria-invalid:border-x-slot-control-invalid-border',
+  'aria-invalid:bg-x-slot-control-invalid-bg',
+  'data-[warn]:border-x-slot-control-warn-border',
+  'data-[warn]:bg-x-slot-control-warn-bg',
+].join(' ');
+
+export const CONTROL_CLASS = `${FOCUS_CLASS} ${DISABLED_CLASS} ${VALIDITY_CLASS}`;
 
 /** Controls that are also clicked: buttons, switches, the toast dismiss. */
 export const CLICKABLE_CLASS = `${CONTROL_CLASS} ${HOVER_CLASS}`;

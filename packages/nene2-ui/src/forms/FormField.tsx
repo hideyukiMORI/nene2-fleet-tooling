@@ -9,6 +9,16 @@ export interface FormFieldProps {
   /** Localized error message, or null when valid. */
   error?: string | null;
   /**
+   * Localized warning, or null when there is nothing to flag.
+   *
+   * 🔴 Not a milder `error`. A warning marks a value the form accepts — nene-vault flags a
+   * retention period under ten years, which satisfies every rule the field has. So it does
+   * NOT set `aria-invalid`: announcing a legal value as invalid is worse than saying
+   * nothing. It is announced as a `role="status"` and linked through `aria-describedby`,
+   * and it paints through `data-warn`.
+   */
+  warning?: string | null;
+  /**
    * Localized help text, shown under the control and read out with it.
    *
    * 🔴 Under the control, not beside the label — see `labelAdornment` for that. Three ships
@@ -51,6 +61,7 @@ export function FormField({
   id,
   label,
   error = null,
+  warning = null,
   hint,
   labelAdornment,
   required = false,
@@ -58,8 +69,12 @@ export function FormField({
   children,
 }: FormFieldProps) {
   const errorId = error === null ? null : `${id}-error`;
+  const warningId = warning === null ? null : `${id}-warning`;
   const hintId = hint === undefined || hint === null ? null : `${id}-hint`;
-  const value = useMemo(() => ({ id, errorId, hintId, required }), [id, errorId, hintId, required]);
+  const value = useMemo(
+    () => ({ id, errorId, warningId, hintId, required }),
+    [id, errorId, warningId, hintId, required],
+  );
 
   return (
     <FieldContext.Provider value={value}>
@@ -70,7 +85,7 @@ export function FormField({
         >
           {label}
           {required && requiredMarker !== undefined && requiredMarker !== null ? (
-            <span className="text-x-slot-field-error-fg">{requiredMarker}</span>
+            <span className="text-x-slot-field-required-marker">{requiredMarker}</span>
           ) : null}
           {labelAdornment}
         </label>
@@ -82,6 +97,17 @@ export function FormField({
           >
             {hint}
           </span>
+        )}
+        {warningId === null ? null : (
+          // role="status" ではなく role="alert" にすると、入力の途中で読み上げを割り込む。
+          // 警告は「見直す価値がある」であって「止まれ」ではないので、次の切れ目で読ませる。
+          <p
+            id={warningId}
+            role="status"
+            className="font-sans text-x-slot-field-error-size text-x-slot-field-warning-fg"
+          >
+            {warning}
+          </p>
         )}
         {errorId === null ? null : (
           <p

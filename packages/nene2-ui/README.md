@@ -258,6 +258,47 @@ wrap every choice in a `<div>` to say them.
 label, so the kit carries it). That was right and it left the reason in place. **Fixing what
 a report names is not the same as fixing what it is about.**
 
+### 🔴 A palette that is missing a meaning
+
+The kit's theme defines **8 of the 28 colours** in the frozen Core Token Contract v1. That
+is a legal theme — the contract says what a name means, not that every name must be used —
+but it stops being harmless the moment a component needs one of the twenty.
+
+`warn` was one. Six ships define `--color-warn`; nene-payout, the product this theme was
+promoted from, does not. So `--color-x-slot-alert-warn-*` pointed at `--color-danger` and a
+warning rendered as an error — as nene-vault put it, **the difference reached someone
+listening and no one looking**.
+
+🔑 Same root cause as the radius scale, and the same shape as it: **a set whose members all
+resolve to one value cannot express the distinction it is named for.** Both are now checked
+— radius by step count, colour by whether two meanings resolve to the same value.
+
+Still undefined: `surface-overlay`, `surface-sunken`, `text-faint`, `text-inverse`,
+`border-strong`, `accent-hover`, `accent-soft`, `on-danger`, `success`, `success-soft`,
+`on-success`, `info`, `info-soft`, `on-info`, `focus-ring`, `scrim`. Two of those —
+`focus-ring` and `scrim` — already have component slots pointing at substitutes.
+
+### 🔴 Two validity states, and only one of them is invalid
+
+A value can be worth flagging without being wrong. nene-vault marks a retention period under
+ten years, which satisfies every rule its form has.
+
+|           | ARIA                                                  | paints                                          |
+| --------- | ----------------------------------------------------- | ----------------------------------------------- |
+| `error`   | `aria-invalid`                                        | `--color-x-slot-control-invalid-*`              |
+| `warning` | 🔴 **nothing** — announced through `aria-describedby` | `--color-x-slot-control-warn-*` via `data-warn` |
+
+Setting `aria-invalid` on a legal value announces it as an error; leaving it off left the
+field with no signal at all, because **the kit painted neither state** until 0.12.0. Seven of
+nine ships paint validity themselves, so migrating onto the kit removed a signal the product
+already had.
+
+🔑 The test guarding vault's amber border asserted `aria-invalid="true"` — the attribute, not
+the paint — and stayed green through the loss. **A test can check a stand-in for the thing it
+cares about; while both live in the same component that is the same test, and the moment the
+real thing moves upstream the stand-in stays behind and keeps passing.** Moving an
+implementation upstream produces this shape structurally.
+
 ### 🔴 What a slot check must cover
 
 The rule above — _every design value a component uses comes from a slot_ — was false in 26 of
