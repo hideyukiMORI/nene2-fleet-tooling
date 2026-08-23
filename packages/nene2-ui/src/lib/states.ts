@@ -13,10 +13,20 @@
  * that only shows the ring to keyboard users.
  *
  * 🔴 `outline`, not `ring`. Tailwind's `ring-*` is a box-shadow, so a parent with
- * `overflow-hidden` clips it away entirely. This kit's own `Card` does not clip — but the
- * products' existing containers do: `overflow-hidden` appears 12 times in nene-records and
- * twice each in nene-vault and nene-deal, which are the first two ships to be migrated
- * (measured 2026-08-23). `outline` is not clipped and carries its own offset.
+ * `overflow: hidden` clips it away entirely. This kit's own `Card` does not clip — the
+ * products' existing containers do, and what they clip decides how much this matters.
+ * In nene-vault, the first ship to migrate (measured 2026-08-23, counting CSS rules as well
+ * as Tailwind classes):
+ *
+ *   .center-card   the whole login form — two inputs and a button
+ *   .seg           the diff/json toggle on the audit screen
+ *   .rail-link     the mobile side-nav buttons
+ *
+ * A `ring` would have lost the focus indicator on all three, and the login form is the one
+ * screen an unauthenticated user can reach. nene-records clips in 12 places, which is more
+ * places but softer targets — the count is the weaker argument.
+ *
+ * `outline` is not clipped and carries its own offset.
  *
  * 🔴 The ring is `text-primary`, not `accent`. An accent ring is *the same colour as a
  * primary button* — contrast 1.00:1 against its own fill, and 1.11:1 against a danger
