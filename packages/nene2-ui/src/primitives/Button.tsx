@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { cx } from '../lib/cx.js';
+import { CONTROL_CLASS } from '../lib/states.js';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger';
@@ -12,7 +13,7 @@ const VARIANT_CLASS: Record<NonNullable<ButtonProps['variant']>, string> = {
   danger: 'bg-danger text-on-accent',
 };
 
-const BASE_CLASS = 'rounded-x-md px-x-inline-md py-x-stack-sm font-sans font-medium';
+const BASE_CLASS = `rounded-x-md px-x-inline-md py-x-stack-sm font-sans font-medium ${CONTROL_CLASS}`;
 
 export function Button({
   variant = 'primary',
