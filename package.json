@@ -10,7 +10,7 @@
   "scripts": {
     "type-check": "tsc --build packages/*",
     "lint": "eslint .",
-    "format:check": "prettier --check \"packages/**/*.{ts,json,css}\"",
+    "format:check": "prettier --check \"packages/**/*.{ts,tsx,json,css}\"",
     "test": "vitest run",
     "build": "tsc --build packages/*",
     "check:cli": "node packages/nene2-tokens/dist/cli.js validate packages/nene2-tokens/themes/reference.css",

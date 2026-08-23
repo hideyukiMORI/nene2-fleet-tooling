@@ -4,8 +4,6 @@
 // they are recognised — 0 false positives.
 export function Panel() {
   return (
-    <div className="bg-surface border-border px-inline-md py-stack-sm gap-inline-sm">
-      panel
-    </div>
+    <div className="bg-surface border-border px-inline-md py-stack-sm gap-inline-sm">panel</div>
   );
 }
