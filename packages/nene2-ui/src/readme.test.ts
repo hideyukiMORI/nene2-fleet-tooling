@@ -330,3 +330,38 @@ describe('the radius scale', () => {
     expect(new Set(all.values()).size).toBe(all.size);
   });
 });
+
+describe('meanings that must stay distinguishable', () => {
+  const theme = readFileSync(path.join(root, 'themes/default.css'), 'utf8');
+  const resolve = (name: string): string => {
+    const m = theme.match(new RegExp(`--${name}:\\s*([^;]+);`));
+    if (m === null) return `«${name} is not defined»`;
+    const value = m[1]!.trim();
+    const ref = value.match(/^var\(--([a-z0-9-]+)\)$/);
+    return ref === null ? value : resolve(ref[1]!);
+  };
+
+  it('a warning does not render as an error', () => {
+    // 🔴 Until 0.12.0 `--color-x-slot-alert-warn-*` pointed at `--color-danger`, so the two
+    // tones differed only in the ARIA role they took. As nene-vault put it: that difference
+    // reaches someone listening and no one looking.
+    //
+    // 🔑 Same shape as the radius scale — a slot set whose members all resolve to one value
+    // cannot express the distinction it is named for. Average-error thinking would call
+    // amber-vs-red a small difference; it is not a difference of degree.
+    expect(resolve('color-x-slot-alert-warn-border')).not.toBe(
+      resolve('color-x-slot-alert-danger-border'),
+    );
+    expect(resolve('color-x-slot-control-warn-border')).not.toBe(
+      resolve('color-x-slot-control-invalid-border'),
+    );
+  });
+
+  it('the palette carries the colours those meanings need', () => {
+    // `warn`, `warn-soft`, `on-warn` and `danger-soft` are in the frozen Core Token
+    // Contract v1; this theme simply had not defined them.
+    for (const c of ['color-warn', 'color-warn-soft', 'color-on-warn', 'color-danger-soft']) {
+      expect(resolve(c), `${c} must be defined`).toMatch(/^oklch\(/);
+    }
+  });
+});

@@ -7,6 +7,13 @@ export interface FieldContextValue {
   errorId: string | null;
   /** id of the rendered hint, or null when there is no hint. */
   hintId: string | null;
+  /**
+   * id of the rendered warning, or null when there is none.
+   *
+   * 🔴 Separate from `errorId`, and deliberately not `aria-invalid`. A warning marks a
+   * value worth a second look, not a value the form rejects.
+   */
+  warningId: string | null;
   /** Whether the field must be filled in. */
   required: boolean;
 }
@@ -20,6 +27,12 @@ export interface FieldWiring {
   'aria-invalid'?: AriaAttributes['aria-invalid'] | undefined;
   'aria-describedby'?: string | undefined;
   'aria-required'?: AriaAttributes['aria-required'] | undefined;
+  /**
+   * Present when the field carries a warning. Not an ARIA attribute — it paints, and says
+   * nothing to assistive technology, because the warning text is already linked through
+   * `aria-describedby`.
+   */
+  'data-warn'?: '' | undefined;
 }
 
 /**
@@ -66,15 +79,20 @@ export function useFieldWiring(explicit: {
       'aria-invalid': explicit.ariaInvalid,
       'aria-describedby': explicit.ariaDescribedBy,
       'aria-required': explicit.ariaRequired,
+      'data-warn': undefined,
     };
   }
 
-  const described = [field.errorId, field.hintId].filter((v): v is string => v !== null).join(' ');
+  // Error first, then warning, then hint — read in the order they matter.
+  const described = [field.errorId, field.warningId, field.hintId]
+    .filter((v): v is string => v !== null)
+    .join(' ');
 
   return {
     id: explicit.id ?? field.id,
     'aria-invalid': explicit.ariaInvalid ?? (field.errorId === null ? undefined : true),
     'aria-describedby': explicit.ariaDescribedBy ?? (described === '' ? undefined : described),
     'aria-required': explicit.ariaRequired ?? (field.required ? true : undefined),
+    'data-warn': field.warningId === null ? undefined : '',
   };
 }
