@@ -133,39 +133,55 @@ npx @hideyukimori/nene2-tokens themegen
 
 ## 🔴 What a product may redefine, and what it may not
 
-Everything in `themes/default.css` is _technically_ overridable — a product's own `@theme`
-loads after the kit's and wins. That is not the same as being free to override it.
+The theme has two layers, and the line between them is the point.
 
-|                        |                                                                                                                                                                      |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 🟢 **Redefine freely** | **Colour, typography, radius, shadow.** These are your brand. `--color-accent`, `--color-x-label`, `--text-x-label-size`, `--font-weight-x-label`, `--radius-x-md` … |
-| 🔴 **Do not redefine** | **The spacing scale** (`--spacing-x-3xs` … `--spacing-x-2xl`).                                                                                                       |
+### ② Slots — 🟢 redefine these
 
-### Why spacing is different
+Every design value a component uses comes from a slot, and slots are named per component:
 
-The nine steps are not a suggestion; they are the thing the kit is for. A product that
-retunes them to match what it wrote before keeps the vocabulary and loses the rule — nine
-names, nine different meanings per product, and no way to say a screen is consistent.
+```css
+/* your product's theme, loaded after the kit's */
+@theme {
+  --spacing-x-slot-card-pad: var(--spacing-x-lg); /* roomier cards, everywhere */
+  --color-x-slot-field-label: var(--color-text-primary); /* darker field labels */
+  --radius-x-slot-control: var(--radius-x-md);
+}
+```
 
-The temptation is real: after migrating, some spacing shifts by up to 2px. That shift is the
-point. Measured in nene-vault before its migration, 128 spacing utilities used **19 distinct
-values**, five of which appeared exactly once. That is drift, not design, and snapping it is
-the correction — not a regression to be tuned away.
+This is where your product decides how it looks. Change a slot and every instance of that
+component follows.
 
-Retuning also makes the fit worse, not better (measured across those 128 uses):
+### ① The scale — 🔒 do not redefine
+
+`--spacing-x-3xs` … `--spacing-x-2xl`, and the radius and colour tokens they point at.
+
+```css
+--spacing-x-slot-card-pad: 1.375rem; /* 🔴 no */
+--spacing-x-md: 1.375rem; /* 🔴 no */
+```
+
+**A slot chooses a step; it may not invent one.** That is the whole mechanism: a product can
+make its cards roomier, and cannot end up with `2.25` again.
+
+### Why the scale is locked
+
+Measured in nene-vault before its migration: **128 spacing utilities using 19 distinct
+values**, five of which appeared exactly once. That is drift, not design. Retuning the scale
+to match it also fits _worse_, not better:
 
 | scale                           | exact match | within 2px |  worst case |
 | ------------------------------- | ----------: | ---------: | ----------: |
 | **the kit's nine**              |         47% |    **99%** |     **4px** |
 | nine chosen to fit this product |         84% |        95% | 🔴 **24px** |
 
-More exact matches, five times the worst error — because a scale bent toward one product's
-histogram drops the ends.
+More exact matches, five times the worst error — a scale bent toward one histogram drops its
+own ends.
 
-🔑 **The kit holds the set you keep to. Your theme holds what your brand looks like.**
+🔑 **The scale is the set you keep to. The slots are what your brand looks like.**
 
-If a screen genuinely cannot be expressed on the scale, that is a missing step or a missing
-component — open an issue rather than editing the token, so every product gets the answer.
+Both halves are enforced: a slot whose default is a literal, or a component that reaches past
+the slots into the scale, fails the test suite. If a screen cannot be expressed this way, it
+is a missing slot or a missing component — open an issue, so every product gets the answer.
 
 ## What is in scope
 

@@ -211,7 +211,11 @@ describe('label typography', () => {
     );
     const cls = (container.querySelector('label')?.getAttribute('class') ?? '').split(/\s+/);
     expect(cls).toEqual(
-      expect.arrayContaining(['text-x-label', 'text-x-label-size', 'font-x-label']),
+      expect.arrayContaining([
+        'text-x-slot-field-label',
+        'text-x-slot-field-label-size',
+        'font-x-slot-field-label',
+      ]),
     );
   });
 
@@ -247,6 +251,6 @@ describe('control font size', () => {
     // ページごと拡大する。旧実装は 16px を持っていた。トークンの値は max(1rem, 16px)。
     const { container } = render(control);
     const el = container.querySelector('input, select, textarea');
-    expect((el?.getAttribute('class') ?? '').split(/\s+/)).toContain('text-x-control-size');
+    expect((el?.getAttribute('class') ?? '').split(/\s+/)).toContain('text-x-slot-control-size');
   });
 });

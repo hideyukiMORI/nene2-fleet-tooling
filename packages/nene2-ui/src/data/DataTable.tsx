@@ -42,7 +42,7 @@ export function DataTable<Row>({ columns, rows, rowKey, caption }: DataTableProp
             <th
               key={col.key}
               scope="col"
-              className={`border-b border-border px-x-2xs py-x-3xs font-medium text-text-muted ${
+              className={`border-b border-border px-x-slot-table-cell-pad-x py-x-slot-table-cell-pad-y font-medium text-text-muted ${
                 col.align === 'end' ? 'text-right' : 'text-left'
               }`}
             >
@@ -57,7 +57,7 @@ export function DataTable<Row>({ columns, rows, rowKey, caption }: DataTableProp
             {columns.map((col) => (
               <td
                 key={col.key}
-                className={`border-b border-border px-x-2xs py-x-3xs ${
+                className={`border-b border-border px-x-slot-table-cell-pad-x py-x-slot-table-cell-pad-y ${
                   col.align === 'end' ? 'text-right' : 'text-left'
                 }`}
               >

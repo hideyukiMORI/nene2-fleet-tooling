@@ -7,7 +7,7 @@ export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   children: ReactNode;
 }
 
-const BASE_CLASS = `w-full rounded-x-md border border-border bg-surface-raised px-x-inline-sm py-x-stack-sm font-sans text-x-control-size text-text-primary ${CONTROL_CLASS}`;
+const BASE_CLASS = `w-full rounded-x-slot-control border border-border bg-surface-raised px-x-slot-control-pad-x py-x-slot-control-pad-y font-sans text-x-slot-control-size text-text-primary ${CONTROL_CLASS}`;
 
 /**
  * Select primitive. forwardRef so it works directly with react-hook-form `register`.

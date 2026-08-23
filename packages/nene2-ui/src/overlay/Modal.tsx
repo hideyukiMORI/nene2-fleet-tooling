@@ -56,8 +56,8 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
       onClose={onClose}
       onCancel={onClose}
       className={cx(
-        'bg-surface-raised text-text-primary border border-border rounded-x-md',
-        'p-x-sm font-sans backdrop:bg-text-primary/50',
+        'bg-surface-raised text-text-primary border border-border rounded-x-slot-modal',
+        'p-x-slot-modal-pad font-sans backdrop:bg-text-primary/50',
       )}
     >
       {children}

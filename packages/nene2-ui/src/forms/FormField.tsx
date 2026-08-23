@@ -63,8 +63,11 @@ export function FormField({
 
   return (
     <FieldContext.Provider value={value}>
-      <div className="flex flex-col gap-x-inline-sm">
-        <label htmlFor={id} className="font-sans font-x-label text-x-label-size text-x-label">
+      <div className="flex flex-col gap-x-slot-field-gap">
+        <label
+          htmlFor={id}
+          className="font-sans font-x-slot-field-label text-x-slot-field-label-size text-x-slot-field-label"
+        >
           {label}
           {required && requiredMarker !== undefined && requiredMarker !== null ? (
             <span className="text-danger">{requiredMarker}</span>

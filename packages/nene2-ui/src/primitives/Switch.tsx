@@ -34,7 +34,7 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
       aria-label={label}
       onClick={() => onCheckedChange(!checked)}
       className={cx(
-        'inline-flex items-center rounded-x-md border border-border px-x-2xs py-x-3xs font-sans',
+        'inline-flex items-center rounded-x-slot-switch border border-border px-x-slot-switch-pad-x py-x-slot-switch-pad-y font-sans',
         checked ? 'bg-accent text-on-accent' : 'bg-surface text-text-muted',
         CONTROL_CLASS,
         className,

@@ -27,7 +27,7 @@ export const Radio = forwardRef<HTMLInputElement, RadioProps>(function Radio(
   ref,
 ) {
   return (
-    <label className="inline-flex items-center gap-x-2xs font-sans text-text-primary">
+    <label className="inline-flex items-center gap-x-slot-choice-gap font-sans text-text-primary">
       <input ref={ref} type="radio" name={name} className={cx(DOT_CLASS, className)} {...rest} />
       {label}
     </label>

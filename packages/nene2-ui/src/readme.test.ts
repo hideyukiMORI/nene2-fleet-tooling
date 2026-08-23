@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -80,10 +81,10 @@ describe('typography tokens', () => {
   const theme = readFileSync(path.join(root, 'themes/default.css'), 'utf8');
 
   it.each([
-    '--color-x-label',
-    '--text-x-label-size',
-    '--font-weight-x-label',
-    '--text-x-control-size',
+    '--color-x-slot-field-label',
+    '--text-x-slot-field-label-size',
+    '--font-weight-x-slot-field-label',
+    '--text-x-slot-control-size',
   ])('defines %s', (token) => {
     expect(theme).toContain(`${token}:`);
   });
@@ -103,7 +104,55 @@ describe('the override boundary', () => {
     // 🔴 機構上は艦が全部上書きできる（読み込み順で勝つ）。書かないと、±2px で困った艦が
     // **善意で spacing を上書きし、9段という語彙だけ残して規律が消える**。
     const section = readme.slice(readme.indexOf('## 🔴 What a product may redefine'));
+    // 片方だけだと、次の艦が反対側で迷う。両方書く。
+    expect(section, 'must say slots are overridable').toMatch(/Slots — 🟢 redefine these/);
+    expect(section, 'must say the scale is not').toMatch(/The scale — 🔒 do not redefine/);
+    expect(section).toContain('--spacing-x-slot-card-pad');
     expect(section).toContain('--spacing-x-3xs');
-    expect(section).toMatch(/Do not redefine/);
+  });
+});
+
+describe('the two token layers', () => {
+  const theme = readFileSync(path.join(root, 'themes/default.css'), 'utf8');
+
+  function componentSources(): string[] {
+    const out: string[] = [];
+    const walk = (d: string) => {
+      for (const e of readdirSync(d, { withFileTypes: true })) {
+        const f = path.join(d, e.name);
+        if (e.isDirectory()) walk(f);
+        else if (/\.tsx?$/.test(f) && !/\.test\./.test(f)) out.push(f);
+      }
+    };
+    walk(path.join(root, 'src'));
+    return out;
+  }
+
+  it('every slot default points at the scale, never at a literal', () => {
+    // 🔴 A slot holding `0.6875rem` would be a product-invented value living in the kit —
+    // exactly the drift the scale exists to stop.
+    const slots = [...theme.matchAll(/--(?:spacing|radius)-x-slot-[a-z0-9-]+:\s*([^;]+);/g)];
+    expect(slots.length).toBeGreaterThan(20);
+    for (const [, value] of slots) {
+      expect(value!.trim(), 'slot defaults must reference the scale').toMatch(
+        /^var\(--(spacing|radius)-x-[a-z0-9-]+\)$/,
+      );
+    }
+  });
+
+  it('no component reaches past the slots into the scale', () => {
+    // 部品がスケールを直接使うと、艦はその部品だけ割り当てを変えられなくなる。
+    // 例外は lib/spacing.ts（Stack/Box の gap/pad prop そのもの＝呼び出し側が選ぶ層）。
+    const offenders: string[] = [];
+    for (const f of componentSources()) {
+      if (f.endsWith('lib/spacing.ts') || f.endsWith('lib/source-probe.ts')) continue;
+      const src = readFileSync(f, 'utf8');
+      for (const m of src.matchAll(
+        /(?<![\w-])(?:p|px|py|pt|pb|pl|pr|gap|m|mt|mb|rounded)-x-(?!slot-)[a-z0-9-]+/g,
+      )) {
+        offenders.push(`${path.relative(root, f)}: ${m[0]}`);
+      }
+    }
+    expect(offenders, `components must use slots, not the scale directly`).toEqual([]);
   });
 });

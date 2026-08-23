@@ -13,7 +13,7 @@ const VARIANT_CLASS: Record<NonNullable<ButtonProps['variant']>, string> = {
   danger: 'bg-danger text-on-accent',
 };
 
-const BASE_CLASS = `rounded-x-md px-x-inline-md py-x-stack-sm font-sans font-medium ${CONTROL_CLASS}`;
+const BASE_CLASS = `rounded-x-slot-button px-x-slot-button-pad-x py-x-slot-button-pad-y font-sans font-medium ${CONTROL_CLASS}`;
 
 export function Button({
   variant = 'primary',

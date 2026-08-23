@@ -16,11 +16,11 @@ export interface DetailListProps {
  */
 export function DetailList({ rows }: DetailListProps) {
   return (
-    <dl className="flex flex-col gap-x-stack-sm">
+    <dl className="flex flex-col gap-x-slot-detail-gap">
       {rows.map((row) => (
         <div
           key={row.label}
-          className="flex flex-col gap-x-inline-sm border-b border-border py-x-stack-sm"
+          className="flex flex-col gap-x-slot-detail-row-gap border-b border-border py-x-slot-detail-row-pad-y"
         >
           <dt className="font-sans font-medium text-text-muted">{row.label}</dt>
           <dd className="font-sans text-text-primary">{row.value}</dd>

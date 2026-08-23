@@ -20,7 +20,7 @@ export interface LoadingStateProps {
  */
 export function LoadingState({ label }: LoadingStateProps) {
   return (
-    <div className="py-x-stack-lg" aria-busy="true">
+    <div className="py-x-slot-state-pad-y" aria-busy="true">
       <Spinner label={label} />
     </div>
   );
