@@ -187,28 +187,64 @@ API の追加（後方互換）: `FormField` の `hint` / `labelAdornment` / `re
 
 ## 初回 publish（パッケージごとに1回・hide のローカル操作）
 
-> 🔴 **`@hideyukimori/nene2-ui` の初回 publish が残っている**〔2026-08-23 実測: `npm view` が 404〕。
-> 基盤3パッケージ（tokens / standards = 2026-07-14・i18n = 2026-07-16）は初回 publish 済みで、
-> 以後の版上げは「2回目以降（GitHub Actions）」の手順。**本節は nene2-ui でもう一度使う。**
+> **この節は、npm にまだ存在しないパッケージを出すときに使う。**
 >
-> ⚠️ 状態を断定する行はここに置かない。**残る初回があるかは `npm view @hideyukimori/<pkg> version` で引く**
-> （この行はかつて「残る初回はない」と書いており、nene2-ui が加わった時点で偽になった）。
+> ⚠️ **どれが未公開かをここに書かない。** この行はかつて「残る初回はない」と書いており
+> `nene2-ui` が加わった時点で偽になり、次に「`nene2-ui` の初回が残っている」と書き直したら
+> **その日のうちに publish されてまた偽になった**（2026-08-23・同じ節を1日に2回腐らせた）。
+> **取り方**: `npm view @hideyukimori/<pkg> version` が 404 なら未公開。
+> ただし ⇒ **404 は認証切れでも出る**（下記②）ので、**先に `npm whoami` を通してから**判定する。
 
 Trusted Publisher は **既存パッケージにしか設定できない**（npm の package settings 画面が
 初回 publish 後にしか存在しない）ため、初回はローカルから account 2FA で publish した:
 
 ```bash
 cd nene2-fleet-tooling
+npm whoami                # 🔴 まず認証を確認する（理由は下記②）
 npm ci && npm run check   # AM-2 release gate 含む全緑を確認
-npm publish --dry-run --workspace packages/<pkg>   # pack 内容の最終確認
-npm publish --workspace packages/<pkg>             # 2FA: --otp=<code>
+npm publish --dry-run --workspace packages/<pkg> --provenance=false   # pack 内容の最終確認
+npm publish --workspace packages/<pkg> --provenance=false             # 2FA: --otp=<code>
 ```
 
 確認: `npm view @hideyukimori/<pkg> version`
+⚠️ 新規スコープ付きパッケージは**packument（`npm view` が読む方）の反映に少し遅れる**ことがある。
+`+ @hideyukimori/<pkg>@<version>` が出ていれば publish は成功しており、
+`curl -s https://registry.npmjs.org/@hideyukimori%2F<pkg>/<version>` で即座に確認できる
+（`dist.shasum` が publish 出力と一致するかを見る）。
 
-注: ローカル publish でも provenance は生成されない（provenance は CI の OIDC 経由のみ）。
-`publishConfig.provenance: true` はローカルでは警告になる場合があるが、その際は
-`--provenance=false` を付けて初回だけ回避してよい（2回目以降は CI 経由で provenance 付き）。
+### 🔴 初回で必ず踏む2つ（2026-08-23・`nene2-ui` 0.2.0 で実際に踏んだ）
+
+**① `--provenance=false` はコマンドに入れる。脚注にしない。**
+
+ローカル publish では provenance を生成できない（OIDC 経由のみ）。4パッケージとも
+`publishConfig.provenance: true` を持っているので、**初回ローカル publish では必ず**こうなる:
+
+```
+npm error code EUSAGE
+npm error Automatic provenance generation not supported for provider: null
+```
+
+**警告ではなくエラーで、publish は中止される。** 2回目以降は CI（`publish.yml`）経由なので
+provenance 付きで出る。
+
+> この回避策は 2026-08-23 まで**脚注にだけ**書かれており、しかも「**警告になる場合がある**」と
+> 実体より弱く書かれていた。⇒ **手順書のとおりに打つと必ず失敗する**状態だった。
+> 前の3パッケージの初回でも同じ所で止まったはずで、**脚注に書いて本文を直さなかったぶんが
+> 今日まで残っていた。**
+
+**② `404 Not Found` が出たら、パッケージ名でも registry でもなく認証を疑う。**
+
+```
+npm error 404 Not Found - PUT https://registry.npmjs.org/@hideyukimori%2f<pkg>
+```
+
+実際の原因は**認証切れ**だった（`npm whoami` が **E401**。`.npmrc` に `_authToken` は在るが
+通っていない）。⇒ **`npm login` で解決する。**
+
+🔑 **npm はスコープ付きパッケージで、権限不足を 404 に隠す** ——「無い」ではなく
+「あなたが誰か分からないので教えない」。**エラーメッセージの名乗り（Not Found）が
+実体（Unauthorized）とずれている**ので、字面を信じると registry やパッケージ名を疑って時間を使う。
+**打つ前に `npm whoami` を通すのが最短。**
 
 ## Trusted Publisher 設定（初回 publish 後・パッケージごとに npm 側で1回）
 
