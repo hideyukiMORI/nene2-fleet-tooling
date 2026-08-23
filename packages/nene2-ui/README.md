@@ -55,7 +55,44 @@ Peer dependencies: `react >= 19`, `tailwindcss >= 4`.
 /* src/shared/ui/theme/index.css */
 @import 'tailwindcss';
 @import '@hideyukimori/nene2-ui/themes/default.css';
+
+/* 🔴 Required. Adjust the relative path to reach your node_modules. */
+@source '../../../../node_modules/@hideyukimori/nene2-ui/dist';
 ```
+
+### 🔴 The `@source` line is not optional
+
+Tailwind v4 discovers classes by scanning your source files, and **it does not walk
+`node_modules`**. Every class this kit ships lives in its `dist/`, so without that line
+Tailwind never sees them and **generates none of them**.
+
+Nothing goes red when this happens. Measured by nene-vault on 2026-08-23 in a real
+application: the build passed with no warning, the types passed, **all 275 tests passed**,
+and the stylesheet came out 47.1 KB instead of 58.6 KB — with every `gap-*`, `rounded-*`,
+focus ring and disabled treatment missing. The tell was that `p-x-lg`, the _same token_
+written in the app's own `.tsx`, was generated. The only difference is which directory the
+file sits in.
+
+A test suite cannot catch it either: jsdom does not compute styles. On screen the symptom is
+simply "the kit does not seem to do anything".
+
+### Proving it, so nobody has to remember
+
+The kit exports a class that exists nowhere except its own `dist`. If your build generates
+it, the kit is in your `@source`; if not, every class the kit ships was dropped. Check it
+where you already check other things:
+
+```js
+import { SOURCE_PROBE_CLASS } from '@hideyukimori/nene2-ui';
+import { readFileSync } from 'node:fs';
+
+const css = readFileSync('dist/assets/index.css', 'utf8');
+if (!css.includes(`.${SOURCE_PROBE_CLASS}`)) {
+  throw new Error('nene2-ui is not in Tailwind @source — none of its classes were generated');
+}
+```
+
+The probe resolves to `padding: 0px`, so it changes nothing if it is ever applied.
 
 ```tsx
 import { PageHeader, Button, FormField, Input, EmptyState } from '@hideyukimori/nene2-ui';

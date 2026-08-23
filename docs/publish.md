@@ -145,6 +145,46 @@ release note 明記2点（hub 依頼・正直表記）:
 
 publish 手順は「2回目以降（GitHub Actions）」（下記）。dry_run → 本番とも**施主実行**。成功後に fleet-baseline.json の null → 実版数の**別 PR**（下記「publish 成功後にやること」）。
 
+### `@hideyukimori/nene2-ui` 0.1.0（**初回**・#294）
+
+nene-payout の `shared/ui` から10部品を昇格（新規設計ゼロ）＋ `cx()` 是正。
+Button / Input / Select / Spinner / Text / PageHeader / FormField / EmptyState / ErrorState / DetailList。
+
+### `@hideyukimori/nene2-ui` 0.2.0（**minor — 部品 10→28本**・#315）
+
+W0.5〜W0.7（#298 / #300 / #302 / #304 / #306 / #308 / #311 / #312）。
+
+この版に入った部品:
+
+| 群           | 追加                                          |
+| ------------ | --------------------------------------------- |
+| `primitives` | `Textarea` `Checkbox` `Radio` `Switch` `Icon` |
+| `layout`     | `Stack` `Grid` `Box` `Section` `Card`         |
+| `states`     | `LoadingState`                                |
+| `overlay`    | `Modal` `ConfirmDialog`                       |
+| `feedback`   | `Badge` `InlineAlert` `ToastProvider`         |
+| `data`       | `DataTable` `Pagination`                      |
+
+API の追加（後方互換）: `FormField` の `hint` / `labelAdornment` / `required` / `requiredMarker`、
+`useToast`、`CONTROL_CLASS` / `FOCUS_CLASS` / `DISABLED_CLASS`、型 `Space` / `Responsive`。
+
+🔴 **破壊的変更は無いが、既存部品の見た目が変わる箇所が2つある**（どちらも v0.1 に
+**無かった**状態表現の追加であって、呼び出し側の指定を上書きするものではない）:
+
+- `Button` / `Input` / `Select` に **disabled と focus-visible の表示が付く**
+  （v0.1 は両方とも1つも持っていなかった。画面側が39箇所で自前に補っていた）
+- `FormField` が **`aria-describedby` を自分で張る**
+  （v0.1 は呼び出し側の責務と doc コメントで宣言し、フリートは守っていなかった）
+
+🔴 **この版で `@source` の欠陥を潰してある**（#316）。0.1.0 の README のとおりに入れると
+**Tailwind がキットのクラスを1つも生成しない**（v4 の自動検出は `node_modules` を走査しない）。
+ビルドも型検査もテストも緑のまま無装飾になる。**npm の版は不変なので、publish 後に README を
+直しても 0.2.0 に固定した艦は壊れた手順を読み続ける** ⇒ **0.2.0 に同梱するのが唯一の機会だった。**
+キットは番兵クラス（`SOURCE_PROBE_CLASS`）も同梱し、consumer 側で1行で検知できるようにしてある。
+
+🔴 **`fleet-baseline.json` への登録は publish の後**。floor は消費側が従う下限なので、
+**公開されていない版を floor に書くと全艦が達成不能になる**。
+
 ## 初回 publish（パッケージごとに1回・hide のローカル操作）
 
 > 🔴 **`@hideyukimori/nene2-ui` の初回 publish が残っている**〔2026-08-23 実測: `npm view` が 404〕。

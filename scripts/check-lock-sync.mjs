@@ -23,6 +23,38 @@
  * ここで意味を言い直している（それをしないと「無視してよい赤」に化ける）。
  */
 import { spawnSync } from 'node:child_process';
+import { readFileSync, readdirSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+/**
+ * `npm ci` accepts a lock whose workspace entry records an out-of-date `version`, so a
+ * version bump leaves the lock behind without anything going red (measured 2026-08-23 while
+ * releasing nene2-ui 0.2.0: the lock still said 0.1.0 and this gate reported "in sync").
+ *
+ * 🔴 That made this script's own message wider than what it checked — the exact shape it
+ * was written to catch. Checked explicitly rather than reworded.
+ */
+function staleWorkspaceVersions() {
+  const lock = JSON.parse(readFileSync(path.join(root, 'package-lock.json'), 'utf8'));
+  const stale = [];
+  for (const dir of readdirSync(path.join(root, 'packages'))) {
+    const rel = `packages/${dir}`;
+    let pkg;
+    try {
+      pkg = JSON.parse(readFileSync(path.join(root, rel, 'package.json'), 'utf8'));
+    } catch {
+      continue; // not a workspace
+    }
+    const recorded = lock.packages?.[rel]?.version;
+    if (recorded !== undefined && recorded !== pkg.version) {
+      stale.push(`${rel}: package.json ${pkg.version} / lock ${recorded}`);
+    }
+  }
+  return stale;
+}
 
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const r = spawnSync(npm, ['ci', '--dry-run', '--ignore-scripts', '--offline'], {
@@ -36,8 +68,17 @@ if (r.error) {
 }
 
 if (r.status === 0) {
-  console.log('check:lock: package.json と package-lock.json は同期している');
-  process.exit(0);
+  const stale = staleWorkspaceVersions();
+  if (stale.length === 0) {
+    console.log('check:lock: package.json と package-lock.json は同期している');
+    process.exit(0);
+  }
+  console.error('🔴 check:lock: lock がワークスペースの版に追随していない');
+  for (const line of stale) console.error(`   ${line}`);
+  console.error('');
+  console.error('   直し方: npm install --package-lock-only --ignore-scripts');
+  console.error('   （npm ci はこの食い違いを通すので、CI は緑のまま lock だけが古くなる。）');
+  process.exit(1);
 }
 
 const out = `${r.stdout ?? ''}${r.stderr ?? ''}`;

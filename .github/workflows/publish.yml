@@ -22,6 +22,7 @@ on:
           - nene2-tokens
           - nene2-standards
           - nene2-i18n
+          - nene2-ui
       dry_run:
         description: 'npm publish --dry-run only'
         required: false
