@@ -34,9 +34,15 @@ const SIZE_CLASS: Record<IconSize, string> = {
  *
  * 🔴 The kit ships no artwork and takes on no icon library, because the fleet has none:
  * across all ten products the dependency count for lucide / heroicons / feather / phosphor
- * / tabler is zero, and every icon is an inline `<svg>` (222 of them, measured 2026-08-23).
- * Choosing a set would mean adding a dependency to seventeen ships to solve a problem they
- * do not have.
+ * / tabler is zero, and the icons are drawn inline: **222 `<svg>` elements** across eight
+ * products (measured 2026-08-23). Choosing a set would mean adding a dependency to
+ * seventeen ships to solve a problem they do not have.
+ *
+ * (Scope: that count is `<svg>` elements only. Icons can also be drawn as CSS backgrounds,
+ * and one is — the `select` chevron in nene-vault, a data-URI background. Searching for one
+ * spelling of a thing that has several always undercounts, so the form being counted is
+ * written down. A background-drawn icon has no element to announce either way, so it does
+ * not move the number below.)
  *
  * 🔴 What is not consistent is the meaning. Of those 222, **101 declare neither
  * `aria-hidden` nor `role="img"`** — they do not say whether they are decoration or
