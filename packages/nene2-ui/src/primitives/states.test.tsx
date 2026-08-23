@@ -190,3 +190,41 @@ describe('a raw <svg> inside a Button', () => {
     expect(classesOf(container.querySelector('svg'))).toContain('h-4');
   });
 });
+
+describe('Button が自分の中身を並べる（#366）', () => {
+  it('🔴 md と sm が別の font スロットを持つ — padding と対称', () => {
+    // 🔴 padding は 4本（md/sm × x/y）あるのに font は1本だった。⇒ vault は md=13px /
+    // sm=12px を出荷していたのに、キットでは両方が同じ大きさになる。
+    // ページネーションの Previous が本番12px / ローカル13px（vault 実測 2026-08-23）。
+    const md = classesOf(render(<Button>x</Button>).container.firstElementChild);
+    const sm = classesOf(render(<Button size="sm">x</Button>).container.firstElementChild);
+    expect(md).toContain('text-x-slot-button-size');
+    expect(sm).toContain('text-x-slot-button-sm-size');
+    expect(sm).not.toContain('text-x-slot-button-size');
+  });
+
+  it('🔴 padding と font のスロットが size ごとに揃っている', () => {
+    // 対称性そのものを固定する。片方だけ増える形が、この報告の原因だった。
+    for (const [size, prefix] of [
+      ['md', 'button'],
+      ['sm', 'button-sm'],
+    ] as const) {
+      const cls = classesOf(render(<Button size={size}>x</Button>).container.firstElementChild);
+      expect(cls, `${size} の padding-x`).toContain(`px-x-slot-${prefix}-pad-x`);
+      expect(cls, `${size} の padding-y`).toContain(`py-x-slot-${prefix}-pad-y`);
+      expect(cls, `${size} の font`).toContain(`text-x-slot-${prefix}-size`);
+    }
+  });
+
+  it('中身を並べる — アイコンと文字の配置を呼び出し側に残さない', () => {
+    // svg の寸法は面倒を見ているのに並べ方だけ呼び出し側、という非対称を消す。
+    const cls = classesOf(render(<Button>x</Button>).container.firstElementChild);
+    expect(cls).toContain('inline-flex');
+    expect(cls).toContain('items-center');
+    // flex は子の匿名テキストの前後の空白を落とすので、gap が無いと
+    // <Button><Icon /> Save</Button> のスペースが消える。
+    expect(cls).toContain('gap-x-slot-button-gap');
+    // 🔴 flex ではなく inline-flex。flex にすると行を占有する。
+    expect(cls).not.toContain('flex ');
+  });
+});
