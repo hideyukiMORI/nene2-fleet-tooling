@@ -1,6 +1,6 @@
 import { forwardRef, type ButtonHTMLAttributes } from 'react';
 import { cx } from '../lib/cx.js';
-import { CONTROL_CLASS } from '../lib/states.js';
+import { CLICKABLE_CLASS } from '../lib/states.js';
 
 export interface SwitchProps
   extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onChange' | 'type'> {
@@ -36,7 +36,7 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
       className={cx(
         'inline-flex items-center rounded-x-slot-switch border border-border px-x-slot-switch-pad-x py-x-slot-switch-pad-y font-sans',
         checked ? 'bg-accent text-on-accent' : 'bg-surface text-text-muted',
-        CONTROL_CLASS,
+        CLICKABLE_CLASS,
         className,
       )}
       {...rest}

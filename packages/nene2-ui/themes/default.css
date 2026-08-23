@@ -52,6 +52,8 @@
    * ───────────────────────────────────────────────────────────────────────── */
   --spacing-x-slot-button-pad-x: var(--spacing-x-sm);
   --spacing-x-slot-button-pad-y: var(--spacing-x-xs);
+  --spacing-x-slot-button-sm-pad-x: var(--spacing-x-xs);
+  --spacing-x-slot-button-sm-pad-y: var(--spacing-x-3xs);
   --spacing-x-slot-control-pad-x: var(--spacing-x-2xs);
   --spacing-x-slot-control-pad-y: var(--spacing-x-xs);
   --spacing-x-slot-field-gap: var(--spacing-x-2xs);
@@ -82,6 +84,16 @@
   --radius-x-slot-toast: var(--radius-x-md);
   --radius-x-slot-modal: var(--radius-x-md);
   --radius-x-slot-card: var(--radius-x-md);
+
+  /* Pointer feedback. One rule for every variant, rather than a hover colour per fill:
+   * the kit's buttons are filled with three different colours, and a palette entry for each
+   * hover state would be three more values a product has to keep in step. Darkening works on
+   * all of them — including the white `secondary` fill, where the fleet's own
+   * `hover:brightness-105` does nothing at all.
+   *
+   * Tailwind wraps `hover:` in `@media (hover: hover)`, so this does not stick on touch. */
+  --brightness-x-slot-hover: 95%;
+  --brightness-x-slot-press: 90%;
 
   --color-x-slot-field-label: var(--color-text-muted);
   --text-x-slot-field-label-size: 0.75rem;

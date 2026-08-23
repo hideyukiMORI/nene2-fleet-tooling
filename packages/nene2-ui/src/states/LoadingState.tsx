@@ -1,6 +1,9 @@
 import { Spinner } from '../primitives/Spinner.js';
+import { cx } from '../lib/cx.js';
 
 export interface LoadingStateProps {
+  /** Composed after the kit's own classes (design principle 2). */
+  className?: string;
   /** Localized message announced while the work is in flight. */
   label: string;
 }
@@ -18,9 +21,9 @@ export interface LoadingStateProps {
  * and a live region wrapped in another live region is announced twice. `aria-busy` marks
  * the region as in-flight without adding a second announcer.
  */
-export function LoadingState({ label }: LoadingStateProps) {
+export function LoadingState({ label, className }: LoadingStateProps) {
   return (
-    <div className="py-x-slot-state-pad-y" aria-busy="true">
+    <div className={cx('py-x-slot-state-pad-y', className)} aria-busy="true">
       <Spinner label={label} />
     </div>
   );

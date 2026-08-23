@@ -1,17 +1,24 @@
 import type { ReactNode } from 'react';
+import { cx } from '../lib/cx.js';
 
 export interface TextProps {
+  /** Composed after the kit's own classes (design principle 2). */
+  className?: string;
   as?: 'p' | 'span';
   tone?: 'primary' | 'muted';
   children: ReactNode;
 }
 
-export function Text({ as = 'p', tone = 'primary', children }: TextProps) {
-  const className = `font-sans ${tone === 'muted' ? 'text-text-muted' : 'text-text-primary'}`;
+export function Text({ as = 'p', tone = 'primary', children, className }: TextProps) {
+  const merged = cx(
+    'font-sans',
+    tone === 'muted' ? 'text-text-muted' : 'text-text-primary',
+    className,
+  );
 
   return as === 'span' ? (
-    <span className={className}>{children}</span>
+    <span className={merged}>{children}</span>
   ) : (
-    <p className={className}>{children}</p>
+    <p className={merged}>{children}</p>
   );
 }

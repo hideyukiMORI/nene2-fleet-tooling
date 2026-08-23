@@ -54,5 +54,23 @@ export const FOCUS_CLASS =
  */
 export const DISABLED_CLASS = 'disabled:opacity-x-disabled disabled:cursor-not-allowed';
 
+/**
+ * Pointer feedback for anything clickable.
+ *
+ * 🔴 The third hole of the same shape. v0.1 shipped with no disabled and no focus styling;
+ * 0.4.0 is where the kit stops shipping without hover and press. The fleet writes them
+ * anyway — measured 2026-08-23 across seven products, though only three of them show up if
+ * you grep for Tailwind classes: nene-invoice, nene-deal, nene-profile and nene-serve
+ * declare theirs in CSS (`background` 55 times, `color` 42, `border-color` 17). Counting one
+ * spelling of a thing that has two is how the first two holes stayed open.
+ *
+ * `disabled:` is excluded on purpose: a disabled control must not react to the pointer.
+ */
+export const HOVER_CLASS =
+  'hover:brightness-x-slot-hover active:brightness-x-slot-press disabled:hover:brightness-100 disabled:active:brightness-100';
+
 /** Controls that can be focused and disabled — every interactive primitive in the kit. */
 export const CONTROL_CLASS = `${FOCUS_CLASS} ${DISABLED_CLASS}`;
+
+/** Controls that are also clicked: buttons, switches, the toast dismiss. */
+export const CLICKABLE_CLASS = `${CONTROL_CLASS} ${HOVER_CLASS}`;

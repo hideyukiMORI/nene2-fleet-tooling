@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { cx } from '../lib/cx.js';
-import { CONTROL_CLASS } from '../lib/states.js';
+import { CLICKABLE_CLASS } from '../lib/states.js';
 import { ToastContext, type ToastApi, type ToastOptions, type ToastTone } from './toast-context.js';
 
 interface Toast {
@@ -109,7 +109,7 @@ export function ToastProvider({
               type="button"
               aria-label={dismissLabel}
               onClick={() => dismiss(toast.id)}
-              className={cx('rounded-x-slot-toast px-x-slot-toast-dismiss-pad-x', CONTROL_CLASS)}
+              className={cx('rounded-x-slot-toast px-x-slot-toast-dismiss-pad-x', CLICKABLE_CLASS)}
             >
               {dismissLabel}
             </button>
