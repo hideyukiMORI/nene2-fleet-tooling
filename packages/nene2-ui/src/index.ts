@@ -29,5 +29,8 @@ export { DetailList, type DetailListProps, type DetailRow } from './data/DetailL
 // Theme
 export { tokens } from './theme/tokens.js';
 
-// Internal helper, exported so downstream components can compose consistently.
+// Internal helpers, exported so downstream components can compose consistently.
 export { cx } from './lib/cx.js';
+// Controls the kit does not ship yet (Textarea has 7 independent implementations in the
+// fleet) can at least carry the same focus and disabled behaviour instead of inventing it.
+export { CONTROL_CLASS, DISABLED_CLASS, FOCUS_CLASS } from './lib/states.js';

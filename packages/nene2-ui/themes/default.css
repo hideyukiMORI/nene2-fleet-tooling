@@ -21,6 +21,11 @@
 
   --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.06);
 
+  /* Disabled controls. A value, so it lives here rather than in a component — the same rule
+   * the colours follow. 50% is what the fleet's screens most often reached for when the kit
+   * gave them nothing (50 x10, 40 x4, 30 x6, measured 2026-08-23 across 20 uses). */
+  --opacity-x-disabled: 50%;
+
   --radius-x-md: 0.5rem;
 
   /* The spacing scale. Nine steps, chosen by measurement rather than taste: snapping the
