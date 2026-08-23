@@ -70,7 +70,7 @@ export function FormField({
         >
           {label}
           {required && requiredMarker !== undefined && requiredMarker !== null ? (
-            <span className="text-danger">{requiredMarker}</span>
+            <span className="text-x-slot-field-error-fg">{requiredMarker}</span>
           ) : null}
           {labelAdornment}
         </label>

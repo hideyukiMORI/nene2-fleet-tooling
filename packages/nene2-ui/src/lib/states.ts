@@ -46,7 +46,7 @@
 
 /** Keyboard focus indicator. Colour comes from the theme, never from a caller. */
 export const FOCUS_CLASS =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary';
+  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-x-slot-focus-ring';
 
 /**
  * Disabled appearance. The opacity is a theme token (`--opacity-x-disabled`) because a

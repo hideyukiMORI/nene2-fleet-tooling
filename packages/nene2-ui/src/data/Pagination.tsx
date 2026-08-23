@@ -77,7 +77,7 @@ export function Pagination(props: PaginationProps) {
         <Button variant="secondary" disabled={atStart} onClick={goPrev} aria-label={previousLabel}>
           {previousLabel}
         </Button>
-        <span aria-current="page" className="font-sans text-text-muted">
+        <span aria-current="page" className="font-sans text-x-slot-pagination-fg">
           {status}
         </span>
         <Button variant="secondary" disabled={atEnd} onClick={goNext} aria-label={nextLabel}>

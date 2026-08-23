@@ -8,7 +8,7 @@ export interface SpinnerProps {
 
 export function Spinner({ label, className }: SpinnerProps) {
   return (
-    <output className={cx('font-sans text-text-muted', className)} aria-live="polite">
+    <output className={cx('font-sans text-x-slot-spinner-fg', className)} aria-live="polite">
       {label}
     </output>
   );

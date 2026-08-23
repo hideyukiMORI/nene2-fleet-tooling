@@ -39,7 +39,7 @@ describe.each(CONTROLS)('%s', (_name, mount) => {
       expect.arrayContaining([
         'focus-visible:outline-2',
         'focus-visible:outline-offset-2',
-        'focus-visible:outline-text-primary',
+        'focus-visible:outline-x-slot-focus-ring',
       ]),
     );
   });
@@ -85,7 +85,9 @@ describe.each(CONTROLS)('%s', (_name, mount) => {
 describe('Input', () => {
   it('distinguishes placeholder text from real text', () => {
     const { container } = render(<Input placeholder="name" />);
-    expect(classesOf(container.firstElementChild)).toContain('placeholder:text-text-muted');
+    expect(classesOf(container.firstElementChild)).toContain(
+      'placeholder:text-x-slot-control-placeholder',
+    );
   });
 
   it('passes disabled through to the element, so the styling has something to hook onto', () => {
@@ -103,7 +105,7 @@ describe('Button', () => {
   it('keeps its variant styling alongside the state classes', () => {
     const { container } = render(<Button variant="danger">x</Button>);
     const cls = classesOf(container.firstElementChild);
-    expect(cls).toContain('bg-danger');
+    expect(cls).toContain('bg-x-slot-button-danger-bg');
     expect(cls).toContain('disabled:cursor-not-allowed');
   });
 });

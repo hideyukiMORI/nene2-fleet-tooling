@@ -12,7 +12,7 @@ export interface TextProps {
 export function Text({ as = 'p', tone = 'primary', children, className }: TextProps) {
   const merged = cx(
     'font-sans',
-    tone === 'muted' ? 'text-text-muted' : 'text-text-primary',
+    tone === 'muted' ? 'text-x-slot-text-muted-fg' : 'text-x-slot-text-fg',
     className,
   );
 

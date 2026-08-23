@@ -8,9 +8,10 @@ export interface BadgeProps {
 }
 
 const TONE_CLASS: Record<NonNullable<BadgeProps['tone']>, string> = {
-  neutral: 'bg-surface text-text-muted border-border',
-  accent: 'bg-accent text-on-accent border-accent',
-  danger: 'bg-danger text-on-accent border-danger',
+  neutral:
+    'bg-x-slot-badge-neutral-bg text-x-slot-badge-neutral-fg border-x-slot-badge-neutral-border',
+  accent: 'bg-x-slot-badge-accent-bg text-x-slot-badge-accent-fg border-x-slot-badge-accent-border',
+  danger: 'bg-x-slot-badge-danger-bg text-x-slot-badge-danger-fg border-x-slot-badge-danger-border',
 };
 
 /**

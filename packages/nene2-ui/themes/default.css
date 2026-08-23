@@ -157,6 +157,116 @@
   --text-x-slot-control-size: var(--text-x-md);
   --text-x-slot-control-touch-size: var(--text-x-ios-floor);
 
+  /* ── Colour slots ─────────────────────────────────────────────────────────────
+   * Every colour a component paints comes from here.
+   *
+   * 🔴 Until 0.9.0 only `FormField` and `InlineAlert` had any, and the other 26 components
+   * reached straight into the palette (`text-text-primary`, `bg-surface-raised`) — 59 places
+   * in 20 files. The README said "every design value a component uses comes from a slot"
+   * the whole time. The check that was supposed to enforce it listed the utility prefixes
+   * it knew about — `p px py … rounded` — so colour and weight were never inspected at all.
+   *
+   * Found by nene-vault comparing its production screens against the migrated build in a
+   * real browser (Playwright, computed styles, element by element, 2026-08-23): 73 elements
+   * matched, 21 differed, and every difference was inside a kit component. Its own markup —
+   * side nav, tables, headings — matched on every property. A product cannot make a control
+   * darker than its body text while the kit writes the colour itself.
+   *
+   * Defaults are palette references, so nothing renders differently. What changes is that
+   * there is now an opening. */
+  --color-x-slot-focus-ring: var(--color-text-primary);
+
+  --color-x-slot-button-primary-bg: var(--color-accent);
+  --color-x-slot-button-primary-fg: var(--color-on-accent);
+  --color-x-slot-button-secondary-bg: var(--color-surface-raised);
+  --color-x-slot-button-secondary-fg: var(--color-text-primary);
+  --color-x-slot-button-secondary-border: var(--color-border);
+  --color-x-slot-button-danger-bg: var(--color-danger);
+  --color-x-slot-button-danger-fg: var(--color-on-accent);
+  --color-x-slot-button-ghost-fg: var(--color-text-primary);
+
+  /* Shared by Input, Select and Textarea — they are one control with three shapes, and a
+   * product that darkens one and not the others has a bug, not a design. */
+  --color-x-slot-control-fg: var(--color-text-primary);
+  --color-x-slot-control-bg: var(--color-surface-raised);
+  --color-x-slot-control-border: var(--color-border);
+  --color-x-slot-control-placeholder: var(--color-text-muted);
+
+  --color-x-slot-choice-fg: var(--color-text-primary);
+  --color-x-slot-choice-border: var(--color-border);
+
+  --color-x-slot-switch-on-bg: var(--color-accent);
+  --color-x-slot-switch-on-fg: var(--color-on-accent);
+  --color-x-slot-switch-off-bg: var(--color-surface);
+  --color-x-slot-switch-off-fg: var(--color-text-muted);
+  --color-x-slot-switch-border: var(--color-border);
+
+  --color-x-slot-badge-neutral-bg: var(--color-surface);
+  --color-x-slot-badge-neutral-fg: var(--color-text-muted);
+  --color-x-slot-badge-neutral-border: var(--color-border);
+  --color-x-slot-badge-accent-bg: var(--color-accent);
+  --color-x-slot-badge-accent-fg: var(--color-on-accent);
+  --color-x-slot-badge-accent-border: var(--color-accent);
+  --color-x-slot-badge-danger-bg: var(--color-danger);
+  --color-x-slot-badge-danger-fg: var(--color-on-accent);
+  --color-x-slot-badge-danger-border: var(--color-danger);
+
+  --color-x-slot-toast-bg: var(--color-surface-raised);
+  --color-x-slot-toast-fg: var(--color-text-primary);
+  --color-x-slot-toast-border: var(--color-border);
+  --color-x-slot-toast-danger-fg: var(--color-danger);
+  --color-x-slot-toast-danger-border: var(--color-danger);
+
+  --color-x-slot-card-bg: var(--color-surface-raised);
+  --color-x-slot-card-border: var(--color-border);
+
+  --color-x-slot-modal-bg: var(--color-surface-raised);
+  --color-x-slot-modal-fg: var(--color-text-primary);
+  --color-x-slot-modal-border: var(--color-border);
+  /* The dim behind a modal. A colour, so it belongs here — the opacity that goes with it is
+   * applied by the component, since it is not a palette entry. */
+  --color-x-slot-modal-scrim: var(--color-text-primary);
+
+  --color-x-slot-table-fg: var(--color-text-primary);
+  --color-x-slot-table-header-fg: var(--color-text-muted);
+  --color-x-slot-table-border: var(--color-border);
+
+  --color-x-slot-detail-term-fg: var(--color-text-muted);
+  --color-x-slot-detail-description-fg: var(--color-text-primary);
+  --color-x-slot-detail-border: var(--color-border);
+
+  --color-x-slot-pagination-fg: var(--color-text-muted);
+  --color-x-slot-page-header-fg: var(--color-text-primary);
+  --color-x-slot-text-fg: var(--color-text-primary);
+  --color-x-slot-text-muted-fg: var(--color-text-muted);
+  --color-x-slot-spinner-fg: var(--color-text-muted);
+  --color-x-slot-empty-state-fg: var(--color-text-muted);
+  --color-x-slot-error-state-fg: var(--color-danger);
+  --color-x-slot-field-error-fg: var(--color-danger);
+
+  /* ── Weight slots ─────────────────────────────────────────────────────────────
+   * `font-medium` appeared inline in four components. Same rule, same reason as colour. */
+  --font-weight-x-slot-button: var(--font-weight-medium);
+  --font-weight-x-slot-table-header: var(--font-weight-medium);
+  --font-weight-x-slot-detail-term: var(--font-weight-medium);
+  --font-weight-x-slot-page-header: var(--font-weight-medium);
+
+  /* ── Size slots that decline to choose ────────────────────────────────────────
+   * 🔴 `inherit`, not a step. Button and the choice controls set no font-size today, so
+   * they take the page's — and picking a step here would change how every product already
+   * renders, which is the one thing this release must not do. `inherit` is not a design
+   * value the kit invented; it is the kit saying it has no opinion, in a place a product
+   * can now answer. nene-vault's production buttons are 13px against a 14px body, which is
+   * exactly the distinction that had nowhere to live.
+   *
+   * ⚠️ 13px is not on the type scale (0.6875 / 0.75 / 0.875 / 1 / 1.125 / 1.5rem). The
+   * scale was measured from what the fleet writes in Tailwind classes, which cannot express
+   * a value it has no step for — so that measurement could not have seen it. Recorded here
+   * rather than acted on: changing the type scale is its own decision, with its own
+   * measurement, and it is not this release's. */
+  --text-x-slot-button-size: inherit;
+  --text-x-slot-choice-size: inherit;
+
   /* Sentinel for the consumer's build (#316). Zero-width, so applying it does nothing.
    * Its only job is to exist: `p-x-source-probe` appears nowhere except this kit's `dist`,
    * so a build that generates it has the kit in its `@source`, and a build that does not

@@ -122,7 +122,7 @@ describe('ConfirmDialog', () => {
       <ConfirmDialog {...props} tone="danger" onConfirm={() => {}} onCancel={() => {}} />,
     );
     const confirm = [...container.querySelectorAll('button')].at(-1);
-    expect(confirm?.getAttribute('class')).toContain('bg-danger');
+    expect(confirm?.getAttribute('class')).toContain('bg-x-slot-button-danger-bg');
   });
 
   it('is not destructive-looking by default', () => {
@@ -130,7 +130,7 @@ describe('ConfirmDialog', () => {
       <ConfirmDialog {...props} onConfirm={() => {}} onCancel={() => {}} />,
     );
     const confirm = [...container.querySelectorAll('button')].at(-1);
-    expect(confirm?.getAttribute('class')).toContain('bg-accent');
+    expect(confirm?.getAttribute('class')).toContain('bg-x-slot-button-primary-bg');
   });
 
   it('routes a dismissal to onCancel, never to onConfirm', () => {
@@ -149,13 +149,15 @@ describe('Badge', () => {
   it('takes a meaning, and reads its colour from the theme', () => {
     const { container } = render(<Badge tone="danger">x</Badge>);
     const cls = container.firstElementChild?.getAttribute('class') ?? '';
-    expect(cls).toContain('bg-danger');
+    expect(cls).toContain('bg-x-slot-badge-danger-bg');
     expect(cls).not.toMatch(/#|rgb|\[/);
   });
 
   it('is neutral unless told otherwise', () => {
     const { container } = render(<Badge>x</Badge>);
-    expect(container.firstElementChild?.getAttribute('class')).toContain('text-text-muted');
+    expect(container.firstElementChild?.getAttribute('class')).toContain(
+      'text-x-slot-badge-neutral-fg',
+    );
   });
 });
 

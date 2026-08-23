@@ -15,12 +15,13 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANT_CLASS: Record<NonNullable<ButtonProps['variant']>, string> = {
-  primary: 'bg-accent text-on-accent',
-  secondary: 'bg-surface-raised text-text-primary border-border',
-  danger: 'bg-danger text-on-accent',
+  primary: 'bg-x-slot-button-primary-bg text-x-slot-button-primary-fg',
+  secondary:
+    'bg-x-slot-button-secondary-bg text-x-slot-button-secondary-fg border-x-slot-button-secondary-border',
+  danger: 'bg-x-slot-button-danger-bg text-x-slot-button-danger-fg',
   // No fill and no border: for the third action in a row, where two framed buttons would
   // compete with each other. nene-vault ships this variant already.
-  ghost: 'bg-transparent text-text-primary',
+  ghost: 'bg-transparent text-x-slot-button-ghost-fg',
 };
 
 const SIZE_CLASS: Record<NonNullable<ButtonProps['size']>, string> = {
@@ -33,7 +34,7 @@ const SIZE_CLASS: Record<NonNullable<ButtonProps['size']>, string> = {
 // taller than the others. nene-vault puts a primary and a secondary side by side in seven
 // modal footers, where that shows up as a step (measured 2026-08-23); its own Button carries
 // the same transparent border for the same reason.
-const BASE_CLASS = `rounded-x-slot-button border border-transparent font-sans font-medium ${CLICKABLE_CLASS}`;
+const BASE_CLASS = `rounded-x-slot-button border border-transparent font-sans text-x-slot-button-size font-x-slot-button ${CLICKABLE_CLASS}`;
 
 export function Button({
   variant = 'primary',

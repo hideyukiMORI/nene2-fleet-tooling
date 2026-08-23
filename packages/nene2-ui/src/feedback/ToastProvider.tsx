@@ -27,8 +27,8 @@ export interface ToastProviderProps {
 }
 
 const TONE_CLASS: Record<ToastTone, string> = {
-  info: 'bg-surface-raised text-text-primary border-border',
-  danger: 'bg-surface-raised text-danger border-danger',
+  info: 'bg-x-slot-toast-bg text-x-slot-toast-fg border-x-slot-toast-border',
+  danger: 'bg-x-slot-toast-bg text-x-slot-toast-danger-fg border-x-slot-toast-danger-border',
 };
 
 /**

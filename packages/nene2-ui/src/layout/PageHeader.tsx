@@ -14,7 +14,7 @@ export function PageHeader({ title, actions, className }: PageHeaderProps) {
     <header
       className={cx('flex items-center justify-between py-x-slot-page-header-pad-y', className)}
     >
-      <h1 className="font-sans font-medium text-text-primary">{title}</h1>
+      <h1 className="font-sans font-x-slot-page-header text-x-slot-page-header-fg">{title}</h1>
       {actions}
     </header>
   );

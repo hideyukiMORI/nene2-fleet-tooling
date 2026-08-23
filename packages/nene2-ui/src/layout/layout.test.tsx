@@ -130,9 +130,9 @@ describe('Card', () => {
     const { container } = render(<Card>x</Card>);
     expect(classesOf(container.firstElementChild)).toEqual(
       expect.arrayContaining([
-        'bg-surface-raised',
+        'bg-x-slot-card-bg',
         'border',
-        'border-border',
+        'border-x-slot-card-border',
         'rounded-x-slot-card',
       ]),
     );

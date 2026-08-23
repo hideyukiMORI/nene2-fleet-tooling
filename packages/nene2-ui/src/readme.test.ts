@@ -149,6 +149,12 @@ describe('the two token layers', () => {
     expect(slots.length).toBeGreaterThan(30);
     for (const [, raw] of slots) {
       const value = raw!.trim();
+      // 🔴 `inherit` is allowed, and only `inherit`. It is not a value the kit invented —
+      // it is the kit declining to have an opinion, in a place a product can now answer.
+      // `Button` and the choice controls set no font-size before 0.9.0, so any step chosen
+      // here would change how every product already renders. See the theme for the case
+      // that made this necessary (nene-vault: 13px buttons against a 14px body).
+      if (value === 'inherit') continue;
       // The palette has no `x-` segment (`--color-accent`), the dimensional scales do
       // (`--spacing-x-md`). Both count as references.
       const refPattern =
@@ -163,6 +169,37 @@ describe('the two token layers', () => {
     }
   });
 
+  /**
+   * Utilities that put a design value on an element without going through a slot.
+   *
+   * Three kinds, deliberately built differently:
+   *  - the dimensional scales, matched by their `x-` namespace (`px-x-md`);
+   *  - the palette, matched by names read out of the theme, so it cannot fall behind;
+   *  - bare literals for weight and size (`font-medium`, `text-sm`).
+   *
+   * `font-sans` is the family — one per theme, nothing to choose — and `text-center` is
+   * alignment, not a design value. Neither is matched.
+   */
+  const palette = [
+    ...readFileSync(path.join(root, 'themes/default.css'), 'utf8').matchAll(
+      /--color-((?!x-)[a-z0-9-]+):/g,
+    ),
+  ].map((m) => m[1]!);
+  const variant =
+    '(?:hover:|active:|focus:|focus-visible:|disabled:|placeholder:|checked:|group-hover:)?';
+  const reachPattern = new RegExp(
+    [
+      // ① a dimensional scale step, reached directly
+      `(?<![\\w-])${variant}(?:p|px|py|pt|pb|pl|pr|gap|m|mt|mb|rounded|size|w|h|max-h|max-w|text|font|shadow)-x-(?!slot-)[a-z0-9-]+`,
+      // ② a palette colour, reached directly
+      `(?<![\\w-])${variant}(?:text|bg|border|accent|outline|ring|fill|stroke|decoration)-(?:${palette.join('|')})(?![a-z0-9-])`,
+      // ③ a literal weight or type step
+      `(?<![\\w-])${variant}font-(?:thin|extralight|light|normal|medium|semibold|bold|extrabold|black)(?![a-z0-9-])`,
+      `(?<![\\w-])${variant}text-(?:xs|sm|base|lg|xl|[2-9]xl)(?![a-z0-9-])`,
+    ].join('|'),
+    'g',
+  );
+
   it('no component reaches past the slots into the scale', () => {
     // 部品がスケールを直接使うと、艦はその部品だけ割り当てを変えられなくなる。
     // 例外は lib/spacing.ts（Stack/Box の gap/pad prop そのもの＝呼び出し側が選ぶ層）。
@@ -170,9 +207,17 @@ describe('the two token layers', () => {
     for (const f of componentSources()) {
       if (f.endsWith('lib/spacing.ts') || f.endsWith('lib/source-probe.ts')) continue;
       const src = readFileSync(f, 'utf8');
-      for (const m of src.matchAll(
-        /(?<![\w-])(?:p|px|py|pt|pb|pl|pr|gap|m|mt|mb|rounded)-x-(?!slot-)[a-z0-9-]+/g,
-      )) {
+      // 🔴 The prefix list is the whole point of failure. Until 0.9.0 it named only the
+      // spacing and radius utilities, so `text-text-primary` and `font-medium` — a colour
+      // and a weight written straight into a component — were never inspected at all. The
+      // rule read "every design value comes from a slot" while 59 of them did not, across
+      // 20 components, and the check was green the entire time.
+      // 🔑 A check written as an enumeration passes everything the enumeration omits.
+      //
+      // So the colour half is not enumerated here at all: the palette is READ FROM THE
+      // THEME. A colour added to the palette tomorrow is covered by this check today,
+      // which is the only version of it that cannot fall behind.
+      for (const m of src.matchAll(reachPattern)) {
         offenders.push(`${path.relative(root, f)}: ${m[0]}`);
       }
     }

@@ -20,7 +20,7 @@ export function Card({ pad = 'sm', gap, raised = false, children, className, ...
   return (
     <div
       className={cx(
-        'flex flex-col bg-surface-raised border border-border rounded-x-slot-card',
+        'flex flex-col bg-x-slot-card-bg border border-x-slot-card-border rounded-x-slot-card',
         raised && 'shadow-sm',
         resolve(pad, PAD),
         resolve(gap, GAP),
