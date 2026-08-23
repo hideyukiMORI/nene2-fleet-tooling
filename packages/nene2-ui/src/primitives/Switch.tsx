@@ -1,6 +1,6 @@
 import { forwardRef, type ButtonHTMLAttributes } from 'react';
 import { cx } from '../lib/cx.js';
-import { CLICKABLE_CLASS } from '../lib/states.js';
+import { CLICKABLE_CLASS, TOUCH_CLASS } from '../lib/states.js';
 
 export interface SwitchProps
   extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onChange' | 'type'> {
@@ -34,6 +34,7 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
       aria-label={label}
       onClick={() => onCheckedChange(!checked)}
       className={cx(
+        TOUCH_CLASS,
         'inline-flex items-center rounded-x-slot-switch border border-x-slot-switch-border px-x-slot-switch-pad-x py-x-slot-switch-pad-y font-sans',
         checked
           ? 'bg-x-slot-switch-on-bg text-x-slot-switch-on-fg'

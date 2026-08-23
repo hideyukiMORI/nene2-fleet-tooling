@@ -228,3 +228,50 @@ describe('Button が自分の中身を並べる（#366）', () => {
     expect(cls).not.toContain('flex ');
   });
 });
+
+describe('タッチ端末の下限（#368）', () => {
+  const TOUCH = 'pointer-coarse:min-h-x-slot-control-touch-min';
+
+  it.each([
+    ['Button md', <Button key="b">x</Button>],
+    [
+      'Button sm',
+      <Button key="bs" size="sm">
+        x
+      </Button>,
+    ],
+    ['Input', <Input key="i" />],
+    [
+      'Select',
+      <Select key="s">
+        <option>a</option>
+      </Select>,
+    ],
+    ['Textarea', <Textarea key="t" />],
+    ['Checkbox', <Checkbox key="c" label="x" />],
+    ['Radio', <Radio key="r" label="x" name="g" />],
+    ['Switch', <Switch key="w" label="x" checked={false} onCheckedChange={() => {}} />],
+  ])('%s は下限を root（＝タップされる要素）に持つ', (_n, node) => {
+    const { container } = render(node);
+    expect(classesOf(container.firstElementChild)).toContain(TOUCH);
+  });
+
+  it('🔴 Checkbox の下限は箱ではなくラベルに付く', () => {
+    // 箱は size-x-slot-choice-box（16px 四方）なので、そこに min-height を当てると
+    // 44×16 の縦長になるだけで、対象は大きくならない。タップされるのはラベル。
+    // ⇒ CONTROL_CLASS（全コントロール共通の束）に入れると箱にも付いてしまうので、
+    //    この1本だけ束から外してある。その判断が消えないよう固定する。
+    const { container } = render(<Checkbox label="x" />);
+    expect(classesOf(container.querySelector('input'))).not.toContain(TOUCH);
+    expect(classesOf(container.firstElementChild)).toContain(TOUCH);
+  });
+
+  it('🔴 下限を持つ要素は flex — inline-block だと中身が上に寄るだけ', () => {
+    // min-height は箱を高くするが、中身は動かさない。items-center が要る。
+    for (const node of [<Button key="b">x</Button>, <Checkbox key="c" label="x" />]) {
+      const cls = classesOf(render(node).container.firstElementChild);
+      expect(cls).toContain('inline-flex');
+      expect(cls).toContain('items-center');
+    }
+  });
+});

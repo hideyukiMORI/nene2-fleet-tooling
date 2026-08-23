@@ -1,6 +1,6 @@
 import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react';
 import { cx } from '../lib/cx.js';
-import { CONTROL_CLASS } from '../lib/states.js';
+import { CONTROL_CLASS, TOUCH_CLASS } from '../lib/states.js';
 import { useFieldWiring } from '../forms/field-context.js';
 
 export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
@@ -58,6 +58,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
   return (
     <label
       className={cx(
+        TOUCH_CLASS,
         'inline-flex cursor-pointer items-center gap-x-slot-choice-gap font-sans text-x-slot-choice-size text-x-slot-choice-fg',
         className,
       )}

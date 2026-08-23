@@ -78,6 +78,21 @@
   --text-x-xl: 1.5rem;
   --text-x-ios-floor: 16px;
 
+  /* The smallest a control may be on a touch screen. Not a design step, for the same reason
+   * `--text-x-ios-floor` is not: it is what the platform requires, and a product lowering it
+   * is not expressing a preference, it is making targets people miss.
+   *
+   * 🔴 44px, which is what WCAG 2.5.5 (AAA) and Apple's HIG both ask for — the smallest
+   * value that satisfies the standards rather than the fleet's average. Two ships already
+   * set 48px (nene-profile, nene-deal), Material's number; a product that wants it raises
+   * the slot. Picking the higher one here would be the kit imposing a size, and picking a
+   * median would make a device constraint look like a preference.
+   *
+   * ⚠️ The kit's own `sm` button computes to about 31px against a 14px body — above the
+   * 24px WCAG 2.5.8 (AA) asks for, and well under this. The `md` button is already ~47px,
+   * so this changes nothing there. */
+  --spacing-x-touch-floor: 44px;
+
   /* ─────────────────────────────────────────────────────────────────────────
    * ② SLOTS — a product may redefine these.
    *
@@ -192,6 +207,11 @@
    * only because the kit cannot know a product's rem base — not because it is yours to tune. */
   --text-x-slot-control-size: var(--text-x-md);
   --text-x-slot-control-touch-size: var(--text-x-ios-floor);
+  /* The other half of the same constraint: the first says a focused control must not be
+   * small enough to make iOS zoom, this says it must not be small enough to miss. Applied
+   * only under `@media (pointer: coarse)` — pointer, not width, for the reason recorded
+   * above (an iPad in landscape is wide and still has fingers). */
+  --spacing-x-slot-control-touch-min: var(--spacing-x-touch-floor);
 
   /* ── Colour slots ─────────────────────────────────────────────────────────────
    * Every colour a component paints comes from here.

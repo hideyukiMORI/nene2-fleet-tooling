@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { cx } from '../lib/cx.js';
-import { CLICKABLE_CLASS } from '../lib/states.js';
+import { CLICKABLE_CLASS, TOUCH_CLASS } from '../lib/states.js';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
@@ -59,7 +59,7 @@ const SIZE_CLASS: Record<NonNullable<ButtonProps['size']>, string> = {
 // leaves anything already smaller alone.
 const SVG_BOUND = '[&_svg]:max-h-x-slot-button-icon [&_svg]:max-w-x-slot-button-icon';
 
-const BASE_CLASS = `rounded-x-slot-button border border-transparent inline-flex items-center justify-center gap-x-slot-button-gap font-sans font-x-slot-button ${SVG_BOUND} ${CLICKABLE_CLASS}`;
+const BASE_CLASS = `rounded-x-slot-button border border-transparent inline-flex items-center justify-center gap-x-slot-button-gap font-sans font-x-slot-button ${SVG_BOUND} ${TOUCH_CLASS} ${CLICKABLE_CLASS}`;
 
 export function Button({
   variant = 'primary',
