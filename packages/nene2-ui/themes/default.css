@@ -244,6 +244,23 @@
   --color-x-slot-error-state-fg: var(--color-danger);
   --color-x-slot-field-error-fg: var(--color-danger);
 
+  /* An upper bound for an `<svg>` written directly inside a `Button`.
+   *
+   * 🔴 `max-*`, deliberately not `size-*`. An `<svg>` with no width/height attributes and no
+   * CSS size is a replaced element with no intrinsic size, so it lays out at 300x150 — which
+   * is how a nene-vault upload button became a 230px-tall rectangle the moment its wrapper
+   * changed from a `<div>` to a `<Stack>` (2026-08-23).
+   *
+   * Sizing it outright would fix that and break something else: a class produced by an
+   * arbitrary variant (`[&_svg]:size-6`) outranks the plain `h-6 w-6` that `Icon` puts on
+   * itself, so `<Icon size="sm">` inside a button would silently render at the button's
+   * size. A maximum has no such conflict — it constrains nothing that is already smaller,
+   * and there is no specificity contest because the two properties are different.
+   *
+   * The bound is `--spacing-x-lg`, which is 1.5rem — `Icon size="lg"` exactly — so no icon
+   * the kit ships is clamped by it. */
+  --spacing-x-slot-button-icon: var(--spacing-x-lg);
+
   /* ── Weight slots ─────────────────────────────────────────────────────────────
    * `font-medium` appeared inline in four components. Same rule, same reason as colour. */
   --font-weight-x-slot-button: var(--font-weight-medium);
