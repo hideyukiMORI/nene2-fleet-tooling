@@ -150,6 +150,25 @@ publish 手順は「2回目以降（GitHub Actions）」（下記）。dry_run �
 nene-payout の `shared/ui` から10部品を昇格（新規設計ゼロ）＋ `cx()` 是正。
 Button / Input / Select / Spinner / Text / PageHeader / FormField / EmptyState / ErrorState / DetailList。
 
+### `@hideyukimori/nene2-ui` 0.5.0（**minor — 選択系のラベル側とページ送りの2モデル**・#336）
+
+**vault が Tailwind クラスと CSS の両方で測った結果**に基づく（片方だけ見て4回過小を出した反省から、両形式で取ってもらったもの）。
+
+- 🔴 **`Checkbox` / `Radio` のラベル側**にキットが届いていなかった。`className` は `<input>` へ
+  渡るので、**`cursor-pointer` と間隔は props でも `className` でも設定できない**。
+  ⇒ **キットが持つ**。あわせて入力の寸法（`--spacing-x-slot-choice-box`・既定 1rem = 16px）と
+  アクセント色（`--color-x-slot-choice-accent`）をスロットへ。
+  **`Radio` にも同じ穴があった**（vault は両者で同じラベル style を共有している）
+- 🔴 **`Pagination` が offset ベースを受けられなかった。** vault の3画面とも offset を持ち、
+  **page 番号は誰も持っていない**。⇒ `canPrev` / `canNext` / `onPrev` / `onNext` でも使える形に。
+  `page` / `pageCount` の側は残す（判別可能な union）
+
+🔑 **`status` を呼び出し側が組み立てる形は変えない。** vault の文言は「**21–40件を表示（全384件）**」＝
+**件の範囲**で、**page 番号からは復元できない**（端数ページで崩れる）。
+⇒ **page へ寄せると3画面の文言が壊れる。**
+
+**線引きは既存の基準の適用**: `cursor-pointer` と間隔は**意匠でも構造の選択肢でもなく部品の構成要素**（キットが持つ）／ページ送りの2モデルは**有限の選択肢**（props で受けてよい）。
+
 ### `@hideyukimori/nene2-ui` 0.4.0（**minor — hover/active ＋ 構造の選択肢**・#332）
 
 🔴 **既存部品の見た目が変わる**（0.3.0 まで**ポインタに何も反応しなかった**）。

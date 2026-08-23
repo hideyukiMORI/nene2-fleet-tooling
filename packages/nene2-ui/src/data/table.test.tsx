@@ -202,3 +202,90 @@ describe('Pagination', () => {
     expect(onPageChange).toHaveBeenNthCalledWith(2, 3);
   });
 });
+
+describe('Checkbox / Radio label side', () => {
+  // 🔴 className は <input> へ渡るので、ラベル側にはキットしか届かない。
+  // vault は cursor-pointer と間隔をラベルに持っており、届かないと
+  // **製品の全選択肢からポインタカーソルが消える**（マウス利用者には見え、diff には出ない）。
+  it.each([
+    ['Checkbox', <Checkbox key="c" label="x" />],
+    ['Radio', <Radio key="r" name="g" value="a" label="x" />],
+  ])('%s makes the whole label clickable-looking', (_n, ui) => {
+    const { container } = render(ui);
+    const cls = (container.querySelector('label')?.getAttribute('class') ?? '').split(/\s+/);
+    expect(cls).toContain('cursor-pointer');
+    expect(cls).toContain('gap-x-slot-choice-gap');
+  });
+
+  it.each([
+    ['Checkbox', <Checkbox key="c" label="x" />],
+    ['Radio', <Radio key="r" name="g" value="a" label="x" />],
+  ])('%s sizes and tints the box from the theme', (_n, ui) => {
+    const { container } = render(ui);
+    const cls = (container.querySelector('input')?.getAttribute('class') ?? '').split(/\s+/);
+    expect(cls).toContain('size-x-slot-choice-box');
+    expect(cls).toContain('accent-x-slot-choice-accent');
+    expect(cls).not.toContain('accent-accent');
+  });
+});
+
+describe('Pagination offset model', () => {
+  const base = {
+    label: 'Users',
+    previousLabel: 'Previous',
+    nextLabel: 'Next',
+    status: 'Showing 21–40 of 384',
+  };
+
+  it('takes canPrev / canNext instead of a page number', () => {
+    // vault の3画面とも offset ベースで、page 番号は誰も持っていない。
+    const { container } = render(
+      <Pagination {...base} canPrev canNext onPrev={() => {}} onNext={() => {}} />,
+    );
+    const [prev, next] = [...container.querySelectorAll('button')];
+    expect(prev?.disabled).toBe(false);
+    expect(next?.disabled).toBe(false);
+    expect(container.querySelector('[aria-current="page"]')?.textContent).toBe(
+      'Showing 21–40 of 384',
+    );
+  });
+
+  it('disables each end from the flag it was given', () => {
+    const { container } = render(
+      <Pagination {...base} canPrev={false} canNext onPrev={() => {}} onNext={() => {}} />,
+    );
+    const [prev, next] = [...container.querySelectorAll('button')];
+    expect(prev?.disabled).toBe(true);
+    expect(next?.disabled).toBe(false);
+  });
+
+  it('calls the offset handlers, not a page setter', () => {
+    const onPrev = vi.fn();
+    const onNext = vi.fn();
+    const { container } = render(
+      <Pagination {...base} canPrev canNext onPrev={onPrev} onNext={onNext} />,
+    );
+    const [prev, next] = [...container.querySelectorAll('button')];
+    fireEvent.click(next!);
+    fireEvent.click(prev!);
+    expect(onNext).toHaveBeenCalledTimes(1);
+    expect(onPrev).toHaveBeenCalledTimes(1);
+  });
+
+  it('still supports the page model', () => {
+    const onPageChange = vi.fn();
+    const { container } = render(
+      <Pagination
+        label="Invoices"
+        previousLabel="Previous"
+        nextLabel="Next"
+        status="Page 2 of 9"
+        page={2}
+        pageCount={9}
+        onPageChange={onPageChange}
+      />,
+    );
+    fireEvent.click([...container.querySelectorAll('button')][1]!);
+    expect(onPageChange).toHaveBeenCalledWith(3);
+  });
+});
