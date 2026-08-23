@@ -13,12 +13,12 @@
 | npm の latest    | **0.11.0**（provenance 署名つき・`dist.shasum 9689f802`） |
 | `fleet-baseline` | `^0.11.0`                                                 |
 | テスト           | **736** / 46ファイル                                      |
-| open な PR       | **1本（#371）**                                           |
+| open な PR       | **0本**                                                   |
 | `npm run check`  | 🟢 全ステップ緑                                           |
 
 ## 🔴 いちばん上にあること
 
-1. **PR #371 が open**（0.12.0〜0.14.0 のリリースノート）。**0.14.0 の publish はこれを入れてから。** dry-run は**緑2回・実行済み**。
+1. 🔴 **0.14.0 が未 publish。** リリースノート（#371）は**マージ済み**、dry-run は**緑2回・実行済み**。⇒ **`gh workflow run publish.yml -f package=nene2-ui -f dry_run=false` が次の一手**（施主の手番）。
 2. **publish 後、`fleet-baseline` を `^0.14.0` へ**。⚠️ **pre-1.0 の caret は minor を固定する**ので `^0.11.0` は 0.14.0 を**積極的に除外する**。上げないと vault に届かない。
 3. ⚠️ **0.12.0〜0.14.0 は描画が変わる**（下記）。艦への周知が要る。
 
