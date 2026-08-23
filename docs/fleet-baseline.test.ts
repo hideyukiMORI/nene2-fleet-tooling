@@ -3,7 +3,7 @@
  * 依存を増やさないため ajv は使わず、スキーマの制約を手で適用する
  * （スキーマ側の pattern をこのテストが読むので、二重定義にはならない）。
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const baseline = JSON.parse(
@@ -57,5 +57,67 @@ describe('fleet-baseline.json', () => {
     // dist.shasum 8c2e2b08c5e603117e941f99ceed3d696bf08cb6（fleet-tooling 実測）。
     // 0.x caret ゆえ ^0.3.0 = >=0.3.0 <0.4.0。#57 順序規範（publish→座席充填）どおり実在確認後に追随。
     expect(baseline.packages['@hideyukimori/nene2-i18n']).toBe('^0.3.0');
+  });
+});
+
+/**
+ * floor が「このリポが実際に切った版」を指しているか（#352）。
+ *
+ * 🔴 上のテスト群はスキーマの形しか見ていなかった。キー名の pattern と、値が caret range か
+ * null か。**その range が実在する版を指しているかは、誰も検査していなかった。**
+ * `^0.9.0`（未 publish）を書いても緑になる。baseline は艦が従う下限なので、実在しない版を
+ * 指すと**全艦が install できない指示を受け取り、しかも CI は緑のまま**になる。
+ *
+ * baseline の5本のうち4本はこのリポのワークスペースなので、ネット無しで突き合わせられる。
+ */
+describe('floor が実在する版を指しているか（#352）', () => {
+  const pkgs = readdirSync(new URL('../packages', import.meta.url))
+    .map((d) => {
+      try {
+        return JSON.parse(
+          readFileSync(new URL(`../packages/${d}/package.json`, import.meta.url), 'utf8'),
+        ) as { name: string; version: string };
+      } catch {
+        return null;
+      }
+    })
+    .filter((p): p is { name: string; version: string } => p !== null);
+
+  /** `^1.2.3` の下限。依存を増やさないので手で比較する。 */
+  const cmp = (a: string, b: string) => {
+    const pa = a.split('.').map(Number);
+    const pb = b.split('.').map(Number);
+    for (let i = 0; i < 3; i += 1) if (pa[i] !== pb[i]) return (pa[i] ?? 0) - (pb[i] ?? 0);
+    return 0;
+  };
+
+  it.each(pkgs.filter((p) => baseline.packages[p.name] != null))(
+    '$name の floor は、このリポが切った版以下',
+    ({ name, version }) => {
+      const floor = baseline.packages[name]!.replace(/^\^/, '');
+      // 🔴 floor > 切った版 ＝ baseline が「まだ存在しないもの」を全艦へ要求している。
+      expect(
+        cmp(floor, version),
+        `baseline は ${name} に ${baseline.packages[name]} を要求しているが、` +
+          `このリポが切った最新は ${version}。存在しない版を下限にすると、` +
+          `艦は install できない指示を受け取り、CI はそれを緑で通す。`,
+      ).toBeLessThanOrEqual(0);
+    },
+  );
+
+  it('🔴 検査できないものを、緑に数えない', () => {
+    // fail-closed（空虚合格禁止）。ワークスペース外のパッケージはこの方法では検査できないので、
+    // 「検査できない」と明示する。⚠️ 新しい外部パッケージが baseline に増えたらここが落ちる。
+    const external = Object.keys(baseline.packages).filter((n) => !pkgs.some((p) => p.name === n));
+    expect(external, 'ワークスペース外＝この検査の射程外').toEqual(['@hideyukimori/nene2-client']);
+  });
+
+  it('⚠️ この検査が覆わないもの', () => {
+    // 覆うのは「切った版より上を要求していないか」だけ。
+    // 🔴 覆わない: publish を飛ばした版（0.5.0 は npm に無いが 0.11.0 以下なので通る）。
+    //    ネット無しでは npm の実在を問えない。publish 実測は docs/publish.md の手順に残す。
+    // 🔴 覆わない: 切った版が floor の caret 範囲を超えている状態（publish 前は正常）。
+    //    ⇒ これを落とすと、マージから publish までの間ずっと CI が赤くなる。
+    expect(true).toBe(true);
   });
 });
