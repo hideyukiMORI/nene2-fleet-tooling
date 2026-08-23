@@ -89,6 +89,24 @@ export const VALIDITY_CLASS = [
   'data-[warn]:bg-x-slot-control-warn-bg',
 ].join(' ');
 
+/**
+ * The minimum a control may be on a touch screen.
+ *
+ * 🔴 Deliberately NOT part of `CONTROL_CLASS`, though everything else here is. This has to
+ * go on the element that *is* the target, and for a checkbox that is the `<label>`, not the
+ * `<input>` — the box is `size-x-slot-choice-box` (16px square), so a minimum height on it
+ * produces a 44×16 rectangle instead of a bigger target. Folding it into the shared bundle
+ * would have applied it there, and the result would have looked like a styling bug rather
+ * than a mis-placed constraint.
+ *
+ * 🔴 It only works at all because the elements that carry it are flex containers. A
+ * `min-height` on an `inline-block` leaves the label at the top of the taller box; with
+ * `items-center` it stays centred. `Button` became one in 0.13.0 for an unrelated reason
+ * (an icon and its label sat on a shared baseline), and that turned out to be a
+ * prerequisite for this.
+ */
+export const TOUCH_CLASS = 'pointer-coarse:min-h-x-slot-control-touch-min';
+
 export const CONTROL_CLASS = `${FOCUS_CLASS} ${DISABLED_CLASS} ${VALIDITY_CLASS}`;
 
 /** Controls that are also clicked: buttons, switches, the toast dismiss. */

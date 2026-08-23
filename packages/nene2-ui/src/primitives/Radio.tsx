@@ -1,6 +1,6 @@
 import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react';
 import { cx } from '../lib/cx.js';
-import { CONTROL_CLASS } from '../lib/states.js';
+import { CONTROL_CLASS, TOUCH_CLASS } from '../lib/states.js';
 
 export interface RadioProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
   /** Localized label. Rendered inside the control's own `<label>`. */
@@ -47,6 +47,7 @@ export const Radio = forwardRef<HTMLInputElement, RadioProps>(function Radio(
   return (
     <label
       className={cx(
+        TOUCH_CLASS,
         'inline-flex cursor-pointer items-center gap-x-slot-choice-gap font-sans text-x-slot-choice-size text-x-slot-choice-fg',
         className,
       )}
