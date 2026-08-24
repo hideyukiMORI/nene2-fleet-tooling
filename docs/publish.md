@@ -65,6 +65,24 @@ nene2-ui         （未公開）
 > #84/#85 束（standards 1.2.0＋tokens 1.1.0）は **2026-07-18 publish 済み**（npm view 実測で latest 一致）。
 > 監査根拠: 未 publish 範囲は git tag / npm view の実測突き合わせ。数字・挙動は全て実測かテスト現物で裏取りし、未実装は未実装と明記する。
 
+### `@hideyukimori/nene2-tokens` 1.3.0（**minor — feat を含む**・#402）
+
+🔴 **1.2.0 の publish（2026-07-21）以降、版を上げないまま4コミットが入っていた**（#402 で実測）。
+**`npm view` と `package.json` は 1.2.0 で一致していた**ので、版だけを見る確認はこの形を通す。
+**34日ぶん**の変更がここで出る。
+
+| | 出所 |
+| --- | --- |
+| **feat: 取り残される `var(--old)` 参照を開示する** | #132 |
+| fix: 複合キーを拡張トークンと認識し、自分の生成物を壊さない | #134 / #88 |
+| fix: `exports` に `./package.json` を追加 | #182 |
+| test: 置換境界の不変条件を固定（#135 は再現せず） | #135 |
+
+触れた出荷物: `src/cli.ts` / `src/codemod.ts` / `src/codemod-map.ts` / `src/contract.ts` / `src/index.ts`。
+
+⚠️ **契約（`COLOR_KEYS` / `SHADOW_KEYS`）は変えていない。** AM-2 release gate は凍結記録と一致したままで、
+publish 経路でも `check:am2-gate` が fail-closed で見張る。
+
 ### `@hideyukimori/nene2-standards` 1.2.0（minor — feat を含む）✅ publish 済み（2026-07-18・#85 束）
 
 - feat: registries に **components-allowlist kind** 新設（#77）・**stylelintConfigFor** — 台帳由来 secondary の合成（#78・arm 実効部）・**init --scan が components-allowlist を emit**＋T-3/initCheck 追随（#79）
