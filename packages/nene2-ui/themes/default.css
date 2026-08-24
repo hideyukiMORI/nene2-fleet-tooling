@@ -389,6 +389,27 @@
   --text-x-slot-button-sm-size: inherit;
   --text-x-slot-choice-size: inherit;
 
+  /* ── Modal slots (0.16.0 / #392) ──────────────────────────────────────────────
+   * 🔴 Every one of these is reached only through a prop that defaults to off, so adding
+   * them changes nothing for a caller that passes none. The dialog itself is unchanged.
+   *
+   * The three widths choose Tailwind's own container steps rather than inventing lengths.
+   * nene-vault measured 432px and 520px in production; the fleet's own dialogs cluster at
+   * 560px (15 uses), 640 (6), 680 (4), 600 (4), 420 (4), 520 (3), 460 (3) — measured across
+   * each ship's `frontend/src` on 2026-08-25. `md`/`lg`/`xl` cover those clusters, and a product
+   * whose value is not on the scale overrides the slot rather than the scale (README §①). */
+  --container-x-slot-modal-sm: var(--container-md);
+  --container-x-slot-modal-md: var(--container-lg);
+  --container-x-slot-modal-lg: var(--container-xl);
+
+  --spacing-x-slot-modal-header-gap: var(--spacing-x-xs);
+  --font-weight-x-slot-modal-title: var(--font-weight-medium);
+  /* `inherit`, so the header title takes the dialog's own size unless a product says
+   * otherwise. There is no previous rendering to copy — the header is new — and picking a
+   * step here would decide type for every product that turns the header on. */
+  --text-x-slot-modal-title-size: inherit;
+  --color-x-slot-modal-close-fg: var(--color-text-muted);
+
   /* ── Shadow slots ─────────────────────────────────────────────────────────────
    * 🔴 Shadow was the one dimension that never got slots (#386). 0.9.0 moved "colour, weight
    * and the type scale" through slots and the enumeration in that sentence decided the
