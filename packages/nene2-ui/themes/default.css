@@ -382,7 +382,10 @@
    * `--spacing-x-slot-button-{,sm-}pad-{x,y}` is four slots, the font was one. nene-vault
    * shipped md=13px and sm=12px, and on the kit both came out at the same size — its
    * pagination "Previous" measured 12px in production against 13px on the migrated build.
-   * Defaults to `inherit` like its sibling, so nothing renders differently today. */
+   * Defaults to `inherit` like its sibling. That makes the two render alike ONLY while a
+   * consumer overrides both or neither: override `--text-x-slot-button-size` alone and `sm`
+   * keeps inheriting the surrounding body size, so `sm` comes out LARGER than `md` (#380).
+   * The pair is listed in `themes/slot-pairs.json` with `overrideTogether: true`. */
   --text-x-slot-button-sm-size: inherit;
   --text-x-slot-choice-size: inherit;
 
