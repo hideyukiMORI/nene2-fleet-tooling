@@ -15,7 +15,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANT_CLASS: Record<NonNullable<ButtonProps['variant']>, string> = {
-  primary: 'bg-x-slot-button-primary-bg text-x-slot-button-primary-fg',
+  primary: 'bg-x-slot-button-primary-bg text-x-slot-button-primary-fg shadow-x-slot-button-primary',
   secondary:
     'bg-x-slot-button-secondary-bg text-x-slot-button-secondary-fg border-x-slot-button-secondary-border',
   danger: 'bg-x-slot-button-danger-bg text-x-slot-button-danger-fg',
