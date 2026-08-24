@@ -65,6 +65,31 @@ nene2-ui         （未公開）
 > #84/#85 束（standards 1.2.0＋tokens 1.1.0）は **2026-07-18 publish 済み**（npm view 実測で latest 一致）。
 > 監査根拠: 未 publish 範囲は git tag / npm view の実測突き合わせ。数字・挙動は全て実測かテスト現物で裏取りし、未実装は未実装と明記する。
 
+### `@hideyukimori/nene2-standards` 2.3.0（**minor — feat を含む**・#402）
+
+🔴 **2.2.0 の publish（2026-07-29）以降、版を上げないまま10コミットが入っていた**（#402 で実測）。
+**26日ぶん。** `npm view` と `package.json` は 2.2.0 で一致していたので、版だけを見る確認はこの形を通す。
+
+| | 出所 |
+| --- | --- |
+| **feat: `reportOnly` — ゲート導入段の降格を配布側で持つ**（生成器同梱） | #189 |
+| **feat: `init --remeasure` — 既存 cap の引き下げ専用モード** | #176 |
+| fix: HTML 埋め込み `<style>` の不可視領域で green を返さない | #164 |
+| fix: 非 Tailwind 艦の Tailwind 依存ルールを「緩和」と報告しない | #163 |
+| fix: 制定した本人を罰しない — provider / テーマモジュールの誤検知 | #118 / #130 |
+| fix: root entry が optional peer の stylelint を静的に巻き込む | #189 |
+| fix: `gate-integrity` の red 文言が実装の約束を超えていた | #184 |
+| fix: `gate-integrity` の crashed が落ちた側を示さない | #193 |
+| fix: conformance の provenance が常に null | #182 |
+| `nene2-ui` 追加に伴う追随 | #294 |
+
+触れた出荷物: `src/checks/*`（`cli` / `gate-integrity` / `init-scan` / `run` / `scan-coverage` /
+`tailwind-presence`）・`src/configs/*`（`report-only` / `restrictions`）・`src/index.ts`・`src/selectors.ts`。
+
+🔴 **`#163` と `#164` は #402 の起票時点で OPEN のまま**だった。**修正は 2026-07-30 にマージ済み・未 publish**
+という状態が26日続いており、**艦が 2.2.0 を入れている限りその2件の欠陥は残っていた**。
+⚠️ **issue が open な理由が「未 publish だから」か「issue の射程が commit より広いから」かは測っていない。**
+
 ### `@hideyukimori/nene2-standards` 1.2.0（minor — feat を含む）✅ publish 済み（2026-07-18・#85 束）
 
 - feat: registries に **components-allowlist kind** 新設（#77）・**stylelintConfigFor** — 台帳由来 secondary の合成（#78・arm 実効部）・**init --scan が components-allowlist を emit**＋T-3/initCheck 追随（#79）
