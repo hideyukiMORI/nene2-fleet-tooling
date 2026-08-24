@@ -1,0 +1,28 @@
+{
+  "$comment": [
+    "サイズ違いで対になっているスロットの一覧（#380）。",
+    "消費者のテーマ検査が『片側だけ上書きされていないか』を見るための配布データ。",
+    "手で書かない —— themes/default.css から導出され、src/lib/slot-pairs.test.ts が突合する。",
+    "overrideTogether が true の対は、既定が両方 inherit のため片側だけ上書きすると段が反転する。"
+  ],
+  "pairs": [
+    {
+      "base": "--spacing-x-slot-button-pad-x",
+      "sm": "--spacing-x-slot-button-sm-pad-x",
+      "defaults": { "base": "var(--spacing-x-sm)", "sm": "var(--spacing-x-xs)" },
+      "overrideTogether": false
+    },
+    {
+      "base": "--spacing-x-slot-button-pad-y",
+      "sm": "--spacing-x-slot-button-sm-pad-y",
+      "defaults": { "base": "var(--spacing-x-xs)", "sm": "var(--spacing-x-3xs)" },
+      "overrideTogether": false
+    },
+    {
+      "base": "--text-x-slot-button-size",
+      "sm": "--text-x-slot-button-sm-size",
+      "defaults": { "base": "inherit", "sm": "inherit" },
+      "overrideTogether": true
+    }
+  ]
+}

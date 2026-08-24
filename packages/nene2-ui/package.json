@@ -12,7 +12,8 @@
       "default": "./dist/index.js"
     },
     "./themes/default.css": "./themes/default.css",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./themes/slot-pairs.json": "./themes/slot-pairs.json"
   },
   "files": [
     "dist",
