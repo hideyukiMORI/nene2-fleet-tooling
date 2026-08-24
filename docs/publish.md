@@ -65,6 +65,24 @@ nene2-ui         （未公開）
 > #84/#85 束（standards 1.2.0＋tokens 1.1.0）は **2026-07-18 publish 済み**（npm view 実測で latest 一致）。
 > 監査根拠: 未 publish 範囲は git tag / npm view の実測突き合わせ。数字・挙動は全て実測かテスト現物で裏取りし、未実装は未実装と明記する。
 
+### `@hideyukimori/nene2-i18n` 0.3.1（**patch**・#402）
+
+🔴 **0.3.0 の publish（2026-07-21）以降、版を上げないまま1コミットが入っていた**（#402 で実測）。
+**34日ぶん。** 中身は1件:
+
+| | 出所 |
+| --- | --- |
+| `exports` に `./package.json` を追加 | #182 |
+
+（`conformance` の provenance が常に null になる欠陥の是正で、4パッケージ横断で `./package.json` を
+公開面に足したもの。消費側が版を読めるようにするため。）
+
+🔴 **patch にした理由。** `exports` の追加は公開面の変更なので minor に見えるが、
+**`0.4.0` は `#171`（`./format` subpath 供給計画 — I18N-14 v1 の5関数）に予約済み**で、
+**先に別の中身で 0.4.0 を消費すると、条文・issue・板の「0.4.0 = `./format`」という参照が全部ずれる。**
+⇒ **番号は、それを指している文書の側にも属している。** 追加が `./package.json` の1本だけであり、
+**既存の import 経路を1つも変えない**ことから patch を採る。
+
 ### `@hideyukimori/nene2-standards` 1.2.0（minor — feat を含む）✅ publish 済み（2026-07-18・#85 束）
 
 - feat: registries に **components-allowlist kind** 新設（#77）・**stylelintConfigFor** — 台帳由来 secondary の合成（#78・arm 実効部）・**init --scan が components-allowlist を emit**＋T-3/initCheck 追随（#79）
