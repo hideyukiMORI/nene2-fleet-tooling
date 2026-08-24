@@ -83,6 +83,49 @@ nene2-ui         （未公開）
 ⇒ **番号は、それを指している文書の側にも属している。** 追加が `./package.json` の1本だけであり、
 **既存の import 経路を1つも変えない**ことから patch を採る。
 
+### `@hideyukimori/nene2-standards` 2.3.0（**minor — feat を含む**・#402）
+
+🔴 **2.2.0 の publish（2026-07-29）以降、版を上げないまま10コミットが入っていた**（#402 で実測）。
+**26日ぶん。** `npm view` と `package.json` は 2.2.0 で一致していたので、版だけを見る確認はこの形を通す。
+
+| | 出所 |
+| --- | --- |
+| **feat: `reportOnly` — ゲート導入段の降格を配布側で持つ**（生成器同梱） | #189 |
+| **feat: `init --remeasure` — 既存 cap の引き下げ専用モード** | #176 |
+| fix: HTML 埋め込み `<style>` の不可視領域で green を返さない | #164 |
+| fix: 非 Tailwind 艦の Tailwind 依存ルールを「緩和」と報告しない | #163 |
+| fix: 制定した本人を罰しない — provider / テーマモジュールの誤検知 | #118 / #130 |
+| fix: root entry が optional peer の stylelint を静的に巻き込む | #189 |
+| fix: `gate-integrity` の red 文言が実装の約束を超えていた | #184 |
+| fix: `gate-integrity` の crashed が落ちた側を示さない | #193 |
+| fix: conformance の provenance が常に null | #182 |
+| `nene2-ui` 追加に伴う追随 | #294 |
+
+触れた出荷物: `src/checks/*`（`cli` / `gate-integrity` / `init-scan` / `run` / `scan-coverage` /
+`tailwind-presence`）・`src/configs/*`（`report-only` / `restrictions`）・`src/index.ts`・`src/selectors.ts`。
+
+🔴 **`#163` と `#164` は #402 の起票時点で OPEN のまま**だった。**修正は 2026-07-30 にマージ済み・未 publish**
+という状態が26日続いており、**艦が 2.2.0 を入れている限りその2件の欠陥は残っていた**。
+⚠️ **issue が open な理由が「未 publish だから」か「issue の射程が commit より広いから」かは測っていない。**
+
+### `@hideyukimori/nene2-tokens` 1.3.0（**minor — feat を含む**・#402）
+
+🔴 **1.2.0 の publish（2026-07-21）以降、版を上げないまま4コミットが入っていた**（#402 で実測）。
+**`npm view` と `package.json` は 1.2.0 で一致していた**ので、版だけを見る確認はこの形を通す。
+**34日ぶん**の変更がここで出る。
+
+| | 出所 |
+| --- | --- |
+| **feat: 取り残される `var(--old)` 参照を開示する** | #132 |
+| fix: 複合キーを拡張トークンと認識し、自分の生成物を壊さない | #134 / #88 |
+| fix: `exports` に `./package.json` を追加 | #182 |
+| test: 置換境界の不変条件を固定（#135 は再現せず） | #135 |
+
+触れた出荷物: `src/cli.ts` / `src/codemod.ts` / `src/codemod-map.ts` / `src/contract.ts` / `src/index.ts`。
+
+⚠️ **契約（`COLOR_KEYS` / `SHADOW_KEYS`）は変えていない。** AM-2 release gate は凍結記録と一致したままで、
+publish 経路でも `check:am2-gate` が fail-closed で見張る。
+
 ### `@hideyukimori/nene2-standards` 1.2.0（minor — feat を含む）✅ publish 済み（2026-07-18・#85 束）
 
 - feat: registries に **components-allowlist kind** 新設（#77）・**stylelintConfigFor** — 台帳由来 secondary の合成（#78・arm 実効部）・**init --scan が components-allowlist を emit**＋T-3/initCheck 追随（#79）
