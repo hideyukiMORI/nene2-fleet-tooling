@@ -43,7 +43,25 @@
   --color-on-warn: oklch(21% 0.04 75);
   --color-danger-soft: oklch(95% 0.03 30);
 
+  /* The shadow scale. Three steps, chosen the way the spacing and radius scales were —
+   * measured from what the fleet already ships, not invented here (#386).
+   *
+   * 🔴 Until 0.15.0 this namespace held one value, and #386 was about to point slots at it.
+   * That is the 0.7.0 radius defect exactly: eight slots, one value, every structural check
+   * green on a layer that cannot express a choice. The test that caught it is
+   * `readme.test.ts` — "every namespace that has slots offers more than one step".
+   *
+   * Measured 2026-08-24 across the fleet's own `--shadow-*` definitions (sm: 9 ships,
+   * md: 9, lg: 7). Each step is the median of each component — offset, blur, alpha —
+   * kept to a single layer like `sm`, though four ships stack two.
+   *
+   * ⚠️ `focus` is a contract key (`SHADOW_KEYS`) with no step here, deliberately: the kit
+   * draws focus with `outline`, not a box-shadow ring, because `ring-*` is a box-shadow and
+   * a parent with `overflow: hidden` clips it (see `lib/states.ts`). A `--shadow-focus`
+   * would be a value with no user. */
   --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.06);
+  --shadow-md: 0 4px 16px oklch(0% 0 0 / 0.09);
+  --shadow-lg: 0 16px 44px oklch(0% 0 0 / 0.16);
 
   /* Typography. Until 0.3.0 the kit had none of these and the components carried
    * `font-medium` and a colour choice inline — which is a design value living outside this
@@ -367,6 +385,22 @@
    * Defaults to `inherit` like its sibling, so nothing renders differently today. */
   --text-x-slot-button-sm-size: inherit;
   --text-x-slot-choice-size: inherit;
+
+  /* ── Shadow slots ─────────────────────────────────────────────────────────────
+   * 🔴 Shadow was the one dimension that never got slots (#386). 0.9.0 moved "colour, weight
+   * and the type scale" through slots and the enumeration in that sentence decided the
+   * scope — so `Card` and `Toast` kept writing `shadow-sm` inline, on the same line as
+   * `rounded-x-slot-*` and `p-x-slot-*`, and `Button` could not carry a shadow at all.
+   * nene-vault lost its primary button's shadow on migration because of it.
+   *
+   * 🔴 Every default here is a copy of what the component rendered before this release, not
+   * a value someone thought was nice. `Button` had no shadow, so its default is `none`;
+   * `Card` and `Toast` wrote `shadow-sm`, so theirs point at the scale. A default that is
+   * anything other than the current rendering changes how every product already looks —
+   * and "the default is harmless" only holds while the default is that copy. */
+  --shadow-x-slot-button-primary: none;
+  --shadow-x-slot-card-raised: var(--shadow-sm);
+  --shadow-x-slot-toast: var(--shadow-sm);
 
   /* Sentinel for the consumer's build (#316). Zero-width, so applying it does nothing.
    * Its only job is to exist: `p-x-source-probe` appears nowhere except this kit's `dist`,

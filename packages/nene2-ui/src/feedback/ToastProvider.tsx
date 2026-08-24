@@ -100,7 +100,7 @@ export function ToastProvider({
           <div
             key={toast.id}
             className={cx(
-              'flex items-start gap-x-slot-toast-gap rounded-x-slot-toast border p-x-slot-toast-pad font-sans shadow-sm',
+              'flex items-start gap-x-slot-toast-gap rounded-x-slot-toast border p-x-slot-toast-pad font-sans shadow-x-slot-toast',
               TONE_CLASS[toast.tone],
             )}
           >

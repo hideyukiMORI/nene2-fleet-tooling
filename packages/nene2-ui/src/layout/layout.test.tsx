@@ -140,10 +140,10 @@ describe('Card', () => {
 
   it('is flat unless raised — a page of shadows reads as no shadows', () => {
     const { container: flat } = render(<Card>x</Card>);
-    expect(classesOf(flat.firstElementChild)).not.toContain('shadow-sm');
+    expect(classesOf(flat.firstElementChild)).not.toContain('shadow-x-slot-card-raised');
 
     const { container: lifted } = render(<Card raised>x</Card>);
-    expect(classesOf(lifted.firstElementChild)).toContain('shadow-sm');
+    expect(classesOf(lifted.firstElementChild)).toContain('shadow-x-slot-card-raised');
   });
 });
 
