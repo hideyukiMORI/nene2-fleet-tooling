@@ -39,6 +39,17 @@ const THREE_HEX = `@layer components {
 }
 `;
 
+/** 一時 repo の直下に index.html（埋め込み <style> 1ブロック）を置く（#164 タスク2）。 */
+function makeHtmlRepo(css: string): string {
+  const dir = mkdtempSync(path.join(tmpdir(), 'nene2-a4-html-'));
+  dirs.push(dir);
+  writeFileSync(
+    path.join(dir, 'index.html'),
+    `<!doctype html>\n<html><head><title>t</title>\n<style>\n${css}</style>\n</head><body><p>x</p></body></html>\n`,
+  );
+  return dir;
+}
+
 function frozenOf(
   baselines: Awaited<ReturnType<typeof scanLintBaselines>>,
   rule: string,
@@ -72,6 +83,43 @@ describe('scanLintBaselines — (rule,file) 実測（P2-A4）', () => {
     const clean = `@layer components {\n  .ok { opacity: 1; }\n}\n`;
     const baselines = await scanLintBaselines(makeRepo(clean));
     expect(baselines).toEqual([]);
+  });
+});
+
+describe('HTML 埋め込み <style> を測定経路に乗せる（#164 タスク2・postcss-html）', () => {
+  it('index.html の埋め込み CSS を (rule,index.html) で数える（color-no-hex は hex 個数と一致）', async () => {
+    const baselines = await scanLintBaselines(makeHtmlRepo(TWO_HEX));
+    const hex = baselines.find((b) => b.rule === 'color-no-hex');
+    expect(hex?.file).toBe('index.html');
+    expect(hex?.frozenCount).toBe(2);
+  });
+
+  it('空虚合格防止: 埋め込みの hex を1つ増やすと frozenCount が +1', async () => {
+    const two = await scanLintBaselines(makeHtmlRepo(TWO_HEX));
+    const three = await scanLintBaselines(makeHtmlRepo(THREE_HEX));
+    expect(frozenOf(three, 'color-no-hex')).toBe((frozenOf(two, 'color-no-hex') ?? 0) + 1);
+  });
+
+  it('legacy manifest は埋め込み CSS だけを測る（maxBytes はマークアップを含まない）・@layer components も拾う', async () => {
+    const dir = makeHtmlRepo(TWO_HEX);
+    const scan = await initScan(dir);
+    const entry = scan.legacyManifest.find((e) => e.path === 'index.html');
+    expect(entry).toBeDefined();
+    // 埋め込み CSS のバイト数（<style> の外＝<!doctype>…<p>x</p> は数えない）
+    expect(entry?.maxBytes).toBeLessThan(Buffer.byteLength(TWO_HEX) + 8);
+    expect(entry?.maxBytes).toBeGreaterThan(0);
+    expect(entry?.maxLines).toBeGreaterThan(0);
+    expect(scan.allowedClasses).toContain('.foo'); // トークンは `.` 付き（既存の css 経路と同じ形）
+  });
+
+  it('陽性対照: 埋め込みの無い HTML は走査対象にならない（lint-baseline 0 件）', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'nene2-a4-nohtml-'));
+    dirs.push(dir);
+    writeFileSync(
+      path.join(dir, 'index.html'),
+      '<!doctype html>\n<html><head></head><body></body></html>\n',
+    );
+    expect(await scanLintBaselines(dir)).toEqual([]);
   });
 });
 
