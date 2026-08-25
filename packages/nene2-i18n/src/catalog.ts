@@ -54,14 +54,28 @@ function resolveLookup(
   shape: 'flat' | 'nested',
 ): (catalog: MessageCatalog | NestedCatalog, key: string) => string | undefined {
   if (shape === 'nested') {
-    return (catalog, key) => {
-      let node: string | NestedCatalog | undefined = catalog;
-      for (const segment of key.split('.')) {
-        if (node === undefined || typeof node === 'string') return undefined;
-        node = node[segment];
+    // 🔴 キー自体にドットを含むノード（`audit.actions["document.voided"]`）に到達できること。
+    // 監査ログの action キーはバックエンドのイベント名＝データであり、i18n の都合で改名できない
+    // （vault #453・hub 裁定 2026-08-25・#419）。1セグメントずつ辿る形は原理的にそこへ届かない。
+    // 各ノードで「残りを最長から順に1つのキーとして試し、行き止まりなら後戻り」する。
+    // ドット付きキーと分割経路の両方が在るときは最長一致（リテラル）が勝つ。
+    // ドットを含まないキーは候補が1つしか無いので、従来と同じ経路を同じ順で辿る＝挙動不変。
+    const walk = (
+      node: string | NestedCatalog | undefined,
+      segs: string[],
+      i: number,
+    ): string | undefined => {
+      if (i === segs.length) return typeof node === 'string' ? node : undefined;
+      if (node === undefined || typeof node === 'string') return undefined;
+      for (let j = segs.length; j > i; j--) {
+        const candidate = segs.slice(i, j).join('.');
+        if (!Object.hasOwn(node, candidate)) continue;
+        const found = walk(node[candidate], segs, j);
+        if (found !== undefined) return found;
       }
-      return typeof node === 'string' ? node : undefined;
+      return undefined;
     };
+    return (catalog, key) => walk(catalog, key.split('.'), 0);
   }
   // flat: キー自体がドット付き文字列（`common.total`）＝完全一致で引く（探索しない）。
   return (catalog, key) => {
