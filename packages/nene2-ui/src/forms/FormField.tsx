@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from 'react';
 import { FieldContext } from './field-context.js';
+import { cx } from '../lib/cx.js';
 
 export interface FormFieldProps {
   /** id of the control this field labels; the control picks it up automatically. */
@@ -39,6 +40,8 @@ export interface FormFieldProps {
    * Folding the two together would mean the kit picking "*" for every locale.
    */
   requiredMarker?: ReactNode;
+  /** Composed after the kit's own classes (design principle 2). Lands on the outer `<div>`. */
+  className?: string;
   children: ReactNode;
 }
 
@@ -66,6 +69,7 @@ export function FormField({
   labelAdornment,
   required = false,
   requiredMarker,
+  className,
   children,
 }: FormFieldProps) {
   const errorId = error === null ? null : `${id}-error`;
@@ -78,7 +82,7 @@ export function FormField({
 
   return (
     <FieldContext.Provider value={value}>
-      <div className="flex flex-col gap-x-slot-field-gap">
+      <div className={cx('flex flex-col gap-x-slot-field-gap', className)}>
         <label
           htmlFor={id}
           className="font-sans font-x-slot-field-label text-x-slot-field-label-size text-x-slot-field-label"

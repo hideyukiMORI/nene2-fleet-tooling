@@ -15,6 +15,8 @@ interface PaginationBase {
    * component that only knew about pages could not produce the sentence the product needs.
    */
   status: string;
+  /** Composed after the kit's own classes (design principle 2). Lands on the `<nav>`. */
+  className?: string;
 }
 
 interface PagePagination extends PaginationBase {
@@ -61,7 +63,7 @@ export type PaginationProps = PagePagination | OffsetPagination;
  * the row jump, and moves the next-page button under the cursor that just clicked it.
  */
 export function Pagination(props: PaginationProps) {
-  const { label, previousLabel, nextLabel, status } = props;
+  const { label, previousLabel, nextLabel, status, className } = props;
 
   const atStart = props.page === undefined ? !props.canPrev : props.page <= 1;
   const atEnd = props.page === undefined ? !props.canNext : props.page >= props.pageCount;
@@ -72,7 +74,7 @@ export function Pagination(props: PaginationProps) {
     props.page === undefined ? props.onNext() : props.onPageChange(props.page + 1);
 
   return (
-    <nav aria-label={label}>
+    <nav aria-label={label} className={className}>
       <Stack direction="horizontal" gap="2xs" align="center">
         <Button variant="secondary" disabled={atStart} onClick={goPrev} aria-label={previousLabel}>
           {previousLabel}

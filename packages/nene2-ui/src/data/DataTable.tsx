@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { cx } from '../lib/cx.js';
 
 export interface DataColumn<Row> {
   /** Stable key, also used as the React key. */
@@ -18,6 +19,8 @@ export interface DataTableProps<Row> {
   rowKey: (row: Row) => string;
   /** Localized description of what the table contains. Becomes the table's caption. */
   caption: string;
+  /** Composed after the kit's own classes (design principle 2). Lands on the `<table>`. */
+  className?: string;
 }
 
 /**
@@ -32,9 +35,9 @@ export interface DataTableProps<Row> {
  * invoice list") is not obvious to someone arriving at it by keyboard from elsewhere on the
  * page. It is visually hidden, not absent.
  */
-export function DataTable<Row>({ columns, rows, rowKey, caption }: DataTableProps<Row>) {
+export function DataTable<Row>({ columns, rows, rowKey, caption, className }: DataTableProps<Row>) {
   return (
-    <table className="w-full border-collapse font-sans text-x-slot-table-fg">
+    <table className={cx('w-full border-collapse font-sans text-x-slot-table-fg', className)}>
       <caption className="sr-only">{caption}</caption>
       <thead>
         <tr>
