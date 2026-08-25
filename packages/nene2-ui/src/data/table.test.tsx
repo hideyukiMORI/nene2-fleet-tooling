@@ -289,3 +289,55 @@ describe('Pagination offset model', () => {
     expect(onPageChange).toHaveBeenCalledWith(3);
   });
 });
+
+describe('Pagination — size / stackOnMobile / statusPlacement（#421・0.17.0）', () => {
+  const base = {
+    label: 'p',
+    previousLabel: 'prev',
+    nextLabel: 'next',
+    status: '1 / 3',
+    page: 1,
+    pageCount: 3,
+    onPageChange: () => {},
+  };
+  const texts = (c: HTMLElement) =>
+    [...(c.querySelector('nav > div')?.children ?? [])].map((el) => el.textContent);
+
+  it('既定は 0.16.1 までと同じ — 中央に status・縦積みなし・Button は md のまま', () => {
+    const { container } = render(<Pagination {...base} />);
+    expect(texts(container)).toEqual(['prev', '1 / 3', 'next']);
+    const row = container.querySelector('nav > div')?.getAttribute('class') ?? '';
+    expect(row).not.toContain('max-sm:');
+    const btn = container.querySelector('button')?.getAttribute('class') ?? '';
+    expect(btn).toContain('px-x-slot-button-pad-x');
+    expect(btn).not.toContain('button-sm');
+  });
+
+  it('size は両方の Button へ届く', () => {
+    const { container } = render(<Pagination {...base} size="sm" />);
+    const buttons = [...container.querySelectorAll('button')];
+    expect(buttons).toHaveLength(2);
+    for (const b of buttons) expect(b.getAttribute('class')).toContain('px-x-slot-button-sm-pad-x');
+  });
+
+  it('stackOnMobile は max-sm: 接頭辞のクラスだけを足す', () => {
+    const { container } = render(<Pagination {...base} stackOnMobile />);
+    const added = (container.querySelector('nav > div')?.getAttribute('class') ?? '')
+      .split(/\s+/)
+      .filter((c) => c.includes('flex-col') || c.includes('items-stretch'));
+    expect(added.length).toBeGreaterThan(0);
+    for (const c of added) expect(c.startsWith('max-sm:')).toBe(true);
+  });
+
+  it.each([
+    ['start', ['1 / 3', 'prev', 'next']],
+    ['end', ['prev', 'next', '1 / 3']],
+  ] as const)(
+    'statusPlacement=%s は順序を変え、status は aria-current のまま',
+    (placement, expected) => {
+      const { container } = render(<Pagination {...base} statusPlacement={placement} />);
+      expect(texts(container)).toEqual([...expected]);
+      expect(container.querySelector('[aria-current="page"]')?.textContent).toBe('1 / 3');
+    },
+  );
+});

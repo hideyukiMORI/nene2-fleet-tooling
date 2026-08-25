@@ -1,5 +1,6 @@
 import { Button } from '../primitives/Button.js';
 import { Stack } from '../layout/Stack.js';
+import { cx } from '../lib/cx.js';
 
 interface PaginationBase {
   /** Localized name for the navigation region, e.g. "Invoice pages". */
@@ -17,6 +18,28 @@ interface PaginationBase {
   status: string;
   /** Composed after the kit's own classes (design principle 2). Lands on the `<nav>`. */
   className?: string;
+  /**
+   * Passed to both buttons. `sm` for a dense list footer. Omitted, the buttons keep the
+   * size they had — which is what every caller got before 0.17.0.
+   */
+  size?: 'md' | 'sm';
+  /**
+   * On a narrow viewport, stack the three parts vertically. Off by default: the same rule as
+   * `Modal`'s `sheetOnMobile` — a component that changes shape at a breakpoint is a decision.
+   */
+  stackOnMobile?: boolean;
+  /**
+   * Where the status sentence sits. `center` (default) is between the two buttons — what the
+   * component always drew. `start` puts it before both, `end` after both.
+   *
+   * 🔴 Not a free layout. Three positions is the whole space a row of two buttons and one
+   * sentence has, which makes it structure (design principle 3), not a value.
+   *
+   * There is deliberately no "hide when empty" prop: the kit cannot know a list is empty (the
+   * offset model carries no total), and `{total > 0 && <Pagination … />}` says it in the one
+   * place that does know. A prop would only move that line and pretend the kit decided.
+   */
+  statusPlacement?: 'start' | 'center' | 'end';
 }
 
 interface PagePagination extends PaginationBase {
@@ -63,7 +86,16 @@ export type PaginationProps = PagePagination | OffsetPagination;
  * the row jump, and moves the next-page button under the cursor that just clicked it.
  */
 export function Pagination(props: PaginationProps) {
-  const { label, previousLabel, nextLabel, status, className } = props;
+  const {
+    label,
+    previousLabel,
+    nextLabel,
+    status,
+    className,
+    size = 'md',
+    stackOnMobile,
+    statusPlacement = 'center',
+  } = props;
 
   const atStart = props.page === undefined ? !props.canPrev : props.page <= 1;
   const atEnd = props.page === undefined ? !props.canNext : props.page >= props.pageCount;
@@ -73,18 +105,52 @@ export function Pagination(props: PaginationProps) {
   const goNext = () =>
     props.page === undefined ? props.onNext() : props.onPageChange(props.page + 1);
 
+  const prev = (
+    <Button
+      key="prev"
+      variant="secondary"
+      size={size}
+      disabled={atStart}
+      onClick={goPrev}
+      aria-label={previousLabel}
+    >
+      {previousLabel}
+    </Button>
+  );
+  const current = (
+    <span key="status" aria-current="page" className="font-sans text-x-slot-pagination-fg">
+      {status}
+    </span>
+  );
+  const next = (
+    <Button
+      key="next"
+      variant="secondary"
+      size={size}
+      disabled={atEnd}
+      onClick={goNext}
+      aria-label={nextLabel}
+    >
+      {nextLabel}
+    </Button>
+  );
+  const order =
+    statusPlacement === 'start'
+      ? [current, prev, next]
+      : statusPlacement === 'end'
+        ? [prev, next, current]
+        : [prev, current, next];
+
   return (
     <nav aria-label={label} className={className}>
-      <Stack direction="horizontal" gap="2xs" align="center">
-        <Button variant="secondary" disabled={atStart} onClick={goPrev} aria-label={previousLabel}>
-          {previousLabel}
-        </Button>
-        <span aria-current="page" className="font-sans text-x-slot-pagination-fg">
-          {status}
-        </span>
-        <Button variant="secondary" disabled={atEnd} onClick={goNext} aria-label={nextLabel}>
-          {nextLabel}
-        </Button>
+      <Stack
+        direction="horizontal"
+        gap="2xs"
+        align="center"
+        // Every class carries the `max-sm:` prefix, so a wide viewport is untouched.
+        className={cx(stackOnMobile === true && 'max-sm:flex-col max-sm:items-stretch')}
+      >
+        {order}
       </Stack>
     </nav>
   );
