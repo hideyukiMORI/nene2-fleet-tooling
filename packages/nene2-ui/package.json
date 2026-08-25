@@ -1,6 +1,6 @@
 {
   "name": "@hideyukimori/nene2-ui",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "description": "NeNe fleet shared React UI kit — token-driven primitives on Tailwind v4 @theme. Components carry no design of their own; themes do.",
   "type": "module",
   "license": "MIT",

@@ -65,6 +65,36 @@ nene2-ui         （未公開）
 > #84/#85 束（standards 1.2.0＋tokens 1.1.0）は **2026-07-18 publish 済み**（npm view 実測で latest 一致）。
 > 監査根拠: 未 publish 範囲は git tag / npm view の実測突き合わせ。数字・挙動は全て実測かテスト現物で裏取りし、未実装は未実装と明記する。
 
+### `@hideyukimori/nene2-ui` 0.17.1（**patch — fix**・#439）
+
+**載せ替える前に読むもの: 無し。** 変わるのは1点で、`DataTable collapse="sm"` で**カード化した各セルの `::before` ラベルが
+accessible name に入らなくなる**。見た目は不変。
+
+| 変わるもの | 0.17.0 | 0.17.1 |
+| --- | --- | --- |
+| sm 未満・`collapse="sm"` の cell の accessible name | **"Name x"** — `::before` の `attr(data-label)` が名前に入り、`sr-only` の `th` と**見出しが二重に読まれる**（vault の本番 0.9.2・375px・ariaSnapshot 実測） | **"x"** — 列との対応は残してある `th scope="col"` が担う |
+| 見た目 | — | **不変** |
+
+🔴 **機構**: `content` の代替テキスト構文 `content: attr(data-label) / ""`。`/ ""` で生成テキストの代替テキストを空にすると、
+**描画はされるが支援技術には渡らない**。Tailwind では `max-sm:before:content-[attr(data-label)_/_'']`（`_` ＝空白）。
+`th` を `hidden` にする案は全ブラウザで構造を捨てるので採らない。
+
+**実測（fleet-tooling・2026-08-26 01:1x JST・`date`）**:
+
+- Tailwind **4.3.2** の生成 CSS（`compile` API 直叩き）: `--tw-content: attr(data-label) / ''; content: var(--tw-content);`
+  — `/` と `''` はそのまま通る（「キット側で確認できない」は誤りだった: tailwindcss は自艦の `node_modules` に居る）。
+- vault の `@tailwindcss/oxide` 4.3.2 の scanner を 0.17.1 の `dist` にかけた結果: `max-sm:before:content-[attr(data-label)_/_'']` を
+  抽出する（vault は `@source '…/nene2-ui/dist'` で拾っている）。
+- **Chromium 149（vault の Playwright 1.61.1・375×812・合成 HTML）で陽性対照つき**: 素の `attr(data-label)` → cell `"Name x"` ／
+  `/ ""` → cell `"x"`。`--tw-content` 変数経由でも同じ。`getComputedStyle(td,'::before').content` は `"Name" / ""`。
+
+⚠️ **Firefox は代替テキスト構文を実装していない（2026-08 時点）**ので、Firefox では **0.17.0 と同じく二重のまま**。退行ではなく現状維持。
+⚠️ **上の実測は合成 HTML。vault の本番 build での撮り直しは vault #469 の手順**（`getComputedStyle` と ariaSnapshot）。
+それまで vault 側について「直った」と書かない。
+
+**各艦でやること**: 0.17.0 → 0.17.1 は caret 内（`^0.17.0` が含む）。ただし **lock が止めるので `npm update @hideyukimori/nene2-ui`**
+（0.17.0 の「各艦でやること」と同じ。消費艦は vault の1艦）。
+
 ### `@hideyukimori/nene2-ui` 0.17.0（**minor — feat**・vault W1b の待ち分）
 
 **載せ替える前に読むもの: 「各艦でやること」の節（下）。** 中身はすべて**任意 prop**で、**既定は 0.16.1 までの描画と同じ**。

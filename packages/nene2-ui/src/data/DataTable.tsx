@@ -32,9 +32,17 @@ export interface DataTableProps<Row> {
    * `max-sm:` prefix, so a wide viewport is untouched.
    *
    * ⚠️ The visual header row is hidden (`sr-only`), not removed: the `<th scope="col">` stay
-   * in the document, so assistive tech still pairs a cell with its column. The `::before`
-   * label is presentational and is not read on its own. That the two do not double up is a
-   * live-lane check — jsdom does not lay out, and it is not asserted here.
+   * in the document, so assistive tech still pairs a cell with its column.
+   *
+   * 🔴 The `::before` label is drawn with the alternative-text form of `content`
+   * (`attr(data-label) / ""`) so that it stays out of the cell's accessible name. Without
+   * the `/ ""` the generated text *is* part of the name: every cell is read as "Name x"
+   * while the hidden `<th>` still supplies "Name" — the header twice (#439, vault's
+   * Playwright on production 0.9.2 at 375px). Measured in Chromium 149 for 0.17.1: plain
+   * `attr()` → cell "Name x"; with `/ ""` → cell "x", also through Tailwind's
+   * `--tw-content` indirection. Firefox does not implement the alternative-text form
+   * (2026-08), so there the label is still read twice — the same as 0.17.0, not a
+   * regression. jsdom does not compute pseudo-elements, so the test pins the class literal.
    */
   collapse?: 'sm';
 }
@@ -57,8 +65,10 @@ const CARD_TABLE = 'max-sm:block';
 const CARD_THEAD = 'max-sm:sr-only';
 const CARD_TBODY = 'max-sm:block';
 const CARD_ROW = 'max-sm:block max-sm:border-b max-sm:border-x-slot-table-border';
+// `content-[attr(data-label)_/_'']` — Tailwind's `_` is a space, so this is
+// `content: attr(data-label) / ''`: the label is drawn but has empty alternative text (#439).
 const CARD_CELL =
-  'max-sm:block max-sm:border-b-0 max-sm:text-left max-sm:before:block max-sm:before:content-[attr(data-label)] max-sm:before:font-x-slot-table-header max-sm:before:text-x-slot-table-header-fg';
+  "max-sm:block max-sm:border-b-0 max-sm:text-left max-sm:before:block max-sm:before:content-[attr(data-label)_/_''] max-sm:before:font-x-slot-table-header max-sm:before:text-x-slot-table-header-fg";
 
 export function DataTable<Row>({
   columns,
