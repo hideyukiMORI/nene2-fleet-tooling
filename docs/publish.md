@@ -65,6 +65,18 @@ nene2-ui         （未公開）
 > #84/#85 束（standards 1.2.0＋tokens 1.1.0）は **2026-07-18 publish 済み**（npm view 実測で latest 一致）。
 > 監査根拠: 未 publish 範囲は git tag / npm view の実測突き合わせ。数字・挙動は全て実測かテスト現物で裏取りし、未実装は未実装と明記する。
 
+### `@hideyukimori/nene2-ui` 0.17.0（**minor — feat**・vault W1b の待ち分）
+
+**載せ替える前に読むもの: 「各艦でやること」の節（下）。** 中身はすべて**任意 prop**で、**既定は 0.16.1 までの描画と同じ**。
+何も渡さない呼び出し側は1文字も変わらない。
+
+| Issue | 入るもの | 既定 |
+| --- | --- | --- |
+| #390 | `className` を `Badge` / `FormField` / `DataTable` / `Pagination` の4部品に（root に着地） | 渡さなければ無し |
+
+🔴 **`Modal` / `ConfirmDialog` / `ToastProvider` は `className` を受けない（意図）。** オーバーレイ／プロバイダで、
+外から任意クラスを載せると `<dialog>` の margin / top-layer の前提が崩れる——0.16.1（#417）がその実例。
+
 ### `@hideyukimori/nene2-ui` 0.16.1（**patch — fix**・#417）
 
 **載せ替える前に読むもの: 無し。** 変わるのは1点で、**Tailwind preflight の艦で dialog が中央に来る**ようになる。

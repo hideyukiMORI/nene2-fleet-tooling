@@ -258,6 +258,12 @@ wrap every choice in a `<div>` to say them.
 label, so the kit carries it). That was right and it left the reason in place. **Fixing what
 a report names is not the same as fixing what it is about.**
 
+Until 0.17.0 seven components accepted no `className` at all. Four of them now do — `Badge`,
+`FormField`, `DataTable`, `Pagination` — because a caller could not add a margin or a width
+without wrapping them. **Three still do not, on purpose**: `Modal`, `ConfirmDialog` and
+`ToastProvider` are overlays and a provider; a class landed on a `<dialog>` from outside can
+undo the margin and top-layer assumptions the kit relies on (0.16.1 is the case in point).
+
 ### 🔴 A palette that is missing a meaning
 
 The kit's theme defines **8 of the 28 colours** in the frozen Core Token Contract v1. That

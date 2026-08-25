@@ -17,6 +17,10 @@ import { Checkbox } from './Checkbox.js';
 import { Radio } from './Radio.js';
 import { Switch } from './Switch.js';
 import { Icon } from './Icon.js';
+import { Badge } from '../feedback/Badge.js';
+import { FormField } from '../forms/FormField.js';
+import { DataTable } from '../data/DataTable.js';
+import { Pagination } from '../data/Pagination.js';
 
 afterEach(() => {
   document.body.innerHTML = '';
@@ -144,6 +148,73 @@ describe('className lands on the root', () => {
     const { container } = render(node);
     const root = container.firstElementChild;
     expect(root?.getAttribute('class') ?? '').toContain('MARK');
+  });
+
+  // #390 — 0.16.1 まで className を受けなかった7部品のうち、受けるべき4つ。
+  // Modal / ConfirmDialog / ToastProvider は受けない側に置く（オーバーレイ／プロバイダ。
+  // dialog に外から任意クラスを載せると margin / top-layer の前提が崩れる——#417 がその実例）。
+  const LATE_CASES = [
+    [
+      'Badge',
+      <Badge key="bd" className="MARK">
+        x
+      </Badge>,
+    ],
+    [
+      'FormField',
+      <FormField key="ff" id="f" label="x" className="MARK">
+        <input id="f" />
+      </FormField>,
+    ],
+    [
+      'DataTable',
+      <DataTable
+        key="dt"
+        caption="c"
+        className="MARK"
+        columns={[{ key: 'a', header: 'A', cell: (r: { a: string }) => r.a }]}
+        rows={[{ a: '1' }]}
+        rowKey={(r) => r.a}
+      />,
+    ],
+    [
+      'Pagination',
+      <Pagination
+        key="pg"
+        label="p"
+        previousLabel="prev"
+        nextLabel="next"
+        status="1 / 1"
+        page={1}
+        pageCount={1}
+        onPageChange={() => {}}
+        className="MARK"
+      />,
+    ],
+  ] as const;
+
+  it.each(LATE_CASES)(
+    '%s (0.17.0) puts the caller’s class on its outermost element',
+    (_n, node) => {
+      const { container } = render(node);
+      const root = container.firstElementChild;
+      expect(root?.getAttribute('class') ?? '').toContain('MARK');
+    },
+  );
+
+  it('Pagination without className renders no empty class attribute', () => {
+    const { container } = render(
+      <Pagination
+        label="p"
+        previousLabel="prev"
+        nextLabel="next"
+        status="1 / 1"
+        page={1}
+        pageCount={1}
+        onPageChange={() => {}}
+      />,
+    );
+    expect(container.firstElementChild?.hasAttribute('class')).toBe(false);
   });
 
   it('Checkbox still lets the box itself be reached, separately', () => {
