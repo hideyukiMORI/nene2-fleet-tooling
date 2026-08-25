@@ -75,6 +75,7 @@ nene2-ui         （未公開）
 | #390 | `className` を `Badge` / `FormField` / `DataTable` / `Pagination` の4部品に（root に着地） | 渡さなければ無し |
 | #422 | `Badge` の `tone` に **`success` / `warn` / `info`**（3 → 6値）。パレットに `success` / `info` 系6色を追加（コントラスト実測つき） | `neutral`＝不変 |
 | #421 | `Pagination` に `size`（両 Button へ）/ `stackOnMobile`（`max-sm:` のみ）/ `statusPlacement`（`start` / `center` / `end`） | md・横並び・center＝不変 |
+| #424 | `DetailList` に `layout: 'stack' \| 'columns'`。`columns` は **md 未満で自動的に1列**（利用側は書かない） | `stack`＝不変 |
 
 🔴 **`Modal` / `ConfirmDialog` / `ToastProvider` は `className` を受けない（意図）。** オーバーレイ／プロバイダで、
 外から任意クラスを載せると `<dialog>` の margin / top-layer の前提が崩れる——0.16.1（#417）がその実例。
