@@ -97,3 +97,60 @@ describe('コア純度: 3 strategy の直交合成（nested × double × key-ech
     expect(t('audit_event.action.logout')).toBe('audit_event.action.logout'); // 可視 fallback
   });
 });
+
+describe('nested: キーにドットを含むノードへ到達する（#419・vault #453）', () => {
+  // 監査ログの action キー（document.voided）はバックエンドのイベント名＝データ。
+  // 改名させず、lookup 側が「残りを最長から1つのキーとして試す」ことで届ける。
+  const audit = {
+    common: { buttons: { close: '閉じる' } },
+    audit: {
+      actions: {
+        'document.voided': '文書を無効化',
+        'document.restored': { label: '文書を復元', description: '無効化を取り消した' },
+        document: { created: '文書を作成' },
+      },
+    },
+  };
+  const { t } = createTranslator(audit, { catalogShape: 'nested', onMissing: 'key-echo' });
+
+  it('① 従来の dot-path はそのまま引ける', () => {
+    expect(t('common.buttons.close')).toBe('閉じる');
+    expect(t('audit.actions.document.created')).toBe('文書を作成');
+  });
+
+  it('② 葉のキーにドットがあっても引ける', () => {
+    expect(t('audit.actions.document.voided')).toBe('文書を無効化');
+  });
+
+  it('③ ドット付きキーと分割経路の両方が在るときはリテラル（最長一致）が勝つ', () => {
+    const both = { a: { 'b.c': 'literal', b: { c: 'split' } } };
+    const { t: tt } = createTranslator(both, { catalogShape: 'nested' });
+    expect(tt('a.b.c')).toBe('literal');
+  });
+
+  it('④ 無ければ onMissing に委ねる（自分で沈黙 fallback しない）', () => {
+    expect(t('audit.actions.document.deleted')).toBe('audit.actions.document.deleted');
+    expect(() =>
+      createTranslator(audit, { catalogShape: 'nested' }).t('audit.actions.nope'),
+    ).toThrow('unknown MessageKey');
+  });
+
+  it('⑤ 中間ノードのキーにドットがあっても、その下を辿れる', () => {
+    expect(t('audit.actions.document.restored.label')).toBe('文書を復元');
+    expect(t('audit.actions.document.restored.description')).toBe('無効化を取り消した');
+  });
+
+  it('⑥ 最長一致が行き止まりでも、短い経路で解決できるなら後戻りして見つける', () => {
+    const trap = { a: { 'b.c': { x: '行き止まり' }, b: { c: { d: '正解' } } } };
+    const { t: tt } = createTranslator(trap, { catalogShape: 'nested' });
+    expect(tt('a.b.c.d')).toBe('正解');
+  });
+
+  it('⑦ 中間ノードで止まる key はオブジェクトを返さず onMissing', () => {
+    expect(t('audit.actions.document.restored')).toBe('audit.actions.document.restored');
+  });
+
+  it('⑧ prototype のキーは辿らない（hasOwn で引く）', () => {
+    expect(t('audit.constructor')).toBe('audit.constructor');
+  });
+});

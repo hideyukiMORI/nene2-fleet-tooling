@@ -126,7 +126,14 @@ export function Modal(props: ModalProps) {
       onClose={onClose}
       onCancel={onClose}
       className={cx(
-        'bg-x-slot-modal-bg text-x-slot-modal-fg border border-x-slot-modal-border rounded-x-slot-modal',
+        // 🔴 `m-auto` is what centres a `showModal()` dialog. The UA stylesheet already says
+        // `dialog { margin: auto }`, but Tailwind's preflight (`* { margin: 0 }`, author origin)
+        // erases it, so on every Tailwind ship the dialog sat at (0,0) — measured in nene-vault's
+        // production at 1280px, where the old hand-written modal had been at (380,119) (#417).
+        // The sheet classes below (`max-sm:mt-auto max-sm:mb-0`) always assumed this margin was
+        // there; saying it explicitly is the kit owning an assumption it had been borrowing.
+        // jsdom does not implement `showModal`, so the position itself is a live-lane check.
+        'm-auto bg-x-slot-modal-bg text-x-slot-modal-fg border border-x-slot-modal-border rounded-x-slot-modal',
         'p-x-slot-modal-pad font-sans backdrop:bg-x-slot-modal-scrim/50',
         size !== undefined && SIZE_CLASS[size],
         sheetOnMobile === true && SHEET_CLASS,

@@ -65,6 +65,26 @@ nene2-ui         （未公開）
 > #84/#85 束（standards 1.2.0＋tokens 1.1.0）は **2026-07-18 publish 済み**（npm view 実測で latest 一致）。
 > 監査根拠: 未 publish 範囲は git tag / npm view の実測突き合わせ。数字・挙動は全て実測かテスト現物で裏取りし、未実装は未実装と明記する。
 
+### `@hideyukimori/nene2-ui` 0.16.1（**patch — fix**・#417）
+
+**載せ替える前に読むもの: 無し。** 変わるのは1点で、**Tailwind preflight の艦で dialog が中央に来る**ようになる。
+
+| 変わるもの | 0.16.0 まで | 0.16.1 |
+| --- | --- | --- |
+| `Modal` の dialog の位置（desktop） | **左上 (0,0)** に張り付く（vault の本番・1280px で実測） | 中央 |
+
+🔴 **機構**: UA の `dialog { margin: auto }` を Tailwind v4 の preflight（`* { margin: 0 }`・author origin）が消す。
+キットの dialog は margin を自分で言っておらず、`sheetOnMobile` の `max-sm:mt-auto max-sm:mb-0` は
+**その margin:auto が在る前提**で書かれていた。⇒ dialog のクラス列に **`m-auto`** を足した。
+`max-sm:` 側は変えていない（狭い画面では `max-sm:mb-0` が勝つ）。
+
+⚠️ **jsdom は `showModal` を実装しない**ので、位置そのものはテストで固定できない。固定したのは
+「dialog が `m-auto` を自分で持つ」「sheet でも `m-auto` が残り、素の `m-0` 系を持たない」の2本。
+**中央に戻ったかは vault の live レーン**（nene-vault #441）**で 0.16.1 を当てて測る。** それまで「直った」と書かない。
+
+⚠️ **0.16.0 で `Modal` を載せた艦は上げること**（`^0.16.0` は 0.16.1 を含む。`npm update @hideyukimori/nene2-ui`）。
+上流が出るまでの橋渡し（vault の base 層の `dialog { margin: auto }` 1行）は **0.16.1 適用時に消す**（hub 裁定 08-25）。
+
 ### `@hideyukimori/nene2-ui` 0.16.0（**minor — feat**・#392）
 
 **載せ替える前に読むもの: 無し。描画は変わらない。**
@@ -88,6 +108,23 @@ nene2-ui         （未公開）
 
 🔴 **`aria-modal` を名乗って Esc も focus trap も無い実装の是正**が動機（vault の本番で再現）。
 この `Modal` は native `<dialog>` ＋ `showModal()` なので、**focus trap と Esc はブラウザが持つ**。
+
+### `@hideyukimori/nene2-i18n` 0.3.2（**patch — fix**・#419）
+
+**載せ替える前に読むもの: 無し。** `catalogShape: 'nested'` を使う艦（実測では vault のみ・JSON カタログの公認差異）にだけ効く。
+flat（既定）は1行も触っていない。
+
+| 変わるもの | 0.3.1 まで | 0.3.2 |
+| --- | --- | --- |
+| nested lookup で**キー自体にドットを含む**ノード（`audit.actions["document.voided"]`） | 到達できず onMissing（vault の監査ログで **Action 列が生キー表示**・vault #453） | 引ける |
+
+🔴 **機構**: 旧実装は `key.split('.')` を1セグメントずつ辿るだけで、キーにドットを含むノードには原理的に届かなかった。
+監査ログの action キーは**バックエンドのイベント名＝データ**なので改名させず（hub 裁定 08-25）、
+lookup 側が**各ノードで残りを最長から順に1つのキーとして試し、行き止まりなら後戻り**する形にした。
+ドット付きキーと分割経路の両方が在るときは**最長一致（リテラル）が勝つ**。葉だけでなく**中間ノードのドット**も辿れる。
+ドットを含まないキーは候補が1つしか無いので、従来と同じ経路を同じ順で辿る＝**挙動不変**。
+
+⚠️ **flat との違いは変えていない。** flat は今までどおり完全一致のみ（探索しない）。nested を使うかどうかは艦の選択のまま。
 
 ### `@hideyukimori/nene2-i18n` 0.3.1（**patch**・#402）
 
