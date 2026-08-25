@@ -200,6 +200,32 @@ lookup 側が**各ノードで残りを最長から順に1つのキーとして�
 ⇒ **番号は、それを指している文書の側にも属している。** 追加が `./package.json` の1本だけであり、
 **既存の import 経路を1つも変えない**ことから patch を採る。
 
+### `@hideyukimori/nene2-standards` 2.4.0（**minor — fix**・#164 タスク2）
+
+**載せ替える前に読むもの: この節。** 変わるのは **測定経路が HTML 埋め込み `<style>` を読むようになる**こと。
+
+| 変わるもの | 2.3.0 | 2.4.0 |
+| --- | --- | --- |
+| `init --scan` / lint-baseline / `--check` の走査対象 | `.css` のみ | `.css` ＋ **埋め込み `<style>` を持つ `.html`**（postcss-html で中の CSS だけを測る） |
+| `styling.scan-coverage`・台帳登録済みの HTML に埋め込みがある | **unknown**（測れない） | **green**（測れる） |
+| `styling.scan-coverage`・台帳外の HTML に埋め込みがある | red | red（不変） |
+| legacy-manifest の `maxLines` / `maxBytes`（`.html`） | — | **埋め込み CSS の量**（マークアップは数えない） |
+| 依存 | — | `postcss-html` ^2.0.0 が `dependencies` に増える（htmlparser2 / domhandler 等が同伴） |
+| 新 export | — | `enumerateMeasurableStyleSources(cwd)` |
+
+🔴 **機構**: stylelint の `customSyntax` には**モジュール名ではなく Syntax オブジェクト**を渡す。文字列だと消費艦側でモジュール解決され、
+本パッケージの依存へ届かない艦が出る（#189 と同じ経路の摩擦）。`init --scan` の `@layer components` 走査も同じ Document を歩く。
+
+**実測（fleet-tooling・2026-08-26 01:43 JST・`date`・concierge は読み取りのみ）**: `nene-concierge/public_html/admin` に 2.4.0 の `scanLintBaselines` を実走し、
+**07-29 concierge 実測・07-30 fleet 実測と内訳まで一致**: `app.css`（esbuild 生成物）**218** = no-unlayered-css 106 / selector-max-specificity 55 /
+color-no-hex 43 / function-disallowed-list 14 ／ `index.html` の埋め込み **487** = color-no-hex 409 / function-disallowed-list 49 / no-unlayered-css 27 /
+selector-max-id 1 / selector-max-specificity 1。legacy-manifest は `index.html` = 978 行（prettier 整形後）/ 51,292 bytes（埋め込み CSS のみ）。
+
+⚠️ **上げると挙動が変わる艦**: 台帳に `.html` を legacy-manifest 登録している艦は scan-coverage が unknown → green になり、
+**その HTML の (rule,index.html) が lint-baseline に新しく現れる**。登録していなければ `init --check` の ratchet は登録キーしか見ないので落ちない。
+実艦では concierge が該当するが **registries.jsonc 未導入（ゲート未導入）**〔2026-08-26 実測〕なので、いま壊れる艦は無い。
+⚠️ 検出（あるか無いか）は正規表現・測定は postcss-html。コメント内の `<style` は検出側が過検出しうる（fail-closed 側）。
+
 ### `@hideyukimori/nene2-standards` 2.3.0（**minor — feat を含む**・#402）
 
 🔴 **2.2.0 の publish（2026-07-29）以降、版を上げないまま10コミットが入っていた**（#402 で実測）。

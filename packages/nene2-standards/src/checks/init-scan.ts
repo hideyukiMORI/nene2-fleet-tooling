@@ -8,9 +8,14 @@
  *   （conformance styling green 条件「再走査で未分類 selector 0」の入力）。
  * - maxLines は pinned prettier 整形後の行数（AM-14/AM-25' — 整形非決定下の行数に正準性はない）・
  *   maxBytes はソース実バイト数。
+ * - 走査対象は `.css` ＋ **埋め込み `<style>` を持つ `.html`**（#164 タスク2）。HTML は postcss-html で
+ *   読み、**中の CSS だけ**を測る（maxLines / maxBytes とも埋め込み CSS の量。マークアップは数えない）。
+ *   lint も同じ経路（stylelint `customSyntax`）で、(rule,file) の file は `.html` のパスになる。
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+
+import type { Document, Root } from 'postcss';
 
 import baseStylelintConfig from '../stylelint/index.js';
 import { classTokens, layerParamsInclude } from '../stylelint/helpers.js';
@@ -21,7 +26,7 @@ import type {
   RegistriesDocument,
   RegistryEntry,
 } from '../registries/schema.js';
-import { enumerateStyleSources } from './scan-coverage.js';
+import { enumerateMeasurableStyleSources } from './scan-coverage.js';
 
 export interface InitScanResult {
   /** @layer components 内の class トークン（完全一致列挙の初期値） */
@@ -54,7 +59,7 @@ const LINT_BASELINE_EXCLUDED_RULES = new Set<string>([
  * frozenCount>0 のもののみ返す（green は entry 0＝AM-14 と一貫・F4）。
  */
 export async function scanLintBaselines(cwd: string): Promise<InitScanResult['lintBaselines']> {
-  const sources = enumerateStyleSources(cwd).filter((p) => p.endsWith('.css'));
+  const sources = enumerateMeasurableStyleSources(cwd);
   if (sources.length === 0) return [];
   const stylelint = (await import('stylelint')).default;
   // plugin.js は `stylelint` を静的 import するので、ここでも遅延読み込みする。
@@ -62,10 +67,28 @@ export async function scanLintBaselines(cwd: string): Promise<InitScanResult['li
   // eslint だけ配線する艦で ERR_MODULE_NOT_FOUND になる（#189 摩擦1）。
   const stylelintPlugins = (await import('../stylelint/plugin.js')).default;
   const runnable = { ...baseStylelintConfig, plugins: stylelintPlugins };
-  const { results } = await stylelint.lint({
-    files: sources.map((rel) => path.join(cwd, rel)),
-    config: runnable,
-  });
+  const abs = (rel: string): string => path.join(cwd, rel);
+  const css = sources.filter((p) => p.endsWith('.css'));
+  const html = sources.filter((p) => p.endsWith('.html'));
+  type LintResult = Awaited<ReturnType<typeof stylelint.lint>>['results'][number];
+  const results: LintResult[] = [];
+  if (css.length > 0) {
+    results.push(...(await stylelint.lint({ files: css.map(abs), config: runnable })).results);
+  }
+  if (html.length > 0) {
+    // HTML 埋め込み <style> は postcss-html で読む（#164 タスク2）。customSyntax にはモジュール名
+    // でなく Syntax オブジェクトを渡す — 文字列だと消費艦側でモジュール解決され、本パッケージの
+    // 依存（postcss-html）へ届かない艦が出る（#189 と同じ経路の摩擦）。
+    const postcssHtml = (await import('postcss-html')).default;
+    results.push(
+      ...(
+        await stylelint.lint({
+          files: html.map(abs),
+          config: { ...runnable, customSyntax: postcssHtml },
+        })
+      ).results,
+    );
+  }
   const counts = new Map<string, number>();
   for (const r of results) {
     const rel = path.relative(cwd, r.source ?? '');
@@ -92,7 +115,7 @@ async function formattedLineCount(source: string): Promise<number> {
 
 export async function initScan(cwd: string): Promise<InitScanResult> {
   const postcss = (await import('postcss')).default;
-  const sources = enumerateStyleSources(cwd).filter((p) => p.endsWith('.css'));
+  const sources = enumerateMeasurableStyleSources(cwd);
   const allowed = new Set<string>();
   const legacyManifest: InitScanResult['legacyManifest'] = [];
   const advisories: string[] = [];
@@ -101,10 +124,25 @@ export async function initScan(cwd: string): Promise<InitScanResult> {
     const abs = path.join(cwd, rel);
     const raw = readFileSync(abs);
     const text = raw.toString('utf8');
+    // 測る CSS 本文。`.css` はファイルそのもの、`.html` は埋め込み <style> の中身だけ（#164 タスク2）。
+    let cssText = text;
+    let cssBytes = raw.byteLength;
 
     // @layer components の class トークン収集（許可リスト初期値）
     try {
-      const root = postcss.parse(text, { from: abs });
+      let root: Root | Document;
+      if (rel.endsWith('.html')) {
+        const postcssHtml = (await import('postcss-html')).default;
+        // Syntax 型では parse が optional。postcss-html は必ず持つが、型どおり無ければ fail-closed に落とす。
+        if (postcssHtml.parse === undefined) throw new Error('postcss-html に parse が無い');
+        root = postcssHtml.parse(text, { from: abs });
+        if (root.type === 'document') {
+          cssText = root.nodes.map((n) => n.toString()).join('\n');
+          cssBytes = Buffer.byteLength(cssText, 'utf8');
+        }
+      } else {
+        root = postcss.parse(text, { from: abs });
+      }
       root.walkAtRules('layer', (at) => {
         if (!layerParamsInclude(at.params, 'components')) return;
         at.walkRules((rule) => {
@@ -118,8 +156,8 @@ export async function initScan(cwd: string): Promise<InitScanResult> {
 
     // legacy manifest 初期値（テーマ正準配置・エントリ css 以外）
     if (!CANONICAL_NON_LEGACY.some((re) => re.test(rel))) {
-      const maxLines = await formattedLineCount(text);
-      const entry = { path: rel, maxLines, maxBytes: raw.byteLength };
+      const maxLines = await formattedLineCount(cssText);
+      const entry = { path: rel, maxLines, maxBytes: cssBytes };
       legacyManifest.push(entry);
       if (maxLines > ADVISORY_LINES) {
         advisories.push(

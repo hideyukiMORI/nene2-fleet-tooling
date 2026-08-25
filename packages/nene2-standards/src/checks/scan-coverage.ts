@@ -82,15 +82,16 @@ export function enumerateStyleSources(cwd: string): string[] {
 }
 
 /**
- * HTML 埋め込み `<style>` の実測（#164）。
+ * HTML 埋め込み `<style>` の検出（#164 タスク1）。
  *
- * 現行の**測定経路**（`init --scan` / lint-baseline / run）は `.css` だけを見る。一方 scan-coverage は
+ * 2.3.x までの**測定経路**（`init --scan` / lint-baseline / `--check`）は `.css` だけを見ていた。一方 scan-coverage は
  * `index.html` を `CANONICAL_ALLOWED` で**無条件に allowed** にしていたため、
  * **埋め込み `<style>` が台帳にも lint にも載らないまま green** になっていた
  * （＝不可視領域があるのに green・G-6 の現物）。実在例: concierge
  * `public_html/admin/index.html`（52KB・`<style>` 1ブロック・fleet 実測 2026-07-30）。
  *
- * 依存を増やさずに済む範囲で検出する（走査対象としての抽出＝postcss-html 経路は別作業）。
+ * ここは依存なしの粗い検出（正規表現）で、**あるか無いか**だけを決める。中身の測定は
+ * `enumerateMeasurableStyleSources` が選んだファイルを init-scan が postcss-html で読む（#164 タスク2）。
  * コメント内の `<style` は拾いうるが、**過検出は fail-closed 側に倒れる**ので許容する
  * （見落として green を返すより安全 — 逆向きの誤りは G-6 違反になる）。
  */
@@ -111,6 +112,19 @@ export function htmlEmbeddedStyle(cwd: string, rel: string): { blocks: number; l
     lines += body.split('\n').length;
   }
   return { blocks, lines };
+}
+
+/**
+ * **測定経路**（`init --scan` / lint-baseline / `--check`）の走査対象（#164 タスク2）:
+ * `.css` の全件＋**埋め込み `<style>` を持つ `.html`**。埋め込みの無い HTML は測るものが無いので含めない。
+ * scss/sass/less/styl は scan-coverage が red にする対象で、測定経路には乗せない。
+ * 中身の読み方（postcss-html）は init-scan 側。
+ */
+export function enumerateMeasurableStyleSources(cwd: string): string[] {
+  return enumerateStyleSources(cwd).filter(
+    (rel) =>
+      rel.endsWith('.css') || (rel.endsWith('.html') && htmlEmbeddedStyle(cwd, rel).blocks > 0),
+  );
 }
 
 /** `cwd` 配下の HTML のうち、埋め込み `<style>` を持つもの（#164 の不可視領域の列挙）。 */
@@ -155,10 +169,6 @@ export function checkScanCoverage(options: ScanCoverageOptions): KeyState {
     }
   }
 
-  // 測定経路が `.css` だけを見るため、**台帳に載っていても実測できない**領域（#164）。
-  // 「登録されていない」（= red）と「登録されているが測れない」（= unknown）は別物なので分ける。
-  const unmeasurable: string[] = [];
-
   const sources = enumerateStyleSources(cwd);
   for (const rel of sources) {
     if (BANNED_EXT.test(rel)) {
@@ -167,18 +177,14 @@ export function checkScanCoverage(options: ScanCoverageOptions): KeyState {
     }
     const registered = manifestPaths.includes(rel) || widgetEntryFiles.includes(rel);
     // 🔴 HTML は**埋め込み `<style>` を持つ限り無条件 allowed にしない**（#164）。
-    // 正準配置（index.html）であっても、中の CSS は台帳にも lint にも載らない。
+    // 正準配置（index.html）であっても、中の CSS は台帳（legacy manifest）に載って初めて allowed。
+    // 登録済みなら測定経路（init-scan・postcss-html）が cap と違反数を実測する＝不可視領域ではない。
     const embedded = rel.endsWith('.html') ? htmlEmbeddedStyle(cwd, rel) : { blocks: 0, lines: 0 };
     if (embedded.blocks > 0) {
       if (!registered) {
         details.push(
           `HTML 埋め込み <style> が台帳外（${embedded.blocks}ブロック・約${embedded.lines}行）: ${rel}` +
             ` — 正準配置でも中の CSS は themes / 許可リスト / legacy manifest のいずれにも載らない（#164）`,
-        );
-      } else {
-        // 台帳には載っているが、`.css` しか見ない測定経路では cap も違反数も実測できない。
-        unmeasurable.push(
-          `${rel}（${embedded.blocks}ブロック・約${embedded.lines}行）— 台帳登録済みだが測定経路が .css のみ`,
         );
       }
       continue;
@@ -190,18 +196,5 @@ export function checkScanCoverage(options: ScanCoverageOptions): KeyState {
   }
 
   if (details.length > 0) return { state: 'red', details };
-  // 🔴 不可視領域があるなら green ではなく unknown（fail-closed・G-6）。
-  // 「red が無い」を「全部見えた」と読ませない。
-  if (unmeasurable.length > 0) {
-    return {
-      state: 'unknown',
-      reason: 'not-installed',
-      details: [
-        'HTML 埋め込み <style> を実測できる走査経路が未実装のため green を返さない（#164・G-6）:',
-        ...unmeasurable,
-        '解消条件: postcss-html 経由の抽出を測定経路（init --scan / lint-baseline）に追加すること。',
-      ],
-    };
-  }
   return { state: 'green' };
 }
