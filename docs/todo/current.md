@@ -1,25 +1,26 @@
 # 現況（生きた引き継ぎ）
 
 > **これは「いまの状態」を書く1枚**（現在形・上書き）。その日の記録は `docs/daily/`（過去形・追記しない）。
-> **最終更新: 2026-08-26 01:2x〔`date` 実測〕**
+> **最終更新: 2026-08-26 02:0x〔`date` 実測〕**
 
 ## いまどこ
 
-**`nene2-ui` は、載せ替えた艦から出た差分に一通り応えた状態。** vault の実ブラウザ突合から出た分はキット側に着地し、**影の次元がスロット化された**ことで「スロット化されていない次元」が消えた。
+**`nene2-ui` は、載せ替えた艦から出た差分に一通り応えた状態。** vault の実ブラウザ突合から出た分はキット側に着地し（0.17.1 は vault の**本番まで**検収済み）、**影の次元がスロット化された**ことで「スロット化されていない次元」が消えた。
+**`nene2-standards` 2.4.0 で測定経路が HTML 埋め込み `<style>` を読む**ようになり、#164（G-6 の現物）は4タスクとも着地して close。
 
-**4パッケージとも main と npm が一致している**〔2026-08-26 01:19 `npm view` 実測〕。
+**4パッケージとも main と npm が一致している**〔2026-08-26 01:54 `npm view` 実測〕。
 
 | パッケージ | `main` | npm の latest | `fleet-baseline` の floor | タグ以降の未リリース |
 | --- | --- | --- | --- | ---: |
 | `nene2-tokens` | 1.3.0 | **1.3.0** | `^1.1.0` | **0件** |
-| `nene2-standards` | 2.3.0 | **2.3.0** | `^2.1.1` | **0件** |
+| `nene2-standards` | 2.4.0 | **2.4.0** | `^2.1.1` | **0件** |
 | `nene2-i18n` | 0.3.2 | **0.3.2** | `^0.3.0` | **0件** |
 | `nene2-ui` | 0.17.1 | **0.17.1** | `^0.14.0` | **0件** |
 
 |                  | 値〔すべて自艦で実測〕 |
 | ---------------- | ---------------------- |
-| テスト           | **797** / 50ファイル   |
-| open な PR       | **0本**                |
+| テスト           | **802** / 50ファイル   |
+| open な PR       | **0本**（本文書を運ぶ PR を除く） |
 | `npm run check`  | 🟢 EXIT=0（8ステップ） |
 
 🔴 **floor が npm より低いのは正しい。** 理由は「採らないと決めたもの」の節。
@@ -30,17 +31,10 @@
 
 ## 🔴 いちばん上にあること
 
-0. **#439 は `nene2-ui` 0.17.1 で出ている**〔2026-08-26 01:19 `npm view` 実測・shasum `374a1eac`・公開 tarball を pack して sha1 一致と dist 内の
-   `max-sm:before:content-[attr(data-label)_/_'']` も実測〕。PR #444（Closes #439・施主 GO はこの会話で直接）。
-   Chromium 149（vault の Playwright 1.61.1・375×812・合成 HTML・陽性対照つき）で cell の accessible name から `::before` が外れる
-   （素の `attr()` → "Name x"／`/ ''` → "x"）。**Firefox は代替テキスト構文未実装で二重のまま＝退行ではなく現状維持。**
-   🟢 **vault のローカル build で検収 OK**〔伝聞・vault 01:2x・原文は #439 のコメント〕: `npm update` で lock 0.17.1・Chromium 149・375×812・
-   `/demo/standard` の一覧で `getComputedStyle(td,'::before').content` = `"Transaction Date" / ""`、ariaSnapshot の cell が
-   `"2026-08-22"`（0.17.0 では `"Transaction Date 2026-08-22"`）・batch9 25/25・vault 側の `className` と共存して崩れなし。
-   🔴 **本番はまだ**——vault が 0.9.2.1 として配備した後に同じ測定を撮って **vault #469** を閉じる。それまで「本番で直った」と書かない。
-   🔴 **訂正**: 前版の「Tailwind の arbitrary value が何を生成するかはキット側で確認できない（Tailwind をビルドしない）」は
-   **誤りだった**。tailwindcss 4.3.2 は自艦の `node_modules` に居る（standards の `eslint-plugin-better-tailwindcss` の依存）。
-   `compile` API を直接呼べば `--tw-content: attr(data-label) / ''` が 30 秒で出た。⇒ 型10（下）。
+0. **#439 は `nene2-ui` 0.17.1 で出て、vault の本番まで検収済み**〔publish は 2026-08-26 01:19 `npm view` 実測・shasum `374a1eac`／
+   検収は伝聞: vault ローカル build 01:2x → 本番 0.9.2.1 配備 01:32:50・ariaSnapshot 同一・vault #469 close・原文は #439 のコメント2本〕。
+   **Firefox は代替テキスト構文未実装で二重のまま＝退行ではなく現状維持（未測定）。**
+   🔴 **訂正**: 前版の「Tailwind の生成結果はキット側で確認できない」は**誤りだった**（tailwindcss 4.3.2 は自艦 `node_modules` に居る）。⇒ 型10。
 1. **艦の実インストール版の確認**。hub が全艦通知（`_work/handoff-fleet-2026-08-25-npm-releases-notice.md`・板 L128・due 08-27）を
    出している。とくに `nene2-standards` は **26日ぶんの修正が届いていなかった**ので、**上げると挙動が変わる艦がある**。
    その後に **`nene2-ui` 0.16.1**（Modal の位置・vault #441）と **`nene2-i18n` 0.3.2**（nested lookup のドット付きキー・vault #453）が
@@ -57,9 +51,16 @@
    （`::before` のラベルがセル名に入り、sr-only の見出し行も残る）。表示・機能は正常。
    `Card` の `as`（#394）と部品→スロット配布（#393・hub の台帳粒度待ち）は**入っていない**。
    ⚠️ **積み上げ PR は squash と組み合わせない**（base 枝の削除で GitHub が後続 PR を自動 CLOSE・reopen 不可。日報 08-25-3）。次は1本ずつ main 直下で。
-5. **`nene2-standards` の自艦作業が1つ栓抜け**: **#164 タスク2/3**（`enumerateStyleSources` へ postcss-html・Wave 表の再実測）は
-   「2.3.0 publish 後」に置かれていたので、いま着手できる。**#163 の残**（`nene2/style-prop-css-vars-only` が非 Tailwind 艦で外れる）は
+5. **`nene2-standards` 2.4.0 が出ている**〔2026-08-26 01:54 `npm view` 実測・shasum `a63bb8dd`〕: #164 タスク2（測定経路に HTML 埋め込み `<style>`・postcss-html）。
+   **上げると変わる艦** = 台帳に `.html` を legacy-manifest 登録している艦（scan-coverage が unknown → green・その HTML の (rule,index.html) が lint-baseline に現れる）。
+   実艦で該当しうる concierge は **registries.jsonc 未導入**〔実測〕なので、いま壊れる艦は無い。
+   実艦陽性対照: concierge `public_html/admin` を読み取りのみで実走 → `app.css` 218（106/55/43/14）・`index.html` 487（409/49/27/1/1）＝ 07-29 / 07-30 と内訳まで一致。
+   Wave 表の訂正は xi-workspace PR #2（hub マージ `523ab22`）。**#163 の残**（`nene2/style-prop-css-vars-only` が非 Tailwind 艦で外れる）は
    断片の分割＝配布 API 変更で **hub 裁定待ち**。非 Tailwind 4艦には赤が1行残る。
+6. **C8 は完了**（xi-workspace PR #1・hub 検収合格・`97d2feb`・板 L96 done）。`seed-all.py` は tracked な `.mcp.json` を書かない＋`--dry-run`。
+   **本走は hub が「次に handles.tsv を触る時」**。vault の作業木に残る `.mcp.json` の 12/1 差分は **vault の手**。
+7. 🔴 **`_work` main の `3ca8b8e`（2026-08-26 01:49）は自艦の誤コミット**——hub の未コミット変更（advice / board / done）を私の日報メッセージで commit・push した。
+   **hub 裁定＝据え置き**（内容は正しく欠損なし・共有 main の書き換えは他者の pull を壊す）。構造原因は xi-workspace issues #128（規約化は施主判断）。⇒ 型11。
 
 ## ⚠️ 0.11.0 → 0.14.0 で見た目が変わる4点
 
@@ -82,11 +83,13 @@
 ⇒ **`className` は「使われていない」のではなく「新しい意味で既に依存されている」。**
 **次にこの受け口を変えると壊れる**ので、危険度の判定は「触られていないので安全」ではなく「依存されている」側で読むこと。
 
-## 今日の順（2026-08-26・残り）
+## 次の順（2026-08-26・残り）
 
-1. **C8**: `_work/tools/chat-relay/seed-all.py` ＋ `rina-aliases.sh`。`.mcp.json` が追跡されているリポ（vault）は書き換えず `<handle>.mcp.json` を生成して `--mcp-config` で渡す（hub 推し）。`_work` は **`hideyukiMORI/xi-workspace` の作業木**なので枝→PR（hub が検収）。board L100。
-2. **#164 タスク2/3**（standards・postcss-html・Wave 表再実測）。栓は抜けている。
-3. **#410 の18件判定**（hub 報告 §3 の「merged PR が参照しているのに open」候補。#163/#164 は意図的 open・残りは本文を読んで単発のものだけ閉じる）。
+**#410 は判定済み・close**〔02:0x〕: 候補18件（hub の数と一致）→ close 4（#136 #302 #391 #410）・理由コメント 5（#176 #289 #389 #393 #394）・触らず 9。閉じ忘れは **2件**（#302 #391）だけだった。open Issue **72 → 67**。
+
+1. **#289 の陽性対照4項目**（notify-failure・`workflow_dispatch` で `simulate_failure=true`・Issue が1本立つので時間帯を選ぶ）。
+2. **#389 の README 旗艦例**（存在しない `--spacing-x-slot-card-pad` を実在スロットへ・`readme.test.ts` に「例のスロット名は `slot-pairs.json` に在る」を足す）。`src/index.ts:58` の古いコメント（Textarea 未出荷）も同じ PR で。
+3. その後は「未着手」の節（型スケール 13px・契約28色の未定義・`className` 7部品）から、判断が要らないものを拾う。
 
 🔴 **PR は1本ずつ main 直下で出す。積み上げ PR は squash と組み合わせない**（08-25 に踏んだ。日報 08-25-3 §積み上げ）。
 🔴 **マージと publish は施主の直接 GO をこの会話で取る**（hub 中継の GO だけでは実行しない・07-17 の取り決め・08-25 も同じ形で通した）。
@@ -176,6 +179,11 @@
     vault の `node_modules` と `~/.cache/ms-playwright` の Chromium で自艦から回せた（陽性対照つきの accessible name まで）。
     ⇒ **「無い」は `find … node_modules` を打ってから。「このリポはビルドしない」は「この道具が無い」を意味しない。**
     型4の裏返し——型4は「道具の窓が狭い」、これは「道具があるのに探していない」。どちらも**測れるものを伝聞に落とす**。
+
+11. 🔴 **`_work`（hub の共有作業木）では `git -C` ＋絶対パスだけ・`git commit -a` を打たない・worktree の後片付けは単独の Bash。**
+    2026-08-26 01:49、1つの Bash で `cd _work && git worktree remove …; python3（相対パスで失敗）; git commit -qam …; git push` と連ねた結果、
+    失敗後も cwd が `_work` のまま `commit -a` が走り、**hub の未コミット変更を自艦の日報メッセージで共有 main に push した**（`3ca8b8e`・据え置き裁定）。
+    枝は origin/main から scratchpad の worktree で切る（C8・#164 タスク3 はこの形で無事だった）。**事故は「同じ手順の最後の1回」で起きた。**
 
 ## 日報の置き場について（hub へ要確認）
 
