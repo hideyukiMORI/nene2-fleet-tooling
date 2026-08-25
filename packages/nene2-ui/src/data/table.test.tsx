@@ -391,6 +391,16 @@ describe('DataTable — collapse: "sm"（#423・0.17.0）', () => {
     for (const c of added) expect(c.startsWith('max-sm:')).toBe(true);
   });
 
+  it("::before のラベルは alt 構文（`/ ''`）で accessible name から外す（#439・0.17.1）", () => {
+    const { container } = render(
+      <DataTable caption="c" columns={columns} rows={rows} rowKey={(r) => r.a} collapse="sm" />,
+    );
+    const cls = container.querySelector('td')?.getAttribute('class') ?? '';
+    expect(cls).toContain("max-sm:before:content-[attr(data-label)_/_'']");
+    // 素の attr() は生成テキストが名前に入る（0.17.0 の二重読みの原因）。戻らないこと。
+    expect(cls).not.toContain('content-[attr(data-label)]');
+  });
+
   it('見出し行は隠すだけで消さない — th の scope は残る', () => {
     const { container } = render(
       <DataTable caption="c" columns={columns} rows={rows} rowKey={(r) => r.a} collapse="sm" />,
