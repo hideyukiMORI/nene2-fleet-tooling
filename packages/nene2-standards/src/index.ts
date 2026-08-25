@@ -107,6 +107,7 @@ export { detectTailwind, TAILWIND_DEPENDENT_RULES } from './checks/tailwind-pres
 export type { TailwindPresence } from './checks/tailwind-presence.js';
 export {
   checkScanCoverage,
+  enumerateMeasurableStyleSources,
   htmlEmbeddedStyle,
   htmlEmbeddedStyleSources,
 } from './checks/scan-coverage.js';
