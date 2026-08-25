@@ -21,6 +21,22 @@ export interface DataTableProps<Row> {
   caption: string;
   /** Composed after the kit's own classes (design principle 2). Lands on the `<table>`. */
   className?: string;
+  /**
+   * Below `sm`, draw each row as a card: every cell becomes a block headed by its column's
+   * name. Off by default — a table that changes shape at a breakpoint is a decision, the
+   * same rule as `Modal`'s `sheetOnMobile`.
+   *
+   * 🔴 Four ships already do this by hand (`<td data-label>` + `content: attr(data-label)`;
+   * invoice / profile / records / vault, measured 2026-08-25), which is why it is here and
+   * not left to them (#423). The kit does it with utilities, every one carrying the
+   * `max-sm:` prefix, so a wide viewport is untouched.
+   *
+   * ⚠️ The visual header row is hidden (`sr-only`), not removed: the `<th scope="col">` stay
+   * in the document, so assistive tech still pairs a cell with its column. The `::before`
+   * label is presentational and is not read on its own. That the two do not double up is a
+   * live-lane check — jsdom does not lay out, and it is not asserted here.
+   */
+  collapse?: 'sm';
 }
 
 /**
@@ -35,11 +51,34 @@ export interface DataTableProps<Row> {
  * invoice list") is not obvious to someone arriving at it by keyboard from elsewhere on the
  * page. It is visually hidden, not absent.
  */
-export function DataTable<Row>({ columns, rows, rowKey, caption, className }: DataTableProps<Row>) {
+// Every class here carries `max-sm:`. Only structure — the label's weight and colour are
+// the header's own slots, read through `before:`.
+const CARD_TABLE = 'max-sm:block';
+const CARD_THEAD = 'max-sm:sr-only';
+const CARD_TBODY = 'max-sm:block';
+const CARD_ROW = 'max-sm:block max-sm:border-b max-sm:border-x-slot-table-border';
+const CARD_CELL =
+  'max-sm:block max-sm:border-b-0 max-sm:text-left max-sm:before:block max-sm:before:content-[attr(data-label)] max-sm:before:font-x-slot-table-header max-sm:before:text-x-slot-table-header-fg';
+
+export function DataTable<Row>({
+  columns,
+  rows,
+  rowKey,
+  caption,
+  className,
+  collapse,
+}: DataTableProps<Row>) {
+  const cards = collapse === 'sm';
   return (
-    <table className={cx('w-full border-collapse font-sans text-x-slot-table-fg', className)}>
+    <table
+      className={cx(
+        'w-full border-collapse font-sans text-x-slot-table-fg',
+        cards && CARD_TABLE,
+        className,
+      )}
+    >
       <caption className="sr-only">{caption}</caption>
-      <thead>
+      <thead className={cards ? CARD_THEAD : undefined}>
         <tr>
           {columns.map((col) => (
             <th
@@ -54,15 +93,18 @@ export function DataTable<Row>({ columns, rows, rowKey, caption, className }: Da
           ))}
         </tr>
       </thead>
-      <tbody>
+      <tbody className={cards ? CARD_TBODY : undefined}>
         {rows.map((row) => (
-          <tr key={rowKey(row)}>
+          <tr key={rowKey(row)} className={cards ? CARD_ROW : undefined}>
             {columns.map((col) => (
               <td
                 key={col.key}
-                className={`border-b border-x-slot-table-border px-x-slot-table-cell-pad-x py-x-slot-table-cell-pad-y ${
-                  col.align === 'end' ? 'text-right' : 'text-left'
-                }`}
+                {...(cards ? { 'data-label': col.header } : {})}
+                className={cx(
+                  'border-b border-x-slot-table-border px-x-slot-table-cell-pad-x py-x-slot-table-cell-pad-y',
+                  col.align === 'end' ? 'text-right' : 'text-left',
+                  cards && CARD_CELL,
+                )}
               >
                 {col.cell(row)}
               </td>
