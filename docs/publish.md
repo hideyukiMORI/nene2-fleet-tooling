@@ -76,6 +76,17 @@ nene2-ui         （未公開）
 | #422 | `Badge` の `tone` に **`success` / `warn` / `info`**（3 → 6値）。パレットに `success` / `info` 系6色を追加（コントラスト実測つき） | `neutral`＝不変 |
 | #421 | `Pagination` に `size`（両 Button へ）/ `stackOnMobile`（`max-sm:` のみ）/ `statusPlacement`（`start` / `center` / `end`） | md・横並び・center＝不変 |
 | #424 | `DetailList` に `layout: 'stack' \| 'columns'`。`columns` は **md 未満で自動的に1列**（利用側は書かない） | `stack`＝不変 |
+| #423 | `DataTable` に `collapse: 'sm'`。sm 未満で行をカード化（各 `td` に `data-label`＝列見出し・`::before` で描く・**全クラス `max-sm:`**）。見出し行は `sr-only` で隠すだけ＝`th scope` は残る | 無し＝不変 |
+
+⚠️ **`collapse` の読み上げが二重にならないか**（`th` scope ＋ `::before`）は jsdom では測れない。**vault の live で確認するまで「a11y は問題なし」と書かない。**
+
+#### 各艦でやること — 宣言を上げるだけでは入らない（#428・hub 実測 2026-08-25: 14艦中13艦が caret 内で lock 停止）
+
+1. **宣言を上げる**。0.x の caret は minor を固定する: `^0.16.0` は 0.17.0 を**含まない** ⇒ `^0.17.0` へ。
+2. **`npm update @hideyukimori/nene2-ui`**（`npm install` は lock 優先で上がらない。tokens / standards / i18n / client も同じ形で止まっている艦が13艦）。
+3. **`npm ls @hideyukimori/nene2-ui @hideyukimori/nene2-tokens @hideyukimori/nene2-standards @hideyukimori/nene2-i18n`** で**実インストール版**を見る（宣言ではなく）。
+4. **実ブラウザ**まで確かめる — `docker compose` の名前付きボリューム・`node_modules/.vite/deps` の古いプリバンドル（`_work/issues.md` #119）。
+5. 🔴 **`npm ci` は lock を尊重する** ⇒ 宣言だけ上げた PR は CI が緑でも**何も入っていない**。**lock の diff が PR に無ければ上がっていない。**
 
 🔴 **`Modal` / `ConfirmDialog` / `ToastProvider` は `className` を受けない（意図）。** オーバーレイ／プロバイダで、
 外から任意クラスを載せると `<dialog>` の margin / top-layer の前提が崩れる——0.16.1（#417）がその実例。

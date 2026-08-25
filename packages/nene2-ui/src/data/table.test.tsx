@@ -341,3 +341,63 @@ describe('Pagination — size / stackOnMobile / statusPlacement（#421・0.17.0�
     },
   );
 });
+
+describe('DataTable — collapse: "sm"（#423・0.17.0）', () => {
+  const columns = [
+    { key: 'a', header: 'Name', cell: (r: { a: string; b: string }) => r.a },
+    {
+      key: 'b',
+      header: 'Amount',
+      cell: (r: { a: string; b: string }) => r.b,
+      align: 'end' as const,
+    },
+  ];
+  const rows = [{ a: 'x', b: '1' }];
+  const all = (c: HTMLElement) =>
+    [...c.querySelectorAll('table, thead, tbody, tr, td')].flatMap((el) =>
+      (el.getAttribute('class') ?? '').split(/\s+/).filter(Boolean),
+    );
+
+  it('既定は data-label を出さず、max-sm: のクラスを1つも持たない', () => {
+    const { container } = render(
+      <DataTable caption="c" columns={columns} rows={rows} rowKey={(r) => r.a} />,
+    );
+    expect(container.querySelector('[data-label]')).toBeNull();
+    expect(all(container).filter((c) => c.startsWith('max-sm:'))).toEqual([]);
+    // 空の class 属性を撒かない
+    expect(container.querySelector('thead')?.hasAttribute('class')).toBe(false);
+  });
+
+  it('collapse="sm" は各 td に列見出しを data-label で持たせる', () => {
+    const { container } = render(
+      <DataTable caption="c" columns={columns} rows={rows} rowKey={(r) => r.a} collapse="sm" />,
+    );
+    const labels = [...container.querySelectorAll('td')].map((td) => td.getAttribute('data-label'));
+    expect(labels).toEqual(['Name', 'Amount']);
+  });
+
+  it('collapse が足すクラスはすべて max-sm: 接頭辞つき（広い画面は不変）', () => {
+    const plain = all(
+      render(<DataTable caption="c" columns={columns} rows={rows} rowKey={(r) => r.a} />).container,
+    );
+    document.body.innerHTML = '';
+    const cards = all(
+      render(
+        <DataTable caption="c" columns={columns} rows={rows} rowKey={(r) => r.a} collapse="sm" />,
+      ).container,
+    );
+    const added = cards.filter((c) => !plain.includes(c));
+    expect(added.length).toBeGreaterThan(0);
+    for (const c of added) expect(c.startsWith('max-sm:')).toBe(true);
+  });
+
+  it('見出し行は隠すだけで消さない — th の scope は残る', () => {
+    const { container } = render(
+      <DataTable caption="c" columns={columns} rows={rows} rowKey={(r) => r.a} collapse="sm" />,
+    );
+    const ths = [...container.querySelectorAll('th')];
+    expect(ths).toHaveLength(2);
+    for (const th of ths) expect(th.getAttribute('scope')).toBe('col');
+    expect(container.querySelector('thead')?.getAttribute('class')).toContain('max-sm:sr-only');
+  });
+});
