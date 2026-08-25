@@ -8,6 +8,9 @@
 import { render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Badge } from './Badge.js';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { InlineAlert } from './InlineAlert.js';
 import { ConfirmDialog } from '../overlay/ConfirmDialog.js';
 import { Modal } from '../overlay/Modal.js';
@@ -172,5 +175,35 @@ describe('InlineAlert', () => {
     expect(
       render(<InlineAlert>x</InlineAlert>).container.firstElementChild?.getAttribute('role'),
     ).toBe('status');
+  });
+});
+
+describe('Badge — success / warn / info（#422・0.17.0）', () => {
+  it.each(['success', 'warn', 'info'] as const)(
+    '%s reads its own slots, not another tone’s',
+    (tone) => {
+      const { container } = render(<Badge tone={tone}>x</Badge>);
+      const cls = container.firstElementChild?.getAttribute('class') ?? '';
+      expect(cls).toContain(`bg-x-slot-badge-${tone}-bg`);
+      expect(cls).toContain(`text-x-slot-badge-${tone}-fg`);
+      expect(cls).toContain(`border-x-slot-badge-${tone}-border`);
+      // 他のトーンのスロットを借りていない（warn が danger を指していた 0.11 以前の alert の型）
+      for (const other of ['neutral', 'accent', 'danger', 'success', 'warn', 'info'].filter(
+        (t) => t !== tone,
+      )) {
+        expect(cls).not.toContain(`x-slot-badge-${other}-`);
+      }
+    },
+  );
+
+  it('each new tone resolves to a palette colour of its own meaning in the theme', () => {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const theme = readFileSync(path.join(here, '../../themes/default.css'), 'utf8');
+    for (const tone of ['success', 'warn', 'info']) {
+      const m = new RegExp(`--color-x-slot-badge-${tone}-bg:\\s*var\\(--color-([a-z-]+)\\);`).exec(
+        theme,
+      );
+      expect(m?.[1], `badge ${tone} bg`).toBe(tone);
+    }
   });
 });

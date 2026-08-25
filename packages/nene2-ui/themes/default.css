@@ -43,6 +43,22 @@
   --color-on-warn: oklch(21% 0.04 75);
   --color-danger-soft: oklch(95% 0.03 30);
 
+  /* 🔴 Six more contract colours, added in 0.17.0 for `Badge` (#422). Five ships carry a
+   * success tone and a warning tone in their own badge (clear / field / invoice / origin /
+   * vault) and four carry `info`, so a kit badge with three tones could not say what their
+   * screens already say. Hues follow the contract's reference theme; lightness is measured:
+   * white on this `success` is 5.35:1 and on this `info` 5.78:1 (both clear 4.5:1 for text),
+   * the fills are 5.51:1 / 5.95:1 against `surface-raised`, and `text-primary` on either
+   * soft is ≥ 13.8:1 — computed with the same OKLCH→sRGB pipeline that reproduces the
+   * `warn` figures above (3.48 / 3.58 / 4.97), so the calculator has a positive control.
+   * Fourteen contract colours are still undefined — see the README. */
+  --color-success: oklch(50% 0.14 155);
+  --color-success-soft: oklch(95% 0.03 155);
+  --color-on-success: oklch(99% 0 0);
+  --color-info: oklch(50% 0.12 245);
+  --color-info-soft: oklch(95% 0.03 245);
+  --color-on-info: oklch(99% 0 0);
+
   /* The shadow scale. Three steps, chosen the way the spacing and radius scales were —
    * measured from what the fleet already ships, not invented here (#386).
    *
@@ -303,6 +319,17 @@
   --color-x-slot-badge-danger-bg: var(--color-danger);
   --color-x-slot-badge-danger-fg: var(--color-on-accent);
   --color-x-slot-badge-danger-border: var(--color-danger);
+  /* 0.17.0 (#422). Filled, like `accent` and `danger`: a status badge is read at a glance
+   * and an outlined success next to a filled danger would weigh the two unequally. */
+  --color-x-slot-badge-success-bg: var(--color-success);
+  --color-x-slot-badge-success-fg: var(--color-on-success);
+  --color-x-slot-badge-success-border: var(--color-success);
+  --color-x-slot-badge-warn-bg: var(--color-warn);
+  --color-x-slot-badge-warn-fg: var(--color-on-warn);
+  --color-x-slot-badge-warn-border: var(--color-warn);
+  --color-x-slot-badge-info-bg: var(--color-info);
+  --color-x-slot-badge-info-fg: var(--color-on-info);
+  --color-x-slot-badge-info-border: var(--color-info);
 
   --color-x-slot-toast-bg: var(--color-surface-raised);
   --color-x-slot-toast-fg: var(--color-text-primary);
