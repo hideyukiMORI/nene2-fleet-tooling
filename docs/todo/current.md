@@ -34,8 +34,10 @@
    `max-sm:before:content-[attr(data-label)_/_'']` も実測〕。PR #444（Closes #439・施主 GO はこの会話で直接）。
    Chromium 149（vault の Playwright 1.61.1・375×812・合成 HTML・陽性対照つき）で cell の accessible name から `::before` が外れる
    （素の `attr()` → "Name x"／`/ ''` → "x"）。**Firefox は代替テキスト構文未実装で二重のまま＝退行ではなく現状維持。**
-   🔴 **vault の本番 build での撮り直し（vault #469・`getComputedStyle(td,'::before').content` ＋ ariaSnapshot）が済むまで、
-   vault について「直った」と書かない。** hub が vault へ回す（vault は 08-26 未明に終了・撮り直しは 08-26 昼以降）。
+   🟢 **vault のローカル build で検収 OK**〔伝聞・vault 01:2x・原文は #439 のコメント〕: `npm update` で lock 0.17.1・Chromium 149・375×812・
+   `/demo/standard` の一覧で `getComputedStyle(td,'::before').content` = `"Transaction Date" / ""`、ariaSnapshot の cell が
+   `"2026-08-22"`（0.17.0 では `"Transaction Date 2026-08-22"`）・batch9 25/25・vault 側の `className` と共存して崩れなし。
+   🔴 **本番はまだ**——vault が 0.9.2.1 として配備した後に同じ測定を撮って **vault #469** を閉じる。それまで「本番で直った」と書かない。
    🔴 **訂正**: 前版の「Tailwind の arbitrary value が何を生成するかはキット側で確認できない（Tailwind をビルドしない）」は
    **誤りだった**。tailwindcss 4.3.2 は自艦の `node_modules` に居る（standards の `eslint-plugin-better-tailwindcss` の依存）。
    `compile` API を直接呼べば `--tw-content: attr(data-label) / ''` が 30 秒で出た。⇒ 型10（下）。
