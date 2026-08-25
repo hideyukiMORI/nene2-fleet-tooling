@@ -56,6 +56,34 @@ describe('Modal — 既定は 0.15.0 までと同じ（#392）', () => {
   });
 });
 
+describe('Modal — 位置は UA に借りない（#417）', () => {
+  // vault の本番で dialog が (0,0) に張り付いた。UA の `dialog { margin: auto }` を Tailwind の
+  // preflight（`* { margin: 0 }`）が消すため。jsdom は showModal を実装しないので座標は測れない
+  // ——ここで固定できるのは「キットが margin を自分で言っているか」だけ。
+  it('dialog は m-auto を自分で持つ（preflight が UA の margin:auto を消しても中央に残る）', () => {
+    const { container } = render(
+      <Modal open title="t" onClose={() => {}}>
+        b
+      </Modal>,
+    );
+    expect(classesOf(dialogOf(container)).split(/\s+/)).toContain('m-auto');
+  });
+
+  it('sheetOnMobile でも m-auto は残り、下端寄せは max-sm: 側だけが上書きする', () => {
+    const { container } = render(
+      <Modal open title="t" sheetOnMobile onClose={() => {}}>
+        b
+      </Modal>,
+    );
+    const cls = classesOf(dialogOf(container)).split(/\s+/);
+    expect(cls).toContain('m-auto');
+    expect(cls).toContain('max-sm:mb-0');
+    expect(cls).toContain('max-sm:mt-auto');
+    // 🔴 広い画面の margin を消す素のクラス（mb-0 / mt-0 / m-0）を持たない
+    expect(cls.filter((c) => /^m[tbxy]?-0$/.test(c))).toEqual([]);
+  });
+});
+
 describe('Modal — 可視ヘッダ（#392①）', () => {
   it('題を見出しとして描き、dialog はその見出しで名前を得る', () => {
     const { container } = render(
