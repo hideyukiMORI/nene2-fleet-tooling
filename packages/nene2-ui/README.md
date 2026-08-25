@@ -266,9 +266,9 @@ undo the margin and top-layer assumptions the kit relies on (0.16.1 is the case 
 
 ### 🔴 A palette that is missing a meaning
 
-The kit's theme defines **8 of the 28 colours** in the frozen Core Token Contract v1. That
+The kit's theme defines **14 of the 28 colours** in the frozen Core Token Contract v1. That
 is a legal theme — the contract says what a name means, not that every name must be used —
-but it stops being harmless the moment a component needs one of the twenty.
+but it stops being harmless the moment a component needs one of the fourteen.
 
 `warn` was one. Six ships define `--color-warn`; nene-payout, the product this theme was
 promoted from, does not. So `--color-x-slot-alert-warn-*` pointed at `--color-danger` and a
@@ -279,10 +279,11 @@ listening and no one looking**.
 resolve to one value cannot express the distinction it is named for.** Both are now checked
 — radius by step count, colour by whether two meanings resolve to the same value.
 
-Still undefined: `surface-overlay`, `surface-sunken`, `text-faint`, `text-inverse`,
-`border-strong`, `accent-hover`, `accent-soft`, `on-danger`, `success`, `success-soft`,
-`on-success`, `info`, `info-soft`, `on-info`, `focus-ring`, `scrim`. Two of those —
-`focus-ring` and `scrim` — already have component slots pointing at substitutes.
+`success` / `success-soft` / `on-success` and `info` / `info-soft` / `on-info` were added in
+0.17.0 because `Badge` needed them (#422) — defined when a component needs them, not all at
+once. Still undefined: `surface-overlay`, `surface-sunken`, `text-faint`, `text-inverse`,
+`border-strong`, `accent-hover`, `accent-soft`, `on-danger`, `focus-ring`, `scrim`. Two of
+those — `focus-ring` and `scrim` — already have component slots pointing at substitutes.
 
 ### 🔴 Two validity states, and only one of them is invalid
 
