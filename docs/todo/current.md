@@ -1,24 +1,24 @@
 # 現況（生きた引き継ぎ）
 
 > **これは「いまの状態」を書く1枚**（現在形・上書き）。その日の記録は `docs/daily/`（過去形・追記しない）。
-> **最終更新: 2026-08-26 00:0x〔`date` 実測〕**
+> **最終更新: 2026-08-26 01:2x〔`date` 実測〕**
 
 ## いまどこ
 
 **`nene2-ui` は、載せ替えた艦から出た差分に一通り応えた状態。** vault の実ブラウザ突合から出た分はキット側に着地し、**影の次元がスロット化された**ことで「スロット化されていない次元」が消えた。
 
-**4パッケージとも main と npm が一致している**〔実測〕。
+**4パッケージとも main と npm が一致している**〔2026-08-26 01:19 `npm view` 実測〕。
 
 | パッケージ | `main` | npm の latest | `fleet-baseline` の floor | タグ以降の未リリース |
 | --- | --- | --- | --- | ---: |
 | `nene2-tokens` | 1.3.0 | **1.3.0** | `^1.1.0` | **0件** |
 | `nene2-standards` | 2.3.0 | **2.3.0** | `^2.1.1` | **0件** |
 | `nene2-i18n` | 0.3.2 | **0.3.2** | `^0.3.0` | **0件** |
-| `nene2-ui` | 0.17.0 | **0.17.0** | `^0.14.0` | **0件** |
+| `nene2-ui` | 0.17.1 | **0.17.1** | `^0.14.0` | **0件** |
 
 |                  | 値〔すべて自艦で実測〕 |
 | ---------------- | ---------------------- |
-| テスト           | **796** / 50ファイル   |
+| テスト           | **797** / 50ファイル   |
 | open な PR       | **0本**                |
 | `npm run check`  | 🟢 EXIT=0（8ステップ） |
 
@@ -30,10 +30,15 @@
 
 ## 🔴 いちばん上にあること
 
-0. **#439 — `DataTable collapse` の二重読みを 0.17.1 で直す。** 推しは (A) `content: attr(data-label) / ""`（CSS の alt 構文で `::before` を AT から隠す・`th scope` は捨てない）。
-   Firefox は alt 構文未対応で二重のまま＝**退行ではなく現状維持**。(B) thead を `hidden` は全ブラウザで構造を捨てるので採らない。
-   ⚠️ **Tailwind の arbitrary value（`content-[attr(data-label)_/_'']` の下線・引用符）が何を生成するかはキット側で確認できない**（Tailwind をビルドしない）。
-   ⇒ **検収は vault の Playwright**（375×812・`getComputedStyle(td,'::before').content` と ariaSnapshot の撮り直し・vault 同意済み）。0.9.2 のブロッカーにはしない（vault と合意・hub 裁定が要れば上げる）。
+0. **#439 は `nene2-ui` 0.17.1 で出ている**〔2026-08-26 01:19 `npm view` 実測・shasum `374a1eac`・公開 tarball を pack して sha1 一致と dist 内の
+   `max-sm:before:content-[attr(data-label)_/_'']` も実測〕。PR #444（Closes #439・施主 GO はこの会話で直接）。
+   Chromium 149（vault の Playwright 1.61.1・375×812・合成 HTML・陽性対照つき）で cell の accessible name から `::before` が外れる
+   （素の `attr()` → "Name x"／`/ ''` → "x"）。**Firefox は代替テキスト構文未実装で二重のまま＝退行ではなく現状維持。**
+   🔴 **vault の本番 build での撮り直し（vault #469・`getComputedStyle(td,'::before').content` ＋ ariaSnapshot）が済むまで、
+   vault について「直った」と書かない。** hub が vault へ回す（vault は 08-26 未明に終了・撮り直しは 08-26 昼以降）。
+   🔴 **訂正**: 前版の「Tailwind の arbitrary value が何を生成するかはキット側で確認できない（Tailwind をビルドしない）」は
+   **誤りだった**。tailwindcss 4.3.2 は自艦の `node_modules` に居る（standards の `eslint-plugin-better-tailwindcss` の依存）。
+   `compile` API を直接呼べば `--tw-content: attr(data-label) / ''` が 30 秒で出た。⇒ 型10（下）。
 1. **艦の実インストール版の確認**。hub が全艦通知（`_work/handoff-fleet-2026-08-25-npm-releases-notice.md`・板 L128・due 08-27）を
    出している。とくに `nene2-standards` は **26日ぶんの修正が届いていなかった**ので、**上げると挙動が変わる艦がある**。
    その後に **`nene2-ui` 0.16.1**（Modal の位置・vault #441）と **`nene2-i18n` 0.3.2**（nested lookup のドット付きキー・vault #453）が
@@ -75,12 +80,11 @@
 ⇒ **`className` は「使われていない」のではなく「新しい意味で既に依存されている」。**
 **次にこの受け口を変えると壊れる**ので、危険度の判定は「触られていないので安全」ではなく「依存されている」側で読むこと。
 
-## 明日の順（2026-08-26）
+## 今日の順（2026-08-26・残り）
 
-1. **#439**（0.17.1・上記）。patch なので `fix(ui) 0.17.1:` の題で版を同じコミットで上げ、publish.md に「Firefox は二重のまま」を明記。
-2. **C8**: `_work/tools/chat-relay/seed-all.py` ＋ `rina-aliases.sh`。`.mcp.json` が追跡されているリポ（vault）は書き換えず `<handle>.mcp.json` を生成して `--mcp-config` で渡す（hub 推し）。`_work` は **`hideyukiMORI/xi-workspace` の作業木**なので枝→PR（hub が検収）。board L100。
-3. **#164 タスク2/3**（standards・postcss-html・Wave 表再実測）。栓は抜けている。
-4. **#410 の18件判定**（hub 報告 §3 の「merged PR が参照しているのに open」候補。#163/#164 は意図的 open・残りは本文を読んで単発のものだけ閉じる）。
+1. **C8**: `_work/tools/chat-relay/seed-all.py` ＋ `rina-aliases.sh`。`.mcp.json` が追跡されているリポ（vault）は書き換えず `<handle>.mcp.json` を生成して `--mcp-config` で渡す（hub 推し）。`_work` は **`hideyukiMORI/xi-workspace` の作業木**なので枝→PR（hub が検収）。board L100。
+2. **#164 タスク2/3**（standards・postcss-html・Wave 表再実測）。栓は抜けている。
+3. **#410 の18件判定**（hub 報告 §3 の「merged PR が参照しているのに open」候補。#163/#164 は意図的 open・残りは本文を読んで単発のものだけ閉じる）。
 
 🔴 **PR は1本ずつ main 直下で出す。積み上げ PR は squash と組み合わせない**（08-25 に踏んだ。日報 08-25-3 §積み上げ）。
 🔴 **マージと publish は施主の直接 GO をこの会話で取る**（hub 中継の GO だけでは実行しない・07-17 の取り決め・08-25 も同じ形で通した）。
@@ -163,6 +167,13 @@
    「今は 06 時台」と推論し、**〔実測〕の札を貼って4箇所に書いた**（実際は起動の9時間前）。
    ⇒ **錨にしてよいのは、いま自分が走らせた行為が生んだ時刻だけ**（`date` / いま回したテストの `Start at` / `uptime -s`）。
    **`git log %ci` と `stat` の mtime は錨にしない**——**対象の時刻であって、観測の時刻ではない。**
+
+10. 🔑 **「確認できない」は、道具を探してから言う。** 08-25 に「Tailwind をビルドしないので arbitrary value の生成結果は
+    キット側で確認できない」と書き、検収を vault の Playwright へ回した。実際には tailwindcss 4.3.2 が自艦の `node_modules` に
+    居て（standards の eslint plugin の依存・`npm ls tailwindcss`）、`compile` API 直叩きで生成 CSS が出た。Playwright も
+    vault の `node_modules` と `~/.cache/ms-playwright` の Chromium で自艦から回せた（陽性対照つきの accessible name まで）。
+    ⇒ **「無い」は `find … node_modules` を打ってから。「このリポはビルドしない」は「この道具が無い」を意味しない。**
+    型4の裏返し——型4は「道具の窓が狭い」、これは「道具があるのに探していない」。どちらも**測れるものを伝聞に落とす**。
 
 ## 日報の置き場について（hub へ要確認）
 
