@@ -1,7 +1,7 @@
 # 現況（生きた引き継ぎ）
 
 > **これは「いまの状態」を書く1枚**（現在形・上書き）。その日の記録は `docs/daily/`（過去形・追記しない）。
-> **最終更新: 2026-08-25 23:2x〔`date` 実測〕**
+> **最終更新: 2026-08-26 00:0x〔`date` 実測〕**
 
 ## いまどこ
 
@@ -30,6 +30,10 @@
 
 ## 🔴 いちばん上にあること
 
+0. **#439 — `DataTable collapse` の二重読みを 0.17.1 で直す。** 推しは (A) `content: attr(data-label) / ""`（CSS の alt 構文で `::before` を AT から隠す・`th scope` は捨てない）。
+   Firefox は alt 構文未対応で二重のまま＝**退行ではなく現状維持**。(B) thead を `hidden` は全ブラウザで構造を捨てるので採らない。
+   ⚠️ **Tailwind の arbitrary value（`content-[attr(data-label)_/_'']` の下線・引用符）が何を生成するかはキット側で確認できない**（Tailwind をビルドしない）。
+   ⇒ **検収は vault の Playwright**（375×812・`getComputedStyle(td,'::before').content` と ariaSnapshot の撮り直し・vault 同意済み）。0.9.2 のブロッカーにはしない（vault と合意・hub 裁定が要れば上げる）。
 1. **艦の実インストール版の確認**。hub が全艦通知（`_work/handoff-fleet-2026-08-25-npm-releases-notice.md`・板 L128・due 08-27）を
    出している。とくに `nene2-standards` は **26日ぶんの修正が届いていなかった**ので、**上げると挙動が変わる艦がある**。
    その後に **`nene2-ui` 0.16.1**（Modal の位置・vault #441）と **`nene2-i18n` 0.3.2**（nested lookup のドット付きキー・vault #453）が
@@ -42,7 +46,8 @@
    **0.15.0 / 0.16.0 はどちらも描画が変わらない**ので、周知の緊急度は低い。
 4. **`nene2-ui` 0.17.0 は出ている**〔2026-08-25 23:16 `npm view` 実測〕: #390（`className` 4部品・Modal は意図して除外）＋ #422（Badge `success`/`warn`/`info`・パレット 8→14色）
    ＋ #421（Pagination `size`/`stackOnMobile`/`statusPlacement`・「空で非描画」は prop にしない）＋ #424（DetailList `layout`）＋ #423（DataTable `collapse`）＋ #428（版節「各艦でやること」）。
-   🔴 **jsdom で測れない2点は vault の live 待ち**: #423 の `::before` ラベルと `th` の読み上げ二重化／#431 の縦積み。**確認まで「問題なし」と書かない。**
+   🟢 **vault の live 実測は返った**（08-25 23:5x・伝聞・原文は #439）: #431 の縦積みは破綻なし。**#423 は懸念どおり読み上げが二重**
+   （`::before` のラベルがセル名に入り、sr-only の見出し行も残る）。表示・機能は正常。
    `Card` の `as`（#394）と部品→スロット配布（#393・hub の台帳粒度待ち）は**入っていない**。
    ⚠️ **積み上げ PR は squash と組み合わせない**（base 枝の削除で GitHub が後続 PR を自動 CLOSE・reopen 不可。日報 08-25-3）。次は1本ずつ main 直下で。
 5. **`nene2-standards` の自艦作業が1つ栓抜け**: **#164 タスク2/3**（`enumerateStyleSources` へ postcss-html・Wave 表の再実測）は
@@ -69,6 +74,16 @@
 「`Said directly on the control since 0.11.0`: `className` lands on the `<label>` now」と書いている。
 ⇒ **`className` は「使われていない」のではなく「新しい意味で既に依存されている」。**
 **次にこの受け口を変えると壊れる**ので、危険度の判定は「触られていないので安全」ではなく「依存されている」側で読むこと。
+
+## 明日の順（2026-08-26）
+
+1. **#439**（0.17.1・上記）。patch なので `fix(ui) 0.17.1:` の題で版を同じコミットで上げ、publish.md に「Firefox は二重のまま」を明記。
+2. **C8**: `_work/tools/chat-relay/seed-all.py` ＋ `rina-aliases.sh`。`.mcp.json` が追跡されているリポ（vault）は書き換えず `<handle>.mcp.json` を生成して `--mcp-config` で渡す（hub 推し）。`_work` は **`hideyukiMORI/xi-workspace` の作業木**なので枝→PR（hub が検収）。board L100。
+3. **#164 タスク2/3**（standards・postcss-html・Wave 表再実測）。栓は抜けている。
+4. **#410 の18件判定**（hub 報告 §3 の「merged PR が参照しているのに open」候補。#163/#164 は意図的 open・残りは本文を読んで単発のものだけ閉じる）。
+
+🔴 **PR は1本ずつ main 直下で出す。積み上げ PR は squash と組み合わせない**（08-25 に踏んだ。日報 08-25-3 §積み上げ）。
+🔴 **マージと publish は施主の直接 GO をこの会話で取る**（hub 中継の GO だけでは実行しない・07-17 の取り決め・08-25 も同じ形で通した）。
 
 ## 未着手（記録のみ・判断が要るもの）
 
