@@ -7,6 +7,7 @@ interface Toast {
   id: string;
   message: string;
   tone: ToastTone;
+  description?: string;
 }
 
 export interface ToastProviderProps {
@@ -28,8 +29,15 @@ export interface ToastProviderProps {
 
 const TONE_CLASS: Record<ToastTone, string> = {
   info: 'bg-x-slot-toast-bg text-x-slot-toast-fg border-x-slot-toast-border',
+  success: 'bg-x-slot-toast-bg text-x-slot-toast-success-fg border-x-slot-toast-success-border',
   danger: 'bg-x-slot-toast-bg text-x-slot-toast-danger-fg border-x-slot-toast-danger-border',
 };
+
+// 🔴 `success` は polite 側。`assertive` は読み上げを中断させるので、成功の報告に使うと
+// 利用者の作業を割り込みで止める。中断してよいのは danger だけ、というのが2リージョンに
+// 分けた元の理由なので、語彙が増えてもその線は動かさない（#457）。
+const POLITE_TONES: ToastTone[] = ['info', 'success'];
+const ASSERTIVE_TONES: ToastTone[] = ['danger'];
 
 /**
  * Hosts the toast queue and the live regions that announce it.
@@ -66,7 +74,18 @@ export function ToastProvider({
   const show = useCallback(
     (message: string, options?: ToastOptions) => {
       const id = `toast-${(nextId.current += 1)}`;
-      setToasts((current) => [...current, { id, message, tone: options?.tone ?? 'info' }]);
+      const description = options?.description;
+      setToasts((current) => [
+        ...current,
+        {
+          id,
+          message,
+          tone: options?.tone ?? 'info',
+          // exactOptionalPropertyTypes: 省略と `undefined` を渡すことは別物なので、
+          // 渡されなかった場合はキーごと作らない。
+          ...(description === undefined ? {} : { description }),
+        },
+      ]);
       timers.current.set(
         id,
         setTimeout(() => dismiss(id), options?.durationMs ?? defaultDurationMs),
@@ -87,7 +106,7 @@ export function ToastProvider({
 
   const api = useMemo<ToastApi>(() => ({ show, dismiss }), [show, dismiss]);
 
-  const region = (tone: ToastTone, live: 'polite' | 'assertive') => (
+  const region = (tones: ToastTone[], live: 'polite' | 'assertive') => (
     <div
       aria-live={live}
       aria-label={regionLabel}
@@ -95,7 +114,9 @@ export function ToastProvider({
       className="flex flex-col gap-x-slot-toast-gap"
     >
       {toasts
-        .filter((toast) => toast.tone === tone)
+        // 複数トーンを1つのリージョンへ。元の配列を filter するので、同じリージョンに
+        // 入るトースト同士の**表示順は push された順のまま**になる。
+        .filter((toast) => tones.includes(toast.tone))
         .map((toast) => (
           <div
             key={toast.id}
@@ -104,7 +125,16 @@ export function ToastProvider({
               TONE_CLASS[toast.tone],
             )}
           >
-            <span>{toast.message}</span>
+            {/* 🔴 二段目が無いときは要素を増やさない。無条件に包むと、この prop を
+             * 使っていない艦の DOM が動く（EmptyState #456 と同じ判断）。 */}
+            {toast.description === undefined ? (
+              <span>{toast.message}</span>
+            ) : (
+              <span className="flex flex-col gap-x-slot-toast-description-gap">
+                <span>{toast.message}</span>
+                <span className="text-x-slot-toast-description-fg">{toast.description}</span>
+              </span>
+            )}
             <button
               type="button"
               aria-label={dismissLabel}
@@ -121,8 +151,8 @@ export function ToastProvider({
   return (
     <ToastContext.Provider value={api}>
       {children}
-      {region('info', 'polite')}
-      {region('danger', 'assertive')}
+      {region(POLITE_TONES, 'polite')}
+      {region(ASSERTIVE_TONES, 'assertive')}
     </ToastContext.Provider>
   );
 }
