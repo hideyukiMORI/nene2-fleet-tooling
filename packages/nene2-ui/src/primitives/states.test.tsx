@@ -7,6 +7,9 @@
  * 補いを lint で禁じる（順序③）前にここが埋まっていないと、
  * **押せないことが見えないボタン**が本番に出る。
  */
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Button } from './Button.js';
@@ -116,6 +119,29 @@ describe('Button', () => {
     const cls = classesOf(container.firstElementChild);
     expect(cls).toContain('bg-x-slot-button-danger-bg');
     expect(cls).toContain('disabled:cursor-not-allowed');
+  });
+
+  // #455 — `danger` は border 系のクラスを1つも出しておらず、BASE_CLASS の
+  // `border-transparent` が最後まで残っていた。⇒ 塗りではなく**輪郭**で danger を
+  // 表す艦（nene-deal）は、スロット値をいくら上書きしても枠を出せなかった。
+  it('reaches a slot for its border, like secondary does', () => {
+    const cls = classesOf(render(<Button variant="danger">x</Button>).container.firstElementChild);
+    expect(cls).toContain('border-x-slot-button-danger-border');
+  });
+
+  // 🔴 この PR が「他艦の見た目を変えない」ことの実測。既定の枠色は塗りと**同じ変数**を
+  // 指すので、塗りの上に同色の枠が乗る＝`border-transparent` が塗りの上で描いていたのと
+  // 同じ結果になる。列挙で書かず theme の現物から読む（型1: 列挙で書いた検査は、
+  // 列挙に無いものを緑にする）。
+  it('defaults that border to the fill, so a filled danger button is unchanged', () => {
+    const css = readFileSync(
+      path.join(path.dirname(fileURLToPath(import.meta.url)), '../../themes/default.css'),
+      'utf8',
+    );
+    const valueOf = (name: string) => css.match(new RegExp(`--${name}:\\s*([^;]+);`))?.[1]?.trim();
+    const bg = valueOf('color-x-slot-button-danger-bg');
+    expect(bg).toBeTruthy(); // 陽性対照: 読めていないのに一致と言わない
+    expect(valueOf('color-x-slot-button-danger-border')).toBe(bg);
   });
 });
 
