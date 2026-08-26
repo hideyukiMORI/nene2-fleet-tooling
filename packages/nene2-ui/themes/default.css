@@ -275,6 +275,13 @@
   --color-x-slot-button-secondary-border: var(--color-border);
   --color-x-slot-button-danger-bg: var(--color-danger);
   --color-x-slot-button-danger-fg: var(--color-on-accent);
+  /* 🔴 Defaults to the fill, so a filled danger button looks exactly as it did: the border
+   * and the background are the same colour, which is what `border-transparent` over a filled
+   * background already rendered. The slot exists for the ships whose danger button is an
+   * outline rather than a fill — nene-deal's is `background: transparent` with a tinted
+   * border (#455), and it could not express that: the variant emitted no border class at
+   * all, so `border-transparent` from BASE_CLASS won and no slot value could reach it. */
+  --color-x-slot-button-danger-border: var(--color-danger);
   --color-x-slot-button-ghost-fg: var(--color-text-primary);
 
   /* Shared by Input, Select and Textarea — they are one control with three shapes, and a
