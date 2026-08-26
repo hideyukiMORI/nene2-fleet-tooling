@@ -55,8 +55,10 @@ export { tokens } from './theme/tokens.js';
 
 // Internal helpers, exported so downstream components can compose consistently.
 export { cx } from './lib/cx.js';
-// Controls the kit does not ship yet (Textarea has 7 independent implementations in the
-// fleet) can at least carry the same focus and disabled behaviour instead of inventing it.
+// A control the kit does not ship — one a product writes for itself, or one still waiting for
+// a slot in the kit — can at least carry the same focus and disabled behaviour instead of
+// inventing it. (Written when `Textarea` was the example, with 7 independent implementations
+// across the fleet; `Textarea` ships now, so the example is gone but the reason is not.)
 export {
   CLICKABLE_CLASS,
   CONTROL_CLASS,
