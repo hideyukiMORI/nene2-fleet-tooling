@@ -137,12 +137,13 @@ The theme has two layers, and the line between them is the point.
 
 ### ② Slots — 🟢 redefine these
 
-Every design value a component uses comes from a slot, and slots are named per component:
+Every design value a component takes **from the theme** comes from a slot, and slots are named
+per component:
 
 ```css
 /* your product's theme, loaded after the kit's */
 @theme {
-  --spacing-x-slot-card-pad: var(--spacing-x-lg); /* roomier cards, everywhere */
+  --spacing-x-slot-modal-pad: var(--spacing-x-lg); /* roomier modals, everywhere */
   --color-x-slot-field-label: var(--color-text-primary); /* darker field labels */
   --radius-x-slot-control: var(--radius-x-md);
 }
@@ -150,6 +151,18 @@ Every design value a component uses comes from a slot, and slots are named per c
 
 This is where your product decides how it looks. Change a slot and every instance of that
 component follows.
+
+🔴 **"From the theme" is the limit of that sentence, and the limit is load-bearing.** The
+**layout components take their spacing from props, not from slots** — `Box` and `Card` (`pad`),
+`Stack` (`gap`), `Section` and `Grid` (both). That is deliberate rather than an omission: layout
+spacing is a decision the *caller* makes per instance, so it is chosen at the call site. Those
+props still pick a **step from the scale** (`pad="lg"`), so a product cannot invent a value here
+either — but **no slot exists for them**.
+
+⚠️ **This is the part that bites.** Writing `--spacing-x-slot-card-pad` in your theme does
+nothing at all: **there is no such slot**, and nothing warns you — not an error, not a console
+message, not a failing build. To make every card roomier, pass `pad` where you use `Card`, or
+wrap it once in a component of your own.
 
 ### ① The scale — 🔒 do not redefine
 
@@ -223,9 +236,12 @@ second only under `@media (pointer: coarse)`.
 
 ### Composing a slot
 
-A slot can hold several steps — four-sided padding is just CSS:
+A slot can hold several steps — four-sided padding is just CSS. The slot below belongs to a
+component **of your own**, not to the kit (`login-form` is not a kit component); a product
+names slots for its own parts the same way the kit does:
 
 ```css
+/* in your product, for your own <LoginForm> */
 --spacing-x-slot-login-form-pad: var(--spacing-x-xl) var(--spacing-x-md) var(--spacing-x-lg)
   var(--spacing-x-md);
 ```

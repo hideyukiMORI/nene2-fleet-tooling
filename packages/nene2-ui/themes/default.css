@@ -130,10 +130,15 @@
   /* ─────────────────────────────────────────────────────────────────────────
    * ② SLOTS — a product may redefine these.
    *
-   * Every design value a component uses comes from here, and every slot's default points
-   * back at the scale above. That split is the whole idea: a product decides **which step
-   * a part uses**, and cannot invent a step. Change `--spacing-x-slot-card-pad` to
-   * `var(--spacing-x-lg)` and cards get roomier everywhere; you still cannot write `2.25`.
+   * Every design value a component takes **from the theme** comes from here, and every slot's
+   * default points back at the scale above. That split is the whole idea: a product decides
+   * **which step a part uses**, and cannot invent a step. Change `--spacing-x-slot-modal-pad`
+   * to `var(--spacing-x-lg)` and every modal gets roomier; you still cannot write `2.25`.
+   *
+   * 🔴 The layout components (`Box`, `Card`, `Stack`, `Section`, `Grid`) are the exception:
+   * their padding and gap come from **props**, not from slots, because the caller decides
+   * them per instance. There is no `--spacing-x-slot-card-pad` — setting one does nothing,
+   * silently. See README §② (#389).
    *
    * Named per component rather than per role (hide's ruling, 2026-08-23): sharing one slot
    * between `Modal` and `Card` can be arranged later by pointing both at the same value,

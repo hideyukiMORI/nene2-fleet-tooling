@@ -107,7 +107,7 @@ describe('the override boundary', () => {
     // 片方だけだと、次の艦が反対側で迷う。両方書く。
     expect(section, 'must say slots are overridable').toMatch(/Slots — 🟢 redefine these/);
     expect(section, 'must say the scale is not').toMatch(/The scale — 🔒 do not redefine/);
-    expect(section).toContain('--spacing-x-slot-card-pad');
+    expect(section).toContain('--spacing-x-slot-modal-pad');
     expect(section).toContain('--spacing-x-3xs');
     // 🔴 規則の射程を書いていないと、艦がキット本体を落とす検査を作る（vault が実際に踏んだ）。
     expect(section, 'must name the namespaces the rule covers').toMatch(/--brightness-\*/);
@@ -362,6 +362,71 @@ describe('meanings that must stay distinguishable', () => {
     // Contract v1; this theme simply had not defined them.
     for (const c of ['color-warn', 'color-warn-soft', 'color-on-warn', 'color-danger-soft']) {
       expect(resolve(c), `${c} must be defined`).toMatch(/^oklch\(/);
+    }
+  });
+});
+
+describe('the README does not name slots that do not exist', () => {
+  // 🔴 #389: README §② の旗艦例が `--spacing-x-slot-card-pad` を「これを再定義しろ」の
+  // 正例として出していたが、そのスロットは存在しなかった。Card の padding は `pad` prop 由来。
+  // ⇒ **README のとおりにテーマへ書いた消費者は、何も起きない。エラーも警告も出ない。**
+  //
+  // 🔑 これを緑のまま通していたのは、検査が **代理**（README が文字列を含むか）を見て
+  // **本体**（そのスロットが実在するか）を見ていなかったから。しかも誤りを固定していた
+  // ——直そうとすると赤になる形だった。だから代理ではなく本体を検査する。
+  const theme = readFileSync(path.join(root, 'themes/default.css'), 'utf8');
+
+  /**
+   * README が名指ししているが、**キットのスロットとして実在してはいけない**もの。
+   * 2種類あり、どちらも「テーマに宣言が無いこと」が正しい状態:
+   *
+   *   1. 製品側のスロットの例（キットの部品ではない）
+   *   2. **反例**として名指ししているもの（「これを書いても何も起きない」と説明するため）
+   *
+   * 🔴 ここに足すときは理由を書くこと。理由の無い行は、次の #389 を隠す穴になる。
+   */
+  const MUST_NOT_EXIST = new Map([
+    [
+      '--spacing-x-slot-login-form-pad',
+      '§Composing a slot — `login-form` はキットの部品ではなく、製品が自分の <LoginForm> に付ける例',
+    ],
+    [
+      '--spacing-x-slot-card-pad',
+      '§② の警告文が**反例として**名指ししている（#389 の当事者）。' +
+        'この名前で検索した人が警告に辿り着けるよう、あえて書いてある。' +
+        'Card の padding は `pad` prop 由来なので、スロットとして実在してはいけない',
+    ],
+  ]);
+
+  it('every kit slot the README names is declared in the theme', () => {
+    const named = [
+      ...new Set([...readme.matchAll(/--[a-z]+-x-slot-[a-z0-9-]+/g)].map((m) => m[0]!)),
+    ];
+
+    // 陽性対照: README がそもそもスロットを名指ししていないなら、この検査は空虚に緑になる。
+    expect(named.length, 'README must name slots at all').toBeGreaterThan(5);
+
+    const declared = (name: string) =>
+      new RegExp(`^\\s*${name}\\s*:`, 'm').test(theme) ||
+      // ワイルドカード表記（`--color-x-slot-alert-warn-*`）は末尾を落として照合する
+      new RegExp(`^\\s*${name.replace(/-\*$/, '')}[a-z0-9-]*\\s*:`, 'm').test(theme);
+
+    const missing = named.filter((n) => !MUST_NOT_EXIST.has(n) && !declared(n));
+    expect(
+      missing,
+      `README names slots that themes/default.css does not declare. ` +
+        `Either the example is wrong, or the slot is missing. ` +
+        `A product following the README would set these and nothing would happen.`,
+    ).toEqual([]);
+  });
+
+  it('the exceptions are really absent, so the list cannot rot', () => {
+    // 🔴 免除は「実在しないこと」が前提。キットが後から同名のスロットを持ったら、
+    // この行は免除ではなく **検査の穴** になるので、そのとき落ちて気づけるようにする。
+    // （とくに `card-pad` は「実在しない」ことが README の主張そのものなので、
+    //   実在した瞬間に README が嘘になる。ここで落ちるのが正しい。）
+    for (const [name, why] of MUST_NOT_EXIST) {
+      expect(new RegExp(`^\\s*${name}\\s*:`, 'm').test(theme), `${name} — ${why}`).toBe(false);
     }
   });
 });
