@@ -164,6 +164,12 @@
   --spacing-x-slot-choice-box: var(--spacing-x-sm);
   --spacing-x-slot-badge-pad-x: var(--spacing-x-2xs);
   --spacing-x-slot-badge-pad-y: var(--spacing-x-3xs);
+  /* 🔴 Between a badge's icon and its label (#463). Unlike every other slot added so far,
+   * this one **changes what a Badge already renders**: the current default is *nothing
+   * specified*, so an icon sits flush against its text. Both consumers — nene-vault and
+   * nene-deal — were already correcting that independently, so the painting this replaces
+   * is one no consumer used. */
+  --spacing-x-slot-badge-gap: var(--spacing-x-3xs);
   --spacing-x-slot-switch-pad-x: var(--spacing-x-2xs);
   --spacing-x-slot-switch-pad-y: var(--spacing-x-3xs);
   --spacing-x-slot-alert-pad: var(--spacing-x-2xs);
@@ -185,6 +191,10 @@
   --radius-x-slot-button: var(--radius-x-md);
   --radius-x-slot-control: var(--radius-x-md);
   --radius-x-slot-badge: var(--radius-x-md);
+  /* A badge is a label, not body copy (#463). Inherited type made it the size and weight of
+   * whatever it sat in; both consumers overrode both. Same caveat as the gap above: this
+   * changes the current render. */
+  --text-x-slot-badge: var(--text-x-2xs);
   --radius-x-slot-switch: var(--radius-x-md);
   --radius-x-slot-alert: var(--radius-x-md);
   --radius-x-slot-toast: var(--radius-x-md);
@@ -410,7 +420,15 @@
   --spacing-x-slot-button-icon: var(--spacing-x-lg);
 
   /* ── Weight slots ─────────────────────────────────────────────────────────────
-   * `font-medium` appeared inline in four components. Same rule, same reason as colour. */
+   * `font-medium` appeared inline in four components. Same rule, same reason as colour.
+   *
+   * 🔴 The badge is `semibold`, and it is the one slot here that is not preserving an
+   * existing inline weight — it had none, which is why #463 exists. So the reason the other
+   * six are `medium` (that is what they already rendered) does not reach it, and the only
+   * evidence left is the consumers: nene-vault ships `font-semibold` and nene-deal measures
+   * 600 in production. **Nothing ships 500.** A badge also carries its weight at 11px, where
+   * the others sit at body size — the weight is doing work the size cannot. */
+  --font-weight-x-slot-badge: var(--font-weight-semibold);
   --font-weight-x-slot-button: var(--font-weight-medium);
   --font-weight-x-slot-table-header: var(--font-weight-medium);
   --font-weight-x-slot-detail-term: var(--font-weight-medium);

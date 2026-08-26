@@ -156,6 +156,36 @@ describe('Badge', () => {
     expect(cls).not.toMatch(/#|rgb|\[/);
   });
 
+  // #463 — gap も字もスロットが無く、艦は `className` で補うしかなかった。そして
+  // `className` は**効くとは限らない**（同一詳細度なら生成順が決めるので、キットの
+  // BASE_CLASS が後に出れば艦の指定が負ける）。⇒ 補う場所をスロットへ移した。
+  it('reaches slots for its gap and its type, not just its colours', () => {
+    const cls = render(<Badge>x</Badge>).container.firstElementChild?.getAttribute('class') ?? '';
+    expect(cls).toContain('gap-x-slot-badge-gap');
+    expect(cls).toContain('text-x-slot-badge');
+    expect(cls).toContain('font-x-slot-badge');
+  });
+
+  // 🔴 この3本だけは「既定値不変」にできない（現行の既定が *未指定* なので、スロットを
+  // 作ること自体が既定を決める）。だから代わりに **艦が取り戻せること** を固定する。
+  // 値は列挙で書かず theme の現物から読む（型1: 列挙で書いた検査は列挙に無いものを緑にする）。
+  it('defaults those three from the scale, so a ship can redefine them', () => {
+    const css = readFileSync(
+      path.join(path.dirname(fileURLToPath(import.meta.url)), '../../themes/default.css'),
+      'utf8',
+    );
+    const valueOf = (name: string) => css.match(new RegExp(`--${name}:\\s*([^;]+);`))?.[1]?.trim();
+    for (const slot of [
+      'spacing-x-slot-badge-gap',
+      'text-x-slot-badge',
+      'font-weight-x-slot-badge',
+    ]) {
+      const v = valueOf(slot);
+      expect(v, `${slot} is not defined`).toBeTruthy(); // 陽性対照: 読めていないのに合格させない
+      expect(v, `${slot} must default from the scale, not a literal`).toMatch(/^var\(--/);
+    }
+  });
+
   it('is neutral unless told otherwise', () => {
     const { container } = render(<Badge>x</Badge>);
     expect(container.firstElementChild?.getAttribute('class')).toContain(
