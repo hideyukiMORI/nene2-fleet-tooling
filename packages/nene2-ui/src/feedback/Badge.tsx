@@ -35,11 +35,26 @@ const TONE_CLASS: Record<NonNullable<BadgeProps['tone']>, string> = {
  * `<Badge color="red">` becomes a lie the moment the theme changes, and there is no way to
  * find every such lie afterwards except by reading every screen.
  */
+/**
+ * 🔴 `whitespace-nowrap` is load-bearing (#477). A badge is a label, not body copy — but the
+ * kit had no opinion on wrapping, so in a narrow flex row the label wrapped. In CJK that is
+ * not a word-boundary break: 「あなた」 came apart into three stacked characters and the badge
+ * grew from 26.5px tall to 43px (measured, nene-deal /users at 375px).
+ *
+ * Two holes were open at once — the label could *wrap* (`white-space: normal`) and the badge
+ * could *shrink* (`flex-shrink: 1`) — and either one alone produces the failure. `shrink-0`
+ * would close it too, but only while the badge is a flex item: measured in a 50px block
+ * container, `shrink-0` still wrapped (50 × 43) while `nowrap` did not (51 × 26.5). `nowrap`
+ * also stops the shrink, because a flex item's automatic minimum size is its min-content
+ * width and nowrap makes that the whole label. One class, both holes, any context.
+ *
+ * A badge that already fits is unchanged (35.88 × 26.5 before and after, measured).
+ */
 export function Badge({ tone = 'neutral', className, children }: BadgeProps) {
   return (
     <span
       className={cx(
-        'inline-flex items-center gap-x-slot-badge-gap rounded-x-slot-badge border px-x-slot-badge-pad-x py-x-slot-badge-pad-y font-sans text-x-slot-badge font-x-slot-badge',
+        'inline-flex items-center whitespace-nowrap gap-x-slot-badge-gap rounded-x-slot-badge border px-x-slot-badge-pad-x py-x-slot-badge-pad-y font-sans text-x-slot-badge font-x-slot-badge',
         TONE_CLASS[tone],
         className,
       )}

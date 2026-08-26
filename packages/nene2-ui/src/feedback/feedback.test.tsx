@@ -186,6 +186,14 @@ describe('Badge', () => {
     }
   });
 
+  // #477 — 狭い flex 行でラベルが折れ、CJK では1文字ずつ縦に積まれた（deal の W1 で
+  // 施主が見つけた唯一の NG）。jsdom は折り返しを計算しないのでクラス文字列を固定する。
+  // 実ブラウザでの切り分けは Badge.tsx の docstring（対照つきの実測）を参照。
+  it('does not let its label wrap', () => {
+    const cls = render(<Badge>x</Badge>).container.firstElementChild?.getAttribute('class') ?? '';
+    expect(cls).toContain('whitespace-nowrap');
+  });
+
   it('is neutral unless told otherwise', () => {
     const { container } = render(<Badge>x</Badge>);
     expect(container.firstElementChild?.getAttribute('class')).toContain(
