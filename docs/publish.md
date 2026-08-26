@@ -65,6 +65,80 @@ nene2-ui         （未公開）
 > #84/#85 束（standards 1.2.0＋tokens 1.1.0）は **2026-07-18 publish 済み**（npm view 実測で latest 一致）。
 > 監査根拠: 未 publish 範囲は git tag / npm view の実測突き合わせ。数字・挙動は全て実測かテスト現物で裏取りし、未実装は未実装と明記する。
 
+### `@hideyukimori/nene2-ui` 0.18.0（**minor — feat**・deal W1 の待ち分・#455 / #456 / #457）
+
+**載せ替える前に読むもの: 「各艦でやること」の節（0.17.0 の下・同じ手順）。**
+中身は**任意 prop とスロットの追加のみ**で、**既定は 0.17.1 までの描画と同じ**。何も渡さない呼び出し側は変わらない。
+**削除・既定値の変更は 0 件**〔`git diff` 実測〕。
+
+| Issue | 入るもの | 既定 |
+| --- | --- | --- |
+| #455 | `Button` の `danger` が **border をスロットから引く**（`border-x-slot-button-danger-border`）。**塗りではなく輪郭で danger を表す艦**（nene-deal）は、これまでスロット値をいくら上書きしても枠を出せなかった — variant が border クラスを1つも出さず、`BASE_CLASS` の `border-transparent` が最後まで残っていたため | **塗りと同色**＝実質不変（下記） |
+| #456 | `EmptyState` に `description`（二段目）。deal の空状態は4箇所中3箇所が「見出し＋説明」の2段で、`message` 1本に畳むと**説明が画面から消える**（意匠差ではなく情報の欠落） | 省略時は**要素を1つも増やさない** |
+| #457 | `ToastProvider` に `description`（二段目）と **`success` tone**。deal の success トーストは **7/7 が二段目を持つ**（「どの取引が」「どのステージへ」＝操作の対象） | 省略時は**要素を1つも増やさない**／既存 tone は不変 |
+
+**新設スロット 7本**（すべてスケール／パレット参照・リテラルなし）:
+`--color-x-slot-button-danger-border` ／ `--spacing-x-slot-empty-state-gap` ／
+`--color-x-slot-empty-state-description-fg` ／ `--color-x-slot-toast-success-fg` ／
+`--color-x-slot-toast-success-border` ／ `--color-x-slot-toast-description-fg` ／
+`--spacing-x-slot-toast-description-gap`
+
+#### 🔴 #455 だけ「クラス文字列は変わる」— 不変性は画素で測った
+
+`danger` に border クラスが1本増えるので、**生成クラス文字列の before/after 一致は原理的に成立しない**
+（スロット参照を足すのが目的の変更なので当然）。⇒ **画素で測った。**
+
+**実測（fleet-tooling・2026-08-26 18:0x JST・`date`）** — Chromium 149（Playwright 1.61.1・`deviceScaleFactor: 2`）＋
+**実 Tailwind 4.3.2 の `compile` API 出力**:
+
+| 比較 | 差分画素 | max channel delta |
+| --- | ---: | ---: |
+| **旧 vs 新（本件）** | **160** / 115200 | 18 |
+| 旧 vs 旧（**陰性対照**） | **0** / 115200 | 0 |
+| 旧 vs 青枠（陽性対照①） | 1134 / 115200 | 209 |
+| 旧 vs `oklch(0.56 0.2 25)`（陽性対照②・**ごく近い色**） | 1102 / 115200 | 22 |
+
+🔑 **判定は差の「量」ではなく「形」。** 枠色が少しでも本当に変われば**全周 ≒1100px** が動く（陽性対照②）。
+本件の 160px を座標で分類すると:
+
+```
+四隅の近傍(<=24px) : 160 = 100.0%
+辺の途中           :   0
+```
+
+⇒ **直線部は完全一致。差は四隅だけ**＝`border-radius` の下で「透明枠越しに見える背景」と「同色の不透明枠」の
+合成が異なるアンチエイリアス。**視覚的変化ではない。**
+既定は `var(--color-danger)`＝**塗りと同じ変数**を指す（`border-transparent` が塗りの上で描いていたのと同じ結果）。
+
+⚠️ **「実質不変」であって「不変」ではない。** 0 ではないことを明記しておく。
+
+#### #456 / #457 は省略時 DOM が byte-for-byte 一致
+
+新旧の実装で**新 prop を渡さない呼び出し**の `innerHTML` を丸ごと書き出して diff:
+
+```
+EmptyState (center) / EmptyState (align=start) / Toast(show) / Toast(tone='danger')
+→ 4件とも完全一致（1バイトの差もなし）
+```
+
+⚠️ **1回目の測定は無効だった。** トーストを `queueMicrotask` で出したためフラッシュされず、
+**新旧とも空のリージョンを比較して「一致」**と出していた（`'' === ''` で緑になる形）。
+`act()` で同期的に描画し、**`expect(html).toContain('Saved')` を陽性対照に入れて**測り直している。
+
+🟢 **`success` は polite 側**（`assertive` は読み上げを中断するので、完了の報告で利用者の作業を止めない）。
+「中断してよいのは danger だけ」という2リージョンの線は、語彙が増えても動かしていない。
+
+#### 組み合わせの実測
+
+3本とも **`themes/default.css` を触る**ので、各 PR の緑は「相手が入る前の緑」だった。
+隔離 worktree で段階マージして実走: **804 → 806 → 810 / 50 files**・各段で `npm run check` **EXIT=0**。
+その上で `update-branch` で追随させ、**組み合わせに CI を当ててから**マージした。
+（リポ側も BEHIND を実際に蹴った＝この規律は機械で守られている。）
+
+**各艦でやること**: 🔴 **0.x の caret は minor を固定する** ⇒ `^0.17.0` は 0.18.0 を**含まない**。
+**宣言を `^0.18.0` へ書き換え** → `npm update @hideyukimori/nene2-ui` → `npm ls` で実インストール版 → 実ブラウザ。
+（詳細は 0.17.0 の「各艦でやること」と同じ。消費艦は `nene-vault` の1艦。**deal はこの版を W1 で待っている。**）
+
 ### `@hideyukimori/nene2-ui` 0.17.1（**patch — fix**・#439）
 
 **載せ替える前に読むもの: 無し。** 変わるのは1点で、`DataTable collapse="sm"` で**カード化した各セルの `::before` ラベルが
