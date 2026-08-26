@@ -345,6 +345,13 @@
   --color-x-slot-toast-border: var(--color-border);
   --color-x-slot-toast-danger-fg: var(--color-danger);
   --color-x-slot-toast-danger-border: var(--color-danger);
+  /* `success` tone (#457). Badge and InlineAlert already carry this meaning; the toast is
+   * the one surface that had only two. */
+  --color-x-slot-toast-success-fg: var(--color-success);
+  --color-x-slot-toast-success-border: var(--color-success);
+  /* The toast's second line (#457). Only read when `description` is passed. */
+  --color-x-slot-toast-description-fg: var(--color-text-muted);
+  --spacing-x-slot-toast-description-gap: var(--spacing-x-3xs);
 
   --color-x-slot-card-bg: var(--color-surface-raised);
   --color-x-slot-card-border: var(--color-border);

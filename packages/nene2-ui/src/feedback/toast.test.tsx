@@ -20,7 +20,15 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-function Trigger({ tone, durationMs }: { tone?: 'info' | 'danger'; durationMs?: number }) {
+function Trigger({
+  tone,
+  durationMs,
+  description,
+}: {
+  tone?: 'info' | 'success' | 'danger';
+  durationMs?: number;
+  description?: string;
+}) {
   const { show } = useToast();
   return (
     <button
@@ -28,6 +36,7 @@ function Trigger({ tone, durationMs }: { tone?: 'info' | 'danger'; durationMs?: 
         show('Saved', {
           ...(tone === undefined ? {} : { tone }),
           ...(durationMs === undefined ? {} : { durationMs }),
+          ...(description === undefined ? {} : { description }),
         })
       }
     >
@@ -67,6 +76,52 @@ describe('live regions', () => {
     const polite = container.querySelector('[aria-live="polite"]');
     expect(assertive?.textContent).toContain('Saved');
     expect(polite?.textContent).not.toContain('Saved');
+  });
+
+  // #457 — 語彙が増えても「中断してよいのは danger だけ」の線は動かさない。
+  // 完了の報告で読み上げを割り込ませると、利用者の作業をトーストが止める。
+  it('keeps success on the polite side, where interruption is not warranted', () => {
+    const { container } = mount(<Trigger tone="success" />);
+    fireEvent.click(screen.getByText('go'));
+    expect(container.querySelector('[aria-live="polite"]')?.textContent).toContain('Saved');
+    expect(container.querySelector('[aria-live="assertive"]')?.textContent).not.toContain('Saved');
+  });
+});
+
+describe('tone vocabulary (#457)', () => {
+  it('paints success from its own slot, not by borrowing another tone', () => {
+    const { container } = mount(<Trigger tone="success" />);
+    fireEvent.click(screen.getByText('go'));
+    const cls = container.querySelector('[aria-live="polite"] > div')?.getAttribute('class') ?? '';
+    expect(cls).toContain('text-x-slot-toast-success-fg');
+    // 🔴 他トーンのスロットを借りていない（warn が danger を指していた 0.11 以前の型）
+    expect(cls).not.toContain('text-x-slot-toast-danger-fg');
+    expect(cls).not.toContain('text-x-slot-toast-fg ');
+  });
+});
+
+describe('description (#457)', () => {
+  it('renders the second line when one is given', () => {
+    mount(<Trigger description="Acme → Won" />);
+    fireEvent.click(screen.getByText('go'));
+    expect(screen.getByText('Acme → Won')).toBeTruthy();
+    expect(screen.getByText('Saved')).toBeTruthy();
+  });
+
+  // 🔴 本 PR が「既存艦の描画を変えない」ことの実測。二段目が無いときは要素を増やさない。
+  it('leaves the one-line toast exactly as it was — message in a single bare span', () => {
+    const { container } = mount(<Trigger />);
+    fireEvent.click(screen.getByText('go'));
+    const body = container.querySelector('[aria-live="polite"] > div > span');
+    expect(body?.textContent).toBe('Saved');
+    expect(body?.children).toHaveLength(0);
+    // 陽性対照: 二段版では同じ位置に子が2つ出る＝上の 0 が「測れていない」ではない
+    document.body.innerHTML = '';
+    const two = mount(<Trigger description="x" />);
+    fireEvent.click(screen.getAllByText('go')[0]!);
+    expect(two.container.querySelector('[aria-live="polite"] > div > span')?.children).toHaveLength(
+      2,
+    );
   });
 });
 
