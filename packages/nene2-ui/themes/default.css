@@ -173,6 +173,8 @@
   --spacing-x-slot-detail-row-pad-y: var(--spacing-x-xs);
   --spacing-x-slot-state-pad-y: var(--spacing-x-xl);
   --spacing-x-slot-state-action-pad-y: var(--spacing-x-xs);
+  /* Between an EmptyState's two lines (#456). Only read when `description` is passed. */
+  --spacing-x-slot-empty-state-gap: var(--spacing-x-3xs);
   --spacing-x-slot-page-header-pad-y: var(--spacing-x-md);
 
   --radius-x-slot-button: var(--radius-x-md);
@@ -368,6 +370,10 @@
   --color-x-slot-text-muted-fg: var(--color-text-muted);
   --color-x-slot-spinner-fg: var(--color-text-muted);
   --color-x-slot-empty-state-fg: var(--color-text-muted);
+  /* The second line of an EmptyState (#456). Same value as the first by default, so a ship
+   * that adopts `description` gets one uniform block until it decides otherwise; a ship that
+   * wants the hierarchy overrides one of the two. No existing render reads this. */
+  --color-x-slot-empty-state-description-fg: var(--color-text-muted);
   --color-x-slot-error-state-fg: var(--color-danger);
   /* 🔴 The required marker, not the error message — that one is `--color-x-slot-field-error`.
    * Named `-error-fg` when the colour slots were swept in (0.9.0, same day), which reads as

@@ -122,6 +122,27 @@ describe('EmptyState alignment', () => {
       classesOf(render(<EmptyState message="x" align="start" />).container.firstElementChild),
     ).not.toContain('text-center');
   });
+
+  // #456 — 二段目が無いと、艦は文言を落とすしかなかった（nene-deal は4箇所中3箇所が二段）。
+  it('renders a second line when one is given', () => {
+    const { container } = render(<EmptyState message="none yet" description="add one" />);
+    expect(container.firstElementChild?.textContent).toBe('none yetadd one');
+    expect(container.querySelectorAll('p')).toHaveLength(2);
+  });
+
+  // 🔴 本 PR が「既存艦の描画を変えない」ことの実測。description を渡さない場合は
+  // **要素を1つも増やさない**（<p> で包むと、この prop を使わない6艦の DOM が動く）。
+  it('leaves the one-line render exactly as it was — a bare text node, no elements', () => {
+    const { container } = render(<EmptyState message="none yet" />);
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.children).toHaveLength(0); // 陽性対照つき: 下の二段版は 2 を返す
+    expect(root.childNodes).toHaveLength(1);
+    expect(root.childNodes[0]?.nodeType).toBe(3); // Node.TEXT_NODE
+    expect(root.textContent).toBe('none yet');
+    expect(
+      render(<EmptyState message="a" description="b" />).container.firstElementChild?.children,
+    ).toHaveLength(2);
+  });
 });
 
 describe('InlineAlert tones', () => {
