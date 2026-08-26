@@ -39,7 +39,7 @@ export function Badge({ tone = 'neutral', className, children }: BadgeProps) {
   return (
     <span
       className={cx(
-        'inline-flex items-center rounded-x-slot-badge border px-x-slot-badge-pad-x py-x-slot-badge-pad-y font-sans',
+        'inline-flex items-center gap-x-slot-badge-gap rounded-x-slot-badge border px-x-slot-badge-pad-x py-x-slot-badge-pad-y font-sans text-x-slot-badge font-x-slot-badge',
         TONE_CLASS[tone],
         className,
       )}
