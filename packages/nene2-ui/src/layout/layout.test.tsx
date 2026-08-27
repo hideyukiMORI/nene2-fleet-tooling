@@ -10,6 +10,7 @@ import { render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Box } from './Box.js';
 import { Card } from './Card.js';
+import { PageHeader } from './PageHeader.js';
 import { Grid } from './Grid.js';
 import { Section } from './Section.js';
 import { Stack } from './Stack.js';
@@ -144,6 +145,48 @@ describe('Card', () => {
 
     const { container: lifted } = render(<Card raised>x</Card>);
     expect(classesOf(lifted.firstElementChild)).toContain('shadow-x-slot-card-raised');
+  });
+});
+
+describe('PageHeader — description（#492）', () => {
+  it('renders exactly what it did before the prop existed, when it is omitted', () => {
+    const without = render(<PageHeader title="請求" />).container.innerHTML;
+    const explicitly = render(<PageHeader title="請求" description={undefined} />).container
+      .innerHTML;
+    expect(explicitly).toBe(without);
+    // 陰性対照: 両方が空文字で一致しているのではないこと。
+    expect(without).toContain('<h1');
+    // 🔴 一行のときは <h1> を包まない。包むと、この prop を渡していない艦の DOM まで動く。
+    expect(without).not.toContain('<div');
+  });
+
+  it('puts the description under the title, inside one block', () => {
+    const { container } = render(<PageHeader title="督促" description="延滞請求の督促" />);
+    const header = container.firstElementChild!;
+    const block = header.firstElementChild!;
+    expect(block.tagName).toBe('DIV');
+    expect(block.children[0]?.tagName).toBe('H1');
+    expect(block.children[1]?.tagName).toBe('P');
+    expect(block.children[1]?.textContent).toBe('延滞請求の督促');
+  });
+
+  it('keeps actions beside the block, not inside it', () => {
+    const { container } = render(
+      <PageHeader title="ユーザー" description="権限の管理" actions={<button>招待</button>} />,
+    );
+    const header = container.firstElementChild!;
+    expect(header.children).toHaveLength(2);
+    expect(header.children[1]?.tagName).toBe('BUTTON');
+  });
+
+  it('reads its gap and its colour from slots, not from the scale', () => {
+    const cls =
+      render(<PageHeader title="x" description="y" />)
+        .container.querySelector('p')
+        ?.getAttribute('class') ?? '';
+    expect(cls).toContain('mt-x-slot-page-header-gap');
+    expect(cls).toContain('text-x-slot-page-header-description-fg');
+    expect(cls).not.toMatch(/text-(xs|sm|base|lg)\b/);
   });
 });
 

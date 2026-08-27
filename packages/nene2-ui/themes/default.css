@@ -188,6 +188,7 @@
   /* Between an EmptyState's two lines (#456). Only read when `description` is passed. */
   --spacing-x-slot-empty-state-gap: var(--spacing-x-3xs);
   --spacing-x-slot-page-header-pad-y: var(--spacing-x-md);
+  --spacing-x-slot-page-header-gap: var(--spacing-x-3xs);
 
   --radius-x-slot-button: var(--radius-x-md);
   --radius-x-slot-control: var(--radius-x-md);
@@ -389,6 +390,7 @@
 
   --color-x-slot-pagination-fg: var(--color-text-muted);
   --color-x-slot-page-header-fg: var(--color-text-primary);
+  --color-x-slot-page-header-description-fg: var(--color-text-muted);
   --color-x-slot-text-fg: var(--color-text-primary);
   --color-x-slot-text-muted-fg: var(--color-text-muted);
   --color-x-slot-spinner-fg: var(--color-text-muted);
