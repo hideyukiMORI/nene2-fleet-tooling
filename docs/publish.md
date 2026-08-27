@@ -65,6 +65,99 @@ nene2-ui         （未公開）
 > #84/#85 束（standards 1.2.0＋tokens 1.1.0）は **2026-07-18 publish 済み**（npm view 実測で latest 一致）。
 > 監査根拠: 未 publish 範囲は git tag / npm view の実測突き合わせ。数字・挙動は全て実測かテスト現物で裏取りし、未実装は未実装と明記する。
 
+### `@hideyukimori/nene2-ui` 0.20.0（**minor — 🔴 BREAKING を含む**・#487 / #488 / #492）
+
+🔴 **`Button` の `variant` が「形 × 色」の2軸に分かれました。** 旧 `primary | secondary | danger | ghost` は
+**そのままでは動きません**（型エラーになります）。
+
+🔴 **急いで上げる必要はありません。** 0.x の caret は minor を固定するので、
+**`^0.19.0` のままなら 0.20.0 は入ってきません。** 上げるのは移行の準備ができてからで結構です。
+⚠️ **publish 前に `^0.20.0` を書かないでください**（`npm i` が解決できません）。
+
+#### なぜ値を足さず軸を分けたか
+
+旧 `variant` は**形と色を1本の閉じた enum に潰していた**ので、「ghost の形 × danger の色」が言えませんでした。
+**5艦が独立に private な合成名を発明し、命名は一致しませんでした**〔2026-08-27 実測〕:
+clear `ghost-danger` / **field `danger-ghost`（同じものを逆順）** / profile `link-danger` /
+origin `danger-outline` / deal は**スロットで**同じ場所へ到達（#455）。
+
+**4値を足すと 4形 × 4色 = 16名を追う**ことになるので、軸を分けました。
+
+#### 新しい API
+
+```ts
+variant?: 'solid' | 'outline' | 'bare' | 'link';                    // 形（既定 solid）
+tone?:    'neutral' | 'accent' | 'danger' | 'success' | 'warn' | 'info'; // 色（既定 accent）
+size?:    'md' | 'sm';                                               // 変更なし
+```
+
+**`tone` は `Badge` の6つと同一・同順**です。`variant` は「どのプロパティを塗るか」、`tone` は「何色で塗るか」。
+
+#### 🔴 移行の写像
+
+| 旧 | 新 | 種別 |
+| --- | --- | --- |
+| `variant="primary"` | **既定**（何も書かない） | 消える |
+| 省略 | **そのまま** | 不変 |
+| `variant="secondary"` | **`variant="outline" tone="neutral"`** | 🔴 **`tone` が要る** |
+| `variant="danger"` | **`tone="danger"`** | 形 → 色へ移る |
+| `variant="ghost"` | **`variant="bare" tone="neutral"`** | 🔴 **改名**（下記） |
+
+🔴 **`ghost` → `bare` の改名**: 旧名は**艦とキットで別のものを指していました**。
+キットの `ghost` は**箱なし**（地も枠も無い）ですが、**nene-clear の `.btn-ghost` は地も枠もある**
+＝この kit の `outline` です。業界でも語義が割れている語（Bootstrap=outline / Material=text）なので、
+**消費者が増える前に潰しました**（消費2艦とも `ghost` の使用は **0**〔実測〕なので改名コストはゼロ）。
+
+#### 🔴 スロット名が変わります — **無言で失敗します**
+
+**旧スロット名を再定義していた艦はエラーになりません。** その custom property が読まれなくなり、
+**キット既定が描くだけ**です。**上げる前に自艦の再定義を確認してください。**
+
+| 旧 | 新 |
+| --- | --- |
+| `--color-x-slot-button-primary-bg` / `-fg` | `--color-x-slot-button-accent-bg` / `-fg` |
+| `--color-x-slot-button-secondary-bg` | `--color-x-slot-button-outline-bg` |
+| `--color-x-slot-button-secondary-fg` | `--color-x-slot-button-neutral-ink` |
+| `--color-x-slot-button-secondary-border` | `--color-x-slot-button-neutral-border` |
+| `--color-x-slot-button-ghost-fg` | `--color-x-slot-button-neutral-ink` |
+| `--shadow-x-slot-button-primary` | `--shadow-x-slot-button-solid` |
+
+**`--color-x-slot-button-danger-bg` / `-fg` / `-border` は名前が変わりません**が、
+**`-border` は `outline` のときだけ描かれる**ようになりました（`solid` は枠クラスを出しません）。
+
+**艦ごとの実測**〔2026-08-27〕:
+
+- **nene-vault**: JSX 13箇所（`primary` 6 / `secondary` 5 / `danger` 1 / 省略 1）＋
+  🔴 **スロット3行の改名が必須**（`secondary-fg` / `secondary-border` / `shadow-...-primary`
+  ——**3行とも Pagination 3ファイルで実際に効いています**）
+- **nene-deal**: JSX 12箇所（`secondary` 6 / 省略 6）＋ スロット1行（`secondary-border`）。
+  🟢 **#455 で作った「輪郭型 danger」の3行は捨てられます**（`variant="outline" tone="danger"` で直接書ける）。
+  **いま何も塗っていない**ので live な退行はありません〔`variant="danger"` の使用 0・`ConfirmDialog` の使用 0〕
+- **nene-clear**: **キットの `Button` は未使用**〔import 0〕。**最初から2軸で載せ替えられます**
+
+#### 見た目
+
+🟢 **塗りボタンは 0.19.x と同じに見えます。** 機構は変わりました——以前は「枠色の既定が塗りと同じ変数」でしたが、
+いまは **`solid` が border 系のクラスを一つも出さない**ので `BASE_CLASS` の `border-transparent` が残ります。
+
+🔴 **`warn` / `success` / `info` の塗りは新規**です。**コントラストは計算で AA を確認済み**
+（`button-contrast.test.ts` が oklch から計算して毎回守ります・**陰性対照つき**）。
+**`warn` の前景は契約の `--color-on-warn`（暗いブラウン）**で、白字だと 3.48:1（AA 未満）のところ **4.97:1** です。
+
+#### 同梱の2件（どちらも既定不変・nene-clear 執筆）
+
+- **`Badge` に `dot`**（#488 / PR #495）— 状態の丸ポチ。`currentColor` なので**色スロットは無し**。
+  既定サイズは**段の 4px**（`--spacing-x-slot-badge-dot`）。**渡さなければ DOM は動きません**〔fleet が DOM で実測〕
+- **`PageHeader` に `description`**（#492 / PR #497）— 一行の副題。
+  **省略時は `<h1>` を `<div>` で包みません**〔fleet が DOM で実測〕。追加スロットは gap と `description-fg` の2本。
+  ⚠️ **`description=""`（空文字）は「渡していない」と区別され、中身の無い `<p>` が1つ出ます**〔実測〕
+  🔴 **題のサイズスロットは足していません**——`PageHeader` には type scale のスロットが**1本も無い**ので、
+  片方だけ足すと非対称を固定します（board L15 の typography 需要としてまとめて解く）
+
+#### 検証〔2026-08-27 21:0x 実測〕
+
+`main` `1f84083` で **846 tests / 52 files** 緑・`npm run check` **EXIT=0**（AM-2 gate PASS）。
+
 ### `@hideyukimori/nene2-ui` 0.19.1（**patch — fix**・#477）
 
 **載せ替える前に読むもの: 無し。** 変わるのは1点で、**`Badge` のラベルが折り返さなくなる**。
