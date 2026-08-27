@@ -109,6 +109,7 @@ export function Pagination(props: PaginationProps) {
     <Button
       key="prev"
       variant="outline"
+      tone="neutral"
       size={size}
       disabled={atStart}
       onClick={goPrev}
@@ -126,6 +127,7 @@ export function Pagination(props: PaginationProps) {
     <Button
       key="next"
       variant="outline"
+      tone="neutral"
       size={size}
       disabled={atEnd}
       onClick={goNext}

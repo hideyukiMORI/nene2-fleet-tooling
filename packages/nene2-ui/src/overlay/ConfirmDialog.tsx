@@ -42,13 +42,13 @@ export function ConfirmDialog({
       <Stack gap="xs">
         <Text>{message}</Text>
         <Stack direction="horizontal" gap="2xs" justify="end">
-          <Button variant="outline" onClick={onCancel}>
+          <Button variant="outline" tone="neutral" onClick={onCancel}>
             {cancelLabel}
           </Button>
           {/* 🔴 `tone` の値をそのまま渡す。0.20.0 以前は `variant` に載せ替えていたが、
               それは「形」の軸に「色」を書いていたということだった（#487）。
               ConfirmDialog の `tone` と Button の `tone` は同じ語で同じ意味になった。 */}
-          <Button tone={tone === 'danger' ? 'danger' : 'neutral'} onClick={onConfirm}>
+          <Button tone={tone === 'danger' ? 'danger' : 'accent'} onClick={onConfirm}>
             {confirmLabel}
           </Button>
         </Stack>

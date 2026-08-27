@@ -21,14 +21,14 @@ const buttonSrc = readFileSync(path.join(here, 'Button.tsx'), 'utf8');
 const themeSrc = readFileSync(themePath, 'utf8');
 
 const SHAPES = ['solid', 'outline', 'bare', 'link'] as const;
-const TONES = ['neutral', 'danger', 'warn', 'success'] as const;
+const TONES = ['neutral', 'accent', 'danger', 'success', 'warn', 'info'] as const;
 
 const classesOf = (el: Element | null) => el?.getAttribute('class') ?? '';
 
 describe('Button の軸（#487）', () => {
   it('形 × 色 の全16マスが描ける（直積を導出して全数）', () => {
     // 陽性対照: 直積そのものが空でないこと（ループが0回で緑になる事故を潰す）
-    expect(SHAPES.length * TONES.length).toBe(16);
+    expect(SHAPES.length * TONES.length).toBe(24);
 
     for (const variant of SHAPES) {
       for (const tone of TONES) {
@@ -111,11 +111,11 @@ describe('Button の軸（#487）', () => {
     expect(solid).toMatch(/px-x-slot-button-/);
   });
 
-  it('既定は solid × neutral（呼び出し側が何も書かないときの姿）', () => {
+  it('既定は solid × accent（＝0.19.x の primary。呼び出し側が何も書かないときの姿）', () => {
     const bare = classesOf(render(<Button>x</Button>).container.querySelector('button'));
     const spelled = classesOf(
       render(
-        <Button variant="solid" tone="neutral">
+        <Button variant="solid" tone="accent">
           x
         </Button>,
       ).container.querySelector('button'),

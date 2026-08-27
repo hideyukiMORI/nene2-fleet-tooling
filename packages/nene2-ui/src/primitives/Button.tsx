@@ -25,14 +25,16 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /**
    * The colour: what the shape means. Not how loud it is.
    *
-   * `neutral` is the ordinary action, `danger` destroys something, `warn` is the one that is
-   * hard to undo without being destructive, `success` confirms.
+   * 🔴 The same six words `Badge` has carried since 0.17.0, in the same order, painted from
+   * the same shape of slot. A tone means one thing across the kit or it means nothing.
    *
-   * 🔴 `Badge` has carried `tone` since 0.17.0 and paints it from
-   * `--color-x-slot-badge-<tone>-{bg,fg,border}`. Button now reads the same word the same
-   * way, so a tone means one thing across the kit rather than two.
+   * 🔴 The default is `accent`, not `neutral`. What 0.19.x called `primary` was never a tone
+   * — it was "the accent-coloured filled button", so `<Button>` keeps rendering exactly that.
+   * `neutral` is the quiet grey step, which is what `Badge` has always meant by the word.
+   * Reading `neutral` as "the ordinary action" is how this kit ended up with two vocabularies
+   * in the first place.
    */
-  tone?: 'neutral' | 'danger' | 'warn' | 'success';
+  tone?: 'neutral' | 'accent' | 'danger' | 'success' | 'warn' | 'info';
   /**
    * Two sizes, not a length. `sm` for dense rows and toolbars.
    *
@@ -67,30 +69,39 @@ const SHAPE_TONE_CLASS: Record<
 > = {
   solid: {
     neutral: 'bg-x-slot-button-neutral-bg text-x-slot-button-neutral-fg shadow-x-slot-button-solid',
+    accent: 'bg-x-slot-button-accent-bg text-x-slot-button-accent-fg shadow-x-slot-button-solid',
     danger: 'bg-x-slot-button-danger-bg text-x-slot-button-danger-fg shadow-x-slot-button-solid',
-    warn: 'bg-x-slot-button-warn-bg text-x-slot-button-warn-fg shadow-x-slot-button-solid',
     success: 'bg-x-slot-button-success-bg text-x-slot-button-success-fg shadow-x-slot-button-solid',
+    warn: 'bg-x-slot-button-warn-bg text-x-slot-button-warn-fg shadow-x-slot-button-solid',
+    info: 'bg-x-slot-button-info-bg text-x-slot-button-info-fg shadow-x-slot-button-solid',
   },
   outline: {
     neutral:
       'bg-x-slot-button-outline-bg text-x-slot-button-neutral-ink border-x-slot-button-neutral-border',
+    accent:
+      'bg-x-slot-button-outline-bg text-x-slot-button-accent-ink border-x-slot-button-accent-border',
     danger:
       'bg-x-slot-button-outline-bg text-x-slot-button-danger-ink border-x-slot-button-danger-border',
-    warn: 'bg-x-slot-button-outline-bg text-x-slot-button-warn-ink border-x-slot-button-warn-border',
     success:
       'bg-x-slot-button-outline-bg text-x-slot-button-success-ink border-x-slot-button-success-border',
+    warn: 'bg-x-slot-button-outline-bg text-x-slot-button-warn-ink border-x-slot-button-warn-border',
+    info: 'bg-x-slot-button-outline-bg text-x-slot-button-info-ink border-x-slot-button-info-border',
   },
   bare: {
     neutral: 'bg-transparent text-x-slot-button-neutral-ink',
+    accent: 'bg-transparent text-x-slot-button-accent-ink',
     danger: 'bg-transparent text-x-slot-button-danger-ink',
-    warn: 'bg-transparent text-x-slot-button-warn-ink',
     success: 'bg-transparent text-x-slot-button-success-ink',
+    warn: 'bg-transparent text-x-slot-button-warn-ink',
+    info: 'bg-transparent text-x-slot-button-info-ink',
   },
   link: {
     neutral: 'bg-transparent text-x-slot-button-neutral-ink underline-offset-4 hover:underline',
+    accent: 'bg-transparent text-x-slot-button-accent-ink underline-offset-4 hover:underline',
     danger: 'bg-transparent text-x-slot-button-danger-ink underline-offset-4 hover:underline',
-    warn: 'bg-transparent text-x-slot-button-warn-ink underline-offset-4 hover:underline',
     success: 'bg-transparent text-x-slot-button-success-ink underline-offset-4 hover:underline',
+    warn: 'bg-transparent text-x-slot-button-warn-ink underline-offset-4 hover:underline',
+    info: 'bg-transparent text-x-slot-button-info-ink underline-offset-4 hover:underline',
   },
 };
 
@@ -155,7 +166,7 @@ const BASE_CLASS = `rounded-x-slot-button border border-transparent inline-flex 
 
 export function Button({
   variant = 'solid',
-  tone = 'neutral',
+  tone = 'accent',
   size = 'md',
   children,
   type = 'button',

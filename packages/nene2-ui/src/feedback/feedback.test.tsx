@@ -133,8 +133,8 @@ describe('ConfirmDialog', () => {
       <ConfirmDialog {...props} onConfirm={() => {}} onCancel={() => {}} />,
     );
     const confirm = [...container.querySelectorAll('button')].at(-1);
-    // 0.20.0: 形と色が分かれたので、既定は solid × neutral（#487）。
-    expect(confirm?.getAttribute('class')).toContain('bg-x-slot-button-neutral-bg');
+    // 0.20.0: 形と色が分かれた（#487）。確定ボタンは solid × accent＝0.19.x の primary と同じ。
+    expect(confirm?.getAttribute('class')).toContain('bg-x-slot-button-accent-bg');
     // 🔴 陰性対照: danger の色を持っていないこと（「破壊的に見えない」の本体）。
     expect(confirm?.getAttribute('class')).not.toContain('bg-x-slot-button-danger-bg');
   });
