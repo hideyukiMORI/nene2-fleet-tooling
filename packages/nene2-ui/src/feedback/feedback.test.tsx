@@ -216,6 +216,53 @@ describe('InlineAlert', () => {
   });
 });
 
+describe('Badge — dot（#488）', () => {
+  it('draws nothing extra when the prop is omitted, so no product moves', () => {
+    // render は呼び出しごとに独自の container を返すので cleanup は要らない。
+    const plain = render(<Badge>x</Badge>).container.innerHTML;
+    const explicitly = render(<Badge dot={false}>x</Badge>).container.innerHTML;
+    expect(explicitly).toBe(plain);
+    // 陰性対照: この比較が「何も描かれていないもの同士」で成立しているのではないこと。
+    expect(plain).toContain('<span');
+  });
+
+  it('adds one dot before the label when asked', () => {
+    const { container } = render(<Badge dot>x</Badge>);
+    const badge = container.firstElementChild!;
+    const dots = badge.querySelectorAll('span[aria-hidden="true"]');
+    expect(dots).toHaveLength(1);
+    // ラベルの前（＝最初の子）。後ろに付くと視覚順と読み上げ順がずれる。
+    expect(badge.firstElementChild).toBe(dots[0]);
+  });
+
+  it('takes its size from a slot and its colour from currentColor', () => {
+    const cls =
+      render(<Badge dot>x</Badge>)
+        .container.querySelector('span[aria-hidden="true"]')
+        ?.getAttribute('class') ?? '';
+    expect(cls).toContain('size-x-slot-badge-dot');
+    expect(cls).toContain('bg-current');
+    // 🔴 色スロットを持たせない、が設計判断そのもの。ドットはトーンを小さく出した
+    //    もので、独立した色ではない。将来 `--color-x-slot-badge-dot-*` が生えたら
+    //    トーン6色と二重管理になる（#481 の「既定の再宣言」型）。
+    expect(cls).not.toMatch(/(bg|text|border)-x-slot-badge-dot/);
+  });
+
+  it('does not announce itself — the tone is already in the label', () => {
+    const { container } = render(<Badge dot>期限超過</Badge>);
+    expect(container.firstElementChild?.textContent).toBe('期限超過');
+  });
+
+  it('cannot be squashed into an oval in a narrow flex row', () => {
+    const cls =
+      render(<Badge dot>x</Badge>)
+        .container.querySelector('span[aria-hidden="true"]')
+        ?.getAttribute('class') ?? '';
+    expect(cls).toContain('shrink-0');
+    expect(cls).toContain('rounded-full');
+  });
+});
+
 describe('Badge — success / warn / info（#422・0.17.0）', () => {
   it.each(['success', 'warn', 'info'] as const)(
     '%s reads its own slots, not another tone’s',

@@ -12,6 +12,22 @@ export interface BadgeProps {
    * badge as it does in an alert (0.17.0, #422).
    */
   tone?: 'neutral' | 'accent' | 'danger' | 'success' | 'warn' | 'info';
+  /**
+   * Draw a small filled circle before the label.
+   *
+   * 🔴 It takes its colour from `currentColor`, so there is no dot colour slot and there
+   * must not be one: the dot is the tone, shown small. A slot would let a product set a
+   * badge whose dot disagrees with its own text, and it would have to be redefined for
+   * every tone — six values to keep in step with six that already exist (the
+   * redefine-the-default shape nene-vault retired in #481).
+   *
+   * Whether a badge has one is a per-call-site decision, not a theme value: nene-clear
+   * renders dotted and undotted badges **on the same screen** (`DunningPage` marks overdue
+   * with a dot and paused without one), so it cannot be a slot. Hence a prop.
+   *
+   * Omit it and the render is byte-for-byte what it was before this prop existed.
+   */
+  dot?: boolean;
   /** Composed after the kit's own classes (design principle 2). */
   className?: string;
   children: ReactNode;
@@ -50,7 +66,7 @@ const TONE_CLASS: Record<NonNullable<BadgeProps['tone']>, string> = {
  *
  * A badge that already fits is unchanged (35.88 × 26.5 before and after, measured).
  */
-export function Badge({ tone = 'neutral', className, children }: BadgeProps) {
+export function Badge({ tone = 'neutral', dot = false, className, children }: BadgeProps) {
   return (
     <span
       className={cx(
@@ -59,6 +75,18 @@ export function Badge({ tone = 'neutral', className, children }: BadgeProps) {
         className,
       )}
     >
+      {/* 🔴 `aria-hidden`: the dot repeats the tone, which the label already says in words.
+       * Announcing it would read the status twice. `shrink-0` for the same reason the badge
+       * itself is `whitespace-nowrap` (#477) — in a narrow flex row a 4px circle is the
+       * first thing an auto minimum size gives away, and an oval dot reads as a rendering
+       * fault rather than a smaller dot. `rounded-full` is the shape of a dot, not a design
+       * value, so it is not a slot. */}
+      {dot && (
+        <span
+          aria-hidden="true"
+          className="size-x-slot-badge-dot shrink-0 rounded-full bg-current"
+        />
+      )}
       {children}
     </span>
   );
