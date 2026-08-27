@@ -35,6 +35,16 @@ bound. Providing the parts scales with the number of screens, which is finite.**
    cannot express it, add a variant — for everyone. _This is the principle that matters:_ the
    13,021 style violations the fleet is currently remediating exist because values could be
    written inline. Make them unwritable and there is nothing to inspect.
+
+   🔴 **But "add a variant" is the wrong move when the axis is wrong** (#487). `Button` carried
+   one closed enum that mixed *shape* with *colour* — `primary | secondary | danger | ghost` —
+   so "the ghost shape in the danger colour" was not sayable. Five ships each invented a
+   private name for that one cell and no two agreed (`ghost-danger`, `danger-ghost`,
+   `link-danger`, `danger-outline`, and nene-deal reached it through slots). Enumerating four
+   more values would have left `4 shapes × 4 tones = 16` names to chase. 0.20.0 splits the
+   axis instead: `variant` is the shape, `tone` is the colour. **Before adding a value, check
+   whether what is missing is a value or an axis** — a value that ships keep spelling with a
+   hyphen in the middle is usually two axes wearing one name.
 4. **No strings.** The kit ships no user-visible text. `Spinner` takes `label`, `ErrorState` takes
    `retryLabel`. Localisation stays with the product (`@hideyukimori/nene2-i18n`), so a wording
    change never becomes a kit release.

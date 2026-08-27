@@ -42,6 +42,11 @@
   --color-warn-soft: oklch(95% 0.035 80);
   --color-on-warn: oklch(21% 0.04 75);
   --color-danger-soft: oklch(95% 0.03 30);
+  /* 🔴 契約キーだが値が無かった2つ（#487 で必要になったので与える）。
+   * `on-danger` は 0.19.x が danger の塗りに使っていた `on-accent` と同値＝描画は不変。
+   * `accent-soft` は他の *-soft（95% / chroma ~0.03 / 同 hue）と同じ作り方。 */
+  --color-on-danger: oklch(99% 0 0);
+  --color-accent-soft: oklch(95% 0.03 250);
 
   /* 🔴 Six more contract colours, added in 0.17.0 for `Badge` (#422). Five ships carry a
    * success tone and a warning tone in their own badge (clear / field / invoice / origin /
@@ -285,22 +290,65 @@
    * there is now an opening. */
   --color-x-slot-focus-ring: var(--color-text-primary);
 
-  --color-x-slot-button-primary-bg: var(--color-accent);
-  --color-x-slot-button-primary-fg: var(--color-on-accent);
-  --color-x-slot-button-secondary-bg: var(--color-surface-raised);
-  --color-x-slot-button-secondary-fg: var(--color-text-primary);
-  --color-x-slot-button-secondary-border: var(--color-border);
+  /* Button: shape × tone (#487).
+   *
+   * 🔴 The six tones are `Badge`'s six, in `Badge`'s order, read through the same shape of
+   * slot. That was the whole argument for splitting the axis — if the words do not line up,
+   * the kit still has two vocabularies and has only moved where they disagree.
+   *
+   * 🔴 `-fg` reads the contract's own `on-<tone>`, not `on-accent` for everything. The
+   * contract has carried `on-warn` since it was frozen (2026-07-14) and it is a dark brown,
+   * because `--color-warn` is mid-luminance and white on it measures 3.48:1 — below AA.
+   * With `on-warn` it is 4.97:1. The first draft of this PR painted every tone's label with
+   * `on-accent` and shipped that 3.48:1; the contract had already solved it.
+   *
+   * 🔴 The default tone is `accent`, so `<Button>` is still the accent-coloured filled
+   * button 0.19.x called `primary`. `neutral` is the quiet grey step.
+   *
+   * Four colours per tone, none derivable from the others:
+   *   -bg     the fill, painted by `solid` only
+   *   -fg     what sits on that fill (the contract's `on-<tone>`)
+   *   -ink    the tone itself, painted by `outline` / `bare` / `link`
+   *   -border the outline's frame — the *-soft step, not the tone
+   *
+   * 🔴 `-border` is the soft step. nene-clear draws its outlined danger with a frame far
+   * lighter than the label (`--bad-line` #e3bcbc against `--bad` #9c2c2c). Using the tone for
+   * both makes every outlined button louder than any ship draws today.
+   *
+   * 🔴 Renaming a slot fails SILENTLY. A ship that redefined `primary-* / secondary-* /
+   * danger-border / ghost-fg` sees no error — the property stops being read and the kit
+   * default paints instead. Both consuming ships redefined some (nene-deal 4, nene-vault 3,
+   * measured 2026-08-27), so the migration note carries the mapping. */
+  --color-x-slot-button-outline-bg: var(--color-surface-raised);
+  --color-x-slot-button-neutral-bg: var(--color-border);
+  --color-x-slot-button-neutral-fg: var(--color-text-primary);
+  --color-x-slot-button-neutral-ink: var(--color-text-primary);
+  --color-x-slot-button-neutral-border: var(--color-border);
+  --color-x-slot-button-accent-bg: var(--color-accent);
+  --color-x-slot-button-accent-fg: var(--color-on-accent);
+  --color-x-slot-button-accent-ink: var(--color-accent);
+  --color-x-slot-button-accent-border: var(--color-accent-soft);
   --color-x-slot-button-danger-bg: var(--color-danger);
-  --color-x-slot-button-danger-fg: var(--color-on-accent);
-  /* 🔴 Defaults to the fill, so a filled danger button looks exactly as it did: the border
-   * and the background are the same colour, which is what `border-transparent` over a filled
-   * background already rendered. The slot exists for the ships whose danger button is an
-   * outline rather than a fill — nene-deal's is `background: transparent` with a tinted
-   * border (#455), and it could not express that: the variant emitted no border class at
-   * all, so `border-transparent` from BASE_CLASS won and no slot value could reach it. */
-  --color-x-slot-button-danger-border: var(--color-danger);
-  --color-x-slot-button-ghost-fg: var(--color-text-primary);
-
+  --color-x-slot-button-danger-fg: var(--color-on-danger);
+  --color-x-slot-button-danger-ink: var(--color-danger);
+  --color-x-slot-button-danger-border: var(--color-danger-soft);
+  --color-x-slot-button-success-bg: var(--color-success);
+  --color-x-slot-button-success-fg: var(--color-on-success);
+  --color-x-slot-button-success-ink: var(--color-success);
+  --color-x-slot-button-success-border: var(--color-success-soft);
+  --color-x-slot-button-warn-bg: var(--color-warn);
+  --color-x-slot-button-warn-fg: var(--color-on-warn);
+  /* 🔴 warn の ink だけ tone 本体色ではない。`--color-warn` は中間輝度で、白地に置くと
+   * 3.58:1 ——AA を割る（他の tone は本体色のままで 4.7〜5.5 通る）。契約の `--color-on-warn`
+   * は 16:1 で、**InlineAlert が既に「白地に載る warn の字」として使っている**
+   * （`--color-x-slot-alert-warn-fg`）。同じ用途に同じトークンを充てるのは揃える方向であって、
+   * 例外ではない。⇒ 契約の値は1つも変えずに済む（Badge も InlineAlert も動かない）。 */
+  --color-x-slot-button-warn-ink: var(--color-on-warn);
+  --color-x-slot-button-warn-border: var(--color-warn-soft);
+  --color-x-slot-button-info-bg: var(--color-info);
+  --color-x-slot-button-info-fg: var(--color-on-info);
+  --color-x-slot-button-info-ink: var(--color-info);
+  --color-x-slot-button-info-border: var(--color-info-soft);
   /* Shared by Input, Select and Textarea — they are one control with three shapes, and a
    * product that darkens one and not the others has a bug, not a design. */
   --color-x-slot-control-fg: var(--color-text-primary);
@@ -495,7 +543,10 @@
    * `Card` and `Toast` wrote `shadow-sm`, so theirs point at the scale. A default that is
    * anything other than the current rendering changes how every product already looks —
    * and "the default is harmless" only holds while the default is that copy. */
-  --shadow-x-slot-button-primary: none;
+  /* 🔴 Renamed from `--shadow-x-slot-button-primary` (#487): the shadow belongs to the
+   * filled shape, not to one colour. nene-vault redefines this one (`var(--shadow-sm)`) and
+   * must rename it — see the migration note. */
+  --shadow-x-slot-button-solid: none;
   --shadow-x-slot-card-raised: var(--shadow-sm);
   --shadow-x-slot-toast: var(--shadow-sm);
 

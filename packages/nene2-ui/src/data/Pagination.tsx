@@ -108,7 +108,8 @@ export function Pagination(props: PaginationProps) {
   const prev = (
     <Button
       key="prev"
-      variant="secondary"
+      variant="outline"
+      tone="neutral"
       size={size}
       disabled={atStart}
       onClick={goPrev}
@@ -125,7 +126,8 @@ export function Pagination(props: PaginationProps) {
   const next = (
     <Button
       key="next"
-      variant="secondary"
+      variant="outline"
+      tone="neutral"
       size={size}
       disabled={atEnd}
       onClick={goNext}

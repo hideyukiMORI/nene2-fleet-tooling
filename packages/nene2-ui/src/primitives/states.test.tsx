@@ -7,9 +7,6 @@
  * 補いを lint で禁じる（順序③）前にここが埋まっていないと、
  * **押せないことが見えないボタン**が本番に出る。
  */
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Button } from './Button.js';
@@ -114,34 +111,46 @@ describe('Button', () => {
     expect((container.firstElementChild as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('keeps its variant styling alongside the state classes', () => {
-    const { container } = render(<Button variant="danger">x</Button>);
+  it('keeps its shape+tone styling alongside the state classes', () => {
+    const { container } = render(<Button tone="danger">x</Button>);
     const cls = classesOf(container.firstElementChild);
     expect(cls).toContain('bg-x-slot-button-danger-bg');
     expect(cls).toContain('disabled:cursor-not-allowed');
   });
 
-  // #455 — `danger` は border 系のクラスを1つも出しておらず、BASE_CLASS の
-  // `border-transparent` が最後まで残っていた。⇒ 塗りではなく**輪郭**で danger を
-  // 表す艦（nene-deal）は、スロット値をいくら上書きしても枠を出せなかった。
-  it('reaches a slot for its border, like secondary does', () => {
-    const cls = classesOf(render(<Button variant="danger">x</Button>).container.firstElementChild);
+  // #455 の後日談（#487）— かつて `danger` は border 系のクラスを出しておらず、輪郭型の
+  // danger を描きたい艦（nene-deal）はスロットで枠を出せなかった。0.18.0 は `danger` に
+  // border スロットを足して解いたが、**それは「形」の穴を「色」の側で塞いだ**もので、
+  // deal は `--color-x-slot-button-danger-bg: transparent` と併せて
+  // **塗りの variant を輪郭に作り変えていた**（deal kit-slots.css:91-93・2026-08-27 実測）。
+  // 0.20.0 で軸が分かれたので、輪郭は形が持つ。
+  it('reaches the tone border slot when the shape is outline', () => {
+    const cls = classesOf(
+      render(
+        <Button variant="outline" tone="danger">
+          x
+        </Button>,
+      ).container.firstElementChild,
+    );
     expect(cls).toContain('border-x-slot-button-danger-border');
   });
 
-  // 🔴 この PR が「他艦の見た目を変えない」ことの実測。既定の枠色は塗りと**同じ変数**を
-  // 指すので、塗りの上に同色の枠が乗る＝`border-transparent` が塗りの上で描いていたのと
-  // 同じ結果になる。列挙で書かず theme の現物から読む（型1: 列挙で書いた検査は、
-  // 列挙に無いものを緑にする）。
-  it('defaults that border to the fill, so a filled danger button is unchanged', () => {
-    const css = readFileSync(
-      path.join(path.dirname(fileURLToPath(import.meta.url)), '../../themes/default.css'),
-      'utf8',
+  // 🔴 塗りの danger が 0.19.x と同じに見えることの実測。**機構が変わっている**:
+  // 以前は「枠色の既定が塗りと同じ変数」だったが、いまは **solid が border 系のクラスを
+  // 一つも出さない**ので BASE_CLASS の `border-transparent` がそのまま残る。
+  // ⇒ 枠は透明。塗りだけが見える。結果は同じで、理由が違う。
+  it('paints no border class on a filled button, so the fill is unchanged', () => {
+    const cls = classesOf(
+      render(
+        <Button variant="solid" tone="danger">
+          x
+        </Button>,
+      ).container.firstElementChild,
     );
-    const valueOf = (name: string) => css.match(new RegExp(`--${name}:\\s*([^;]+);`))?.[1]?.trim();
-    const bg = valueOf('color-x-slot-button-danger-bg');
-    expect(bg).toBeTruthy(); // 陽性対照: 読めていないのに一致と言わない
-    expect(valueOf('color-x-slot-button-danger-border')).toBe(bg);
+    expect(cls).toContain('bg-x-slot-button-danger-bg');
+    expect(cls).not.toContain('border-x-slot-button-danger-border');
+    // 陽性対照: BASE_CLASS の透明枠は残っている（高さを揃えるため・段差防止）。
+    expect(cls).toContain('border-transparent');
   });
 });
 

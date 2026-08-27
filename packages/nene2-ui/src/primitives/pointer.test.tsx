@@ -50,7 +50,7 @@ describe('pointer feedback', () => {
     const theme = 'themes/default.css';
     expect(theme).toBeTruthy();
     const cls = classesOf(
-      render(<Button variant="secondary">x</Button>).container.querySelector('button'),
+      render(<Button variant="outline">x</Button>).container.querySelector('button'),
     );
     expect(cls).not.toContain('hover:brightness-105');
   });
@@ -64,9 +64,11 @@ describe('Button structure props', () => {
     expect(sm).toContain('px-x-slot-button-sm-pad-x');
   });
 
-  it('has a ghost variant for the third action in a row', () => {
+  it('has a bare shape for the third action in a row', () => {
+    // 🔴 0.20.0 で `ghost` から `bare` へ改名した（#487）。旧名は艦とキットで別のものを
+    // 指していた — nene-clear の `.btn-ghost` は地も枠も持つ（＝この kit の `outline`）。
     const cls = classesOf(
-      render(<Button variant="ghost">x</Button>).container.querySelector('button'),
+      render(<Button variant="bare">x</Button>).container.querySelector('button'),
     );
     expect(cls).toContain('bg-transparent');
   });
@@ -185,7 +187,8 @@ describe('Button height', () => {
     // 🔴 高さは padding 由来。border を持つのが secondary だけだと、上下 1px ずつ増えて
     // 他 variant より 2px 高くなる。vault はモーダルのフッター7箇所で primary と secondary を
     // 横に並べており、そこに段差が出る（2026-08-23 実測）。
-    for (const variant of ['primary', 'secondary', 'danger', 'ghost'] as const) {
+    // 🔴 `link` は箱を持たないので対象外（`border-0`）。段差を合わせるべき相手が無い。
+    for (const variant of ['solid', 'outline', 'bare'] as const) {
       const cls = classesOf(
         render(<Button variant={variant}>x</Button>).container.querySelector('button'),
       );

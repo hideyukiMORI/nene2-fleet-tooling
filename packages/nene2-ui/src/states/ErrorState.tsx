@@ -16,7 +16,7 @@ export function ErrorState({ message, retryLabel, onRetry, className }: ErrorSta
     <div className={cx('py-x-slot-state-pad-y', className)} role="alert">
       <p className="font-sans text-x-slot-error-state-fg">{message}</p>
       <div className="py-x-slot-state-action-pad-y">
-        <Button variant="secondary" onClick={onRetry}>
+        <Button variant="outline" tone="neutral" onClick={onRetry}>
           {retryLabel}
         </Button>
       </div>
