@@ -285,21 +285,45 @@
    * there is now an opening. */
   --color-x-slot-focus-ring: var(--color-text-primary);
 
-  --color-x-slot-button-primary-bg: var(--color-accent);
-  --color-x-slot-button-primary-fg: var(--color-on-accent);
-  --color-x-slot-button-secondary-bg: var(--color-surface-raised);
-  --color-x-slot-button-secondary-fg: var(--color-text-primary);
-  --color-x-slot-button-secondary-border: var(--color-border);
+  /* Button: shape × tone (#487).
+   *
+   * 🔴 The names below replace `primary-* / secondary-* / danger-* / ghost-fg`. A ship that
+   * redefined one of the old names will NOT see an error — the old custom property simply
+   * stops being read and the kit default paints instead. Both consuming ships did redefine
+   * some (nene-deal 4, nene-vault 2, measured 2026-08-27), so the migration note carries the
+   * mapping. A removed slot fails silently; that is the whole reason this comment is here.
+   *
+   * Three colours per tone, and they are not derivable from each other:
+   *   -bg     the fill, painted by `solid` only
+   *   -fg     what sits on that fill — the on-accent colour, not the tone colour
+   *   -ink    the tone colour itself, painted by `outline` / `bare` / `link`
+   *   -border the outline's frame, a lighter step than -ink
+   *
+   * 🔴 `-border` is the soft step, not the tone. nene-clear draws its outlined danger with
+   * `--bad-line` (#e3bcbc) against text of `--bad` (#9c2c2c) — the frame is far lighter than
+   * the label. Using the tone itself for both makes every outlined button louder than any
+   * ship draws today (clear's measurement, 2026-08-27). */
+  --color-x-slot-button-outline-bg: var(--color-surface-raised);
+
+  --color-x-slot-button-neutral-bg: var(--color-accent);
+  --color-x-slot-button-neutral-fg: var(--color-on-accent);
+  --color-x-slot-button-neutral-ink: var(--color-text-primary);
+  --color-x-slot-button-neutral-border: var(--color-border);
+
   --color-x-slot-button-danger-bg: var(--color-danger);
   --color-x-slot-button-danger-fg: var(--color-on-accent);
-  /* 🔴 Defaults to the fill, so a filled danger button looks exactly as it did: the border
-   * and the background are the same colour, which is what `border-transparent` over a filled
-   * background already rendered. The slot exists for the ships whose danger button is an
-   * outline rather than a fill — nene-deal's is `background: transparent` with a tinted
-   * border (#455), and it could not express that: the variant emitted no border class at
-   * all, so `border-transparent` from BASE_CLASS won and no slot value could reach it. */
-  --color-x-slot-button-danger-border: var(--color-danger);
-  --color-x-slot-button-ghost-fg: var(--color-text-primary);
+  --color-x-slot-button-danger-ink: var(--color-danger);
+  --color-x-slot-button-danger-border: var(--color-danger-soft);
+
+  --color-x-slot-button-warn-bg: var(--color-warn);
+  --color-x-slot-button-warn-fg: var(--color-on-accent);
+  --color-x-slot-button-warn-ink: var(--color-warn);
+  --color-x-slot-button-warn-border: var(--color-warn-soft);
+
+  --color-x-slot-button-success-bg: var(--color-success);
+  --color-x-slot-button-success-fg: var(--color-on-accent);
+  --color-x-slot-button-success-ink: var(--color-success);
+  --color-x-slot-button-success-border: var(--color-success-soft);
 
   /* Shared by Input, Select and Textarea — they are one control with three shapes, and a
    * product that darkens one and not the others has a bug, not a design. */
@@ -495,7 +519,10 @@
    * `Card` and `Toast` wrote `shadow-sm`, so theirs point at the scale. A default that is
    * anything other than the current rendering changes how every product already looks —
    * and "the default is harmless" only holds while the default is that copy. */
-  --shadow-x-slot-button-primary: none;
+  /* 🔴 Renamed from `--shadow-x-slot-button-primary` (#487): the shadow belongs to the
+   * filled shape, not to one colour. nene-vault redefines this one (`var(--shadow-sm)`) and
+   * must rename it — see the migration note. */
+  --shadow-x-slot-button-solid: none;
   --shadow-x-slot-card-raised: var(--shadow-sm);
   --shadow-x-slot-toast: var(--shadow-sm);
 

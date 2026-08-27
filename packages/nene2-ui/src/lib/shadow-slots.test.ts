@@ -62,7 +62,7 @@ describe('影のスロット（#386）', () => {
     // 🔴 導出できない。この3行は「0.15.0 以前に各部品が実際に描いていたもの」という
     // 過去の事実であり、現在のコードからは復元できないので、記録として固定する。
     // 変更するときは「描画を変える」判断とセットでなければならない。
-    expect(decls.get('--shadow-x-slot-button-primary')).toBe('none'); // Button は影を持たなかった
+    expect(decls.get('--shadow-x-slot-button-solid')).toBe('none'); // Button は影を持たなかった（0.20.0 で primary→solid・#487）
     expect(decls.get('--shadow-x-slot-card-raised')).toBe('var(--shadow-sm)'); // Card.tsx が shadow-sm
     expect(decls.get('--shadow-x-slot-toast')).toBe('var(--shadow-sm)'); // ToastProvider.tsx が shadow-sm
   });
@@ -91,7 +91,7 @@ describe('影のスロット（#386）', () => {
 
   it('影を描く部品がスロットを読んでいる', () => {
     const read = (rel: string) => readFileSync(path.join(root, rel), 'utf8');
-    expect(read('src/primitives/Button.tsx')).toContain('shadow-x-slot-button-primary');
+    expect(read('src/primitives/Button.tsx')).toContain('shadow-x-slot-button-solid');
     expect(read('src/layout/Card.tsx')).toContain('shadow-x-slot-card-raised');
     expect(read('src/feedback/ToastProvider.tsx')).toContain('shadow-x-slot-toast');
   });
