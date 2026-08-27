@@ -22,15 +22,25 @@
 - conformance / validate は fail-closed（検査不能=unknown・空虚合格禁止）。
 - **Issue 駆動**: Issue の無い変更をしない — **コードだけでなく doc も対象**（施主が明示的にスコープを限った場合を除く）。
 - **ブランチ**: `main` から `type/issue-number-summary` を切る。**`main` へ直接コミットしない**。1PR=1論点・CI 緑でレビュー依頼。誠実性ガード（実測のみ・未実施は明記）。
-- **日報**: 作業日は可能な限り `docs/daily/<YYYY-MM-DD>.md` を書く（施主方針）。書式の正本は
-  `nene-origin/internal-docs/records/daily/`（リード1段落 → ヘッドライン → 本日の成果〔時系列・PR/Issue
-  番号つき〕→ 📊 本日の数字）。※ 旧記載の `nene-records/docs/daily/` は **P3 で移設済み・現存しない**
-  （2026-07-30 実測）。
+- 🔴 **運用ログの家**: 運用ログ（`docs/todo`・`docs/daily` 相当）は private
+  **`nene-origin/internal-docs/fleet-tooling/`** に移設済み（2026-08-27・origin #737 / 本リポ #484）。
+  **最新の作業状況・申し送りはそちらを読むこと。** 本リポに `docs/daily` / `docs/todo` は無い。
+  置き場契約の正本は `nene-origin/internal-docs/README.md`、運用・書式の正本は
+  `_work/daily-report-convention.md`（v3 §11 は 2026-07-18 発効済み）。
+- **日報**: 作業日は可能な限り `nene-origin/internal-docs/fleet-tooling/daily/<YYYY-MM-DD>.md` を書く
+  （施主方針）。書式の正本は `nene-origin/internal-docs/records/daily/`（リード1段落 → ヘッドライン →
+  本日の成果〔時系列・PR/Issue 番号つき〕→ 📊 本日の数字）。
   **PR/Issue はマージ有無を書き分ける**・**自分で実測した数字と渡された数字を書き分ける**・**成果を大きく書かない**。
   日報も Issue 駆動（上記）。
   **粒度**: **1セッション = 1本**・ファイル名は**終了日**の日付・冒頭に対象期間を明記する（日付では割らない
   — セッションが記録の単位で、日付はラベル。hub 裁定 2026-07-30）。
   **hub の店じまい宣言はセッション境界として扱ってよい**（宣言後に作業が再開したら新セッション＝新日報。
   **両方に対象期間を明記する**こと。hub 裁定 2026-08-05・#241）。
-- **現況**: `docs/todo/current.md` が「生きた引き継ぎ」（次に座る人が最初に読む1枚）。**日報とは役割を分ける**
-  — 日報＝その日の記録（過去形・追記しない）／`current.md`＝いまの現況（現在形・**上書き**）。
+  🔴 **origin は共有作業木**。書くときは `git worktree add`（置き場は `.worktrees/`）で自分の場所を作り、
+  `--delete-branch` を打たない（`_work/issues.md` #128・origin CLAUDE.md 共有 checkout の作法）。
+- **現況**: `nene-origin/internal-docs/fleet-tooling/todo/current.md` が「生きた引き継ぎ」
+  （次に座る人が最初に読む1枚）。**日報とは役割を分ける** — 日報＝その日の記録（過去形・追記しない）／
+  `current.md`＝いまの現況（現在形・**上書き**）。
+  🔴 **`current.md` の節を書き直す前に、その節が主題以外の open 項目を預かっていないか導出で確かめる**
+  （#485 の実例: 08-26 の書き直しで open Issue 4本の導線が消え、**落ちたことは diff に出なかった**）。
+  「新しい方が良く書けている」は、落ちたものが無いことの証拠にならない。
