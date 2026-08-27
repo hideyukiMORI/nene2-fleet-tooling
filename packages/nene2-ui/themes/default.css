@@ -170,6 +170,7 @@
    * nene-deal — were already correcting that independently, so the painting this replaces
    * is one no consumer used. */
   --spacing-x-slot-badge-gap: var(--spacing-x-3xs);
+  --spacing-x-slot-badge-dot: var(--spacing-x-3xs);
   --spacing-x-slot-switch-pad-x: var(--spacing-x-2xs);
   --spacing-x-slot-switch-pad-y: var(--spacing-x-3xs);
   --spacing-x-slot-alert-pad: var(--spacing-x-2xs);
