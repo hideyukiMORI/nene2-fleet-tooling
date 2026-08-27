@@ -6,7 +6,7 @@ NeNe フリート・フロント統一規約の**配布物（versioned 実行可
 ## 状態
 
 批准4前提のうち **(a) MUST タグ付け・(b) exemplars・(d) は達成済み**。残るのは **(c) 素振りレーン**。
-現況の正は `docs/todo/current.md` と `_work/board.txt`（**この README に進捗を書かない** — #55 / #152 の再発防止）。
+現況の正は `nene-origin/internal-docs/fleet-tooling/todo/current.md` と `_work/board.txt`（**この README に進捗を書かない** — #55 / #152 の再発防止）。
 リポ新設 GO = 2026-07-14 hide 裁定。施主判断6点＋承認2点も同日全件クローズ（記録: `_work/handoff-frontend-standards-2026-07-14-decision-request.md`）。
 
 ## 構成（予定・W0a 成果物）
