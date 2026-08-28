@@ -86,10 +86,6 @@ jobs:
     permissions:
       issues: write
     env:
-      # 🔴 この文字列は下の `jq` の**完全一致キー**。艦ごとに固有にし、**一度決めたら変えない**——
-      #    変えると、変更前に立った issue が二度と見つからず、**重複が1本立つ**。
-      #    `<艦名>` は**未置換だと下のガードで落ちる**（置換漏れを目で探させない・#512）。
-      ISSUE_TITLE: '🔴 <艦名>: 週次 composer audit が失敗しています'
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -97,14 +93,17 @@ jobs:
       - name: Create or update the failure issue
         run: |
           set -euo pipefail
-          # 🔴 置換漏れのガード（#512・vault 提案）。`ISSUE_TITLE` は艦ごとに固有でなければ
-          #    ならないが、原本には「変えること」という指示を置かない方針にした
-          #    （指示は写すたびに忘れうる）。代わりに**未置換なら落とす**。
-          #    🔑 「変えること」と書くより、**変えないと目立つ**ようにする方が確実。
-          #    ここで落とすのは、この装置が実際に必要になった瞬間なので見逃されない。
-          case "$ISSUE_TITLE" in
-            *'<'*) echo "::error::ISSUE_TITLE のプレースホルダが未置換です: $ISSUE_TITLE" >&2; exit 1 ;;
-          esac
+          # 🔴 題名は**艦ごとに固有**でなければならない（下の `jq` の完全一致キー）。
+          #    ⇒ **書き換えさせず、導出する**（#512・vault 提案）。**置換する場所が無ければ置換漏れも無い。**
+          #
+          #    `GITHUB_REPOSITORY` は Actions が**どの event でも必ず設定する**既定環境変数なので、
+          #    payload に依存しない（`github.event.repository.name` は payload 依存で、
+          #    `schedule` での解決が未計測だったため採らなかった）。
+          #    `#*/` で owner を落として艦名だけにする。
+          #
+          #    🔑 一度決めたら変えないこと——変えると、変更前に立った issue が
+          #    二度と見つからず、**重複が1本立つ**。
+          ISSUE_TITLE="🔴 ${GITHUB_REPOSITORY#*/}: 週次 composer audit が失敗しています"
           # 🔴 --limit は 100 では足りない。open が 100 件を超えると同名を取りこぼして
           #    重複起票へフォールバックする。しかも壊れ方が悪い——壊れた側の挙動が
           #    「毎週新しい issue が立つ」で一見すると装置が動いて見え、かつ発現条件
