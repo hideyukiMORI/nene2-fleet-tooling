@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 import { cx } from '../lib/cx.js';
 
 export interface InlineAlertProps {
-  /** What the message means. `danger` is announced assertively; `info` politely. */
-  tone?: 'info' | 'warn' | 'danger';
+  /** What the message means. `danger` is announced assertively; the rest politely. */
+  tone?: 'info' | 'warn' | 'danger' | 'success';
   /**
    * 🔴 Needed to point an `aria-describedby` at this message. Without it a product that
    * wants the alert read out with a control has nowhere to put an id, and nene-vault
@@ -20,6 +20,8 @@ const TONE_CLASS: Record<NonNullable<InlineAlertProps['tone']>, string> = {
   info: 'bg-x-slot-alert-info-bg text-x-slot-alert-info-fg border-x-slot-alert-info-border',
   warn: 'bg-x-slot-alert-warn-bg text-x-slot-alert-warn-fg border-x-slot-alert-warn-border',
   danger: 'bg-x-slot-alert-danger-bg text-x-slot-alert-danger-fg border-x-slot-alert-danger-border',
+  success:
+    'bg-x-slot-alert-success-bg text-x-slot-alert-success-fg border-x-slot-alert-success-border',
 };
 
 /**
@@ -31,9 +33,15 @@ const TONE_CLASS: Record<NonNullable<InlineAlertProps['tone']>, string> = {
  * someone listening and no one looking. The palette now carries `warn` of its own.
  *
  * 🔴 The tone decides the ARIA role, not just the colour. `danger` becomes `role="alert"`,
- * which interrupts a screen reader; `info` becomes `role="status"`, which waits its turn.
- * Six ships wrote this component (three as `InlineAlert`, three as `Alert`) and the choice
- * of role is precisely the part that is easy to get wrong and invisible when you do.
+ * which interrupts a screen reader; every other tone becomes `role="status"`, which waits
+ * its turn. Six ships wrote this component (three as `InlineAlert`, three as `Alert`) and
+ * the choice of role is precisely the part that is easy to get wrong and invisible when you
+ * do.
+ *
+ * 🔴 `success` (#486) is deliberately **polite**, not assertive. Good news does not earn an
+ * interruption, and `ToastProvider` already settled the same question the same way
+ * (`POLITE_TONES = ['info', 'success']`). Announcing a success assertively would cut off
+ * whatever the person was reading to tell them nothing went wrong.
  */
 export function InlineAlert({ tone = 'info', id, className, children }: InlineAlertProps) {
   return (
