@@ -26,7 +26,7 @@ const TONES = ['neutral', 'accent', 'danger', 'success', 'warn', 'info'] as cons
 const classesOf = (el: Element | null) => el?.getAttribute('class') ?? '';
 
 describe('Button の軸（#487）', () => {
-  it('形 × 色 の全16マスが描ける（直積を導出して全数）', () => {
+  it('形 × 色 の全24マスが描ける（直積を導出して全数）', () => {
     // 陽性対照: 直積そのものが空でないこと（ループが0回で緑になる事故を潰す）
     expect(SHAPES.length * TONES.length).toBe(24);
 
@@ -137,5 +137,33 @@ describe('Button の軸（#487）', () => {
       }),
     );
     expect([...seen]).toEqual(['bg-x-slot-button-outline-bg']);
+  });
+
+  /**
+   * #501 — nene-clear measured 15 buttons wrapping on its SP layout, one of them breaking
+   * inside a word ("消込を / 確定"). The label of a button is a command; a wrapped command
+   * reads as two.
+   *
+   * 🔴 This asserts the class, not the layout — jsdom does not lay text out, so it cannot
+   * see a wrap. The class is the strongest thing measurable here; the pixels are measured
+   * by consuming ships (#505 is the harness that would have caught this before shipping).
+   */
+  it('どの形 × どの色でも、ラベルが折り返さない（#501・24マス全数）', () => {
+    // 陽性対照: 直積が空でないこと（0回ループが緑になる事故を潰す・上の全数テストと同じ形）
+    expect(SHAPES.length * TONES.length).toBe(24);
+
+    const missing = SHAPES.flatMap((variant) =>
+      TONES.filter(
+        (tone) =>
+          !classesOf(
+            render(
+              <Button variant={variant} tone={tone}>
+                x
+              </Button>,
+            ).container.querySelector('button'),
+          ).includes('whitespace-nowrap'),
+      ).map((tone) => `${variant} x ${tone}`),
+    );
+    expect(missing).toEqual([]);
   });
 });

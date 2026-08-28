@@ -162,7 +162,19 @@ const LINK_UNBOX = 'border-0 rounded-none';
 // leaves anything already smaller alone.
 const SVG_BOUND = '[&_svg]:max-h-x-slot-button-icon [&_svg]:max-w-x-slot-button-icon';
 
-const BASE_CLASS = `rounded-x-slot-button border border-transparent inline-flex items-center justify-center gap-x-slot-button-gap font-sans font-x-slot-button ${SVG_BOUND} ${TOUCH_CLASS} ${CLICKABLE_CLASS}`;
+// 🔴 `whitespace-nowrap` is load-bearing (#501). A button's label is a command, not body
+// copy: it names one action, and a wrapped command reads as two. nene-clear measured 15
+// buttons wrapping on its SP layout (PC 1440x900: zero) — "督促を送信" became four lines at
+// 70px, and "消込を確定" broke *inside* a word as "消込を / 確定".
+//
+// 🔴 CJK breaks at any character and Latin breaks at word boundaries, so fixing one is not
+// evidence about the other (nene-vault, #477). `nowrap` stops both.
+//
+// This is the same property `Badge` got in #477. It was added there by naming the component
+// rather than by deriving which components need it, so `Button` was simply not on the list —
+// the third instance of that shape (#486 / #501 / #503). The inventory that would have
+// caught all of them at once is a separate, larger piece of work; this line is the stanch.
+const BASE_CLASS = `whitespace-nowrap rounded-x-slot-button border border-transparent inline-flex items-center justify-center gap-x-slot-button-gap font-sans font-x-slot-button ${SVG_BOUND} ${TOUCH_CLASS} ${CLICKABLE_CLASS}`;
 
 export function Button({
   variant = 'solid',
