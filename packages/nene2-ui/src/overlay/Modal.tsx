@@ -31,6 +31,20 @@ interface ModalBase {
    * `showModal`, so it can only be verified in a real browser (see #392, live lane).
    */
   scrollable?: boolean;
+  /**
+   * The dialog's actions, laid out below the body and **outside its scroll area**.
+   *
+   * 🔴 Not a matter of layout — a matter of structure. Pushed into `children`, the action row
+   * joins the body's scroll region, so with `scrollable` it slides off the bottom of a tall
+   * dialog and the person cannot reach "Confirm". nene-clear uses a footer in **11 of 11**
+   * dialogs and makes it a required prop (#493); eight ships wrote a modal and every one of
+   * them drew this row.
+   *
+   * The kit lays the row out end-aligned with a gap, which is what those eleven do. A product
+   * that wants another arrangement composes it inside — `footer={<div className="flex w-full
+   * justify-between">…</div>}` — rather than the kit growing an alignment prop.
+   */
+  footer?: ReactNode;
   children: ReactNode;
 }
 
@@ -42,6 +56,19 @@ interface PlainModal extends ModalBase {
 interface HeaderModal extends ModalBase {
   /** Draw a header: the title, and a control that closes the dialog. */
   header: true;
+  /**
+   * Localized one-line description, under the title.
+   *
+   * 🔴 On `HeaderModal` only, and deliberately. Without a header the title is never drawn —
+   * it becomes the dialog's `aria-label` — so a description would have nothing to sit under
+   * and would be dropped in silence. The same reasoning `closeLabel` uses below: let the
+   * compiler ask for it exactly where it is going to be rendered.
+   *
+   * 🔴 Named `description`, matching `PageHeader` (#492/#497) and `EmptyState` (#456), not
+   * clear's local `sub`. Nine of clear's eleven dialogs carry this line (#493). One word for
+   * one thing across the kit — the rule `Badge`'s tone vocabulary states, applied to a prop.
+   */
+  description?: string;
   /**
    * Localized name for the close control.
    *
@@ -89,7 +116,7 @@ const SHEET_CLASS =
  * up until a consumer overrode one side of a pair.
  */
 export function Modal(props: ModalProps) {
-  const { open, onClose, title, size, sheetOnMobile, scrollable, children } = props;
+  const { open, onClose, title, size, sheetOnMobile, scrollable, footer, children } = props;
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
@@ -137,14 +164,32 @@ export function Modal(props: ModalProps) {
         'p-x-slot-modal-pad font-sans backdrop:bg-x-slot-modal-scrim/50',
         size !== undefined && SIZE_CLASS[size],
         sheetOnMobile === true && SHEET_CLASS,
+        // The column is what keeps the footer out of the scroll region: the body flexes and
+        // scrolls, the footer keeps its height. Without `scrollable` there is nothing to
+        // scroll, so the dialog keeps the block layout every caller has had until now.
         scrollable === true && 'flex flex-col',
       )}
     >
       {props.header === true && (
         <header className="mb-x-slot-modal-header-gap flex items-start justify-between gap-x-slot-modal-header-gap">
-          <h2 id={titleId} className="font-x-slot-modal-title text-x-slot-modal-title-size">
-            {title}
-          </h2>
+          {/* 🔴 The bare <h2> survives when there is no description, so a ship already using
+           * `header` sees the same DOM. Wrapping it unconditionally would change every one of
+           * those dialogs for the benefit of a prop they do not pass — the rule EmptyState set
+           * for its own `description` (#456) and PageHeader kept (#497). */}
+          {props.description === undefined ? (
+            <h2 id={titleId} className="font-x-slot-modal-title text-x-slot-modal-title-size">
+              {title}
+            </h2>
+          ) : (
+            <div>
+              <h2 id={titleId} className="font-x-slot-modal-title text-x-slot-modal-title-size">
+                {title}
+              </h2>
+              <p className="mt-x-slot-modal-description-gap font-sans text-x-slot-modal-description-fg">
+                {props.description}
+              </p>
+            </div>
+          )}
           <button
             type="button"
             aria-label={props.closeLabel}
@@ -158,6 +203,13 @@ export function Modal(props: ModalProps) {
         </header>
       )}
       {scrollable === true ? <div className="min-h-0 overflow-y-auto">{children}</div> : children}
+      {footer !== undefined && (
+        // `shrink-0` matters only in the scrollable column, where the body would otherwise
+        // take the footer's height with it; it is inert in the block layout.
+        <footer className="mt-x-slot-modal-footer-gap flex shrink-0 justify-end gap-x-slot-modal-footer-gap">
+          {footer}
+        </footer>
+      )}
     </dialog>
   );
 }
