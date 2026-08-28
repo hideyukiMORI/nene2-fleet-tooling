@@ -237,6 +237,11 @@
   --color-x-slot-alert-danger-bg: var(--color-surface);
   --color-x-slot-alert-danger-fg: var(--color-danger);
   --color-x-slot-alert-danger-border: var(--color-danger);
+  /* `success` (#486). Shaped like `danger`: the surface stays the page's, and the meaning is
+   * carried by the border and the text — an alert is read, not filled. */
+  --color-x-slot-alert-success-bg: var(--color-surface);
+  --color-x-slot-alert-success-fg: var(--color-success);
+  --color-x-slot-alert-success-border: var(--color-success);
   --color-x-slot-field-label: var(--color-text-muted);
   --color-x-slot-field-hint: var(--color-text-muted);
   --text-x-slot-field-hint-size: var(--text-x-2xs);
@@ -410,8 +415,10 @@
   --color-x-slot-toast-border: var(--color-border);
   --color-x-slot-toast-danger-fg: var(--color-danger);
   --color-x-slot-toast-danger-border: var(--color-danger);
-  /* `success` tone (#457). Badge and InlineAlert already carry this meaning; the toast is
-   * the one surface that had only two. */
+  /* `success` tone (#457). ⚠️ This comment claimed InlineAlert already carried the meaning.
+   * It did not, and would not until #486 — the sentence was written from the enumeration in
+   * the issue rather than from the component. Corrected here rather than deleted: a note
+   * that was wrong about a neighbour is the exact shape #486 is about. */
   --color-x-slot-toast-success-fg: var(--color-success);
   --color-x-slot-toast-success-border: var(--color-success);
   /* The toast's second line (#457). Only read when `description` is passed. */
