@@ -531,12 +531,19 @@
   --container-x-slot-modal-lg: var(--container-xl);
 
   --spacing-x-slot-modal-header-gap: var(--spacing-x-xs);
+  /* The action row (#493). One slot for both the space above it and the space between the
+   * buttons: they are the same rhythm, and a product that wants them apart can say so. */
+  --spacing-x-slot-modal-footer-gap: var(--spacing-x-xs);
+  /* The dialog's second line (#493). Only read when `description` is passed. Same value as
+   * PageHeader's and EmptyState's — one word, one look. */
+  --spacing-x-slot-modal-description-gap: var(--spacing-x-3xs);
   --font-weight-x-slot-modal-title: var(--font-weight-medium);
   /* `inherit`, so the header title takes the dialog's own size unless a product says
    * otherwise. There is no previous rendering to copy — the header is new — and picking a
    * step here would decide type for every product that turns the header on. */
   --text-x-slot-modal-title-size: inherit;
   --color-x-slot-modal-close-fg: var(--color-text-muted);
+  --color-x-slot-modal-description-fg: var(--color-text-muted);
 
   /* ── Shadow slots ─────────────────────────────────────────────────────────────
    * 🔴 Shadow was the one dimension that never got slots (#386). 0.9.0 moved "colour, weight

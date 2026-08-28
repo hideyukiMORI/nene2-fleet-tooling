@@ -177,3 +177,81 @@ describe('Modal — size / sheet / scrollable（#392②③④）', () => {
     expect(classesOf(dialogOf(container))).toContain('max-w-x-slot-modal');
   });
 });
+
+/**
+ * #493 — footer（アクション行）と description（副題）。
+ *
+ * どちらも任意 prop で、**渡さない呼び出し側の DOM は1文字も変わらない**。
+ * 既定の側を先に固定してから、渡した側を見る（このファイルが #392 で立てた形）。
+ */
+describe('Modal — footer と description（#493・既定不変）', () => {
+  it('footer を渡さなければ <footer> は出ない', () => {
+    const { container } = render(
+      <Modal open title="T" onClose={() => {}}>
+        body
+      </Modal>,
+    );
+    expect(container.querySelector('footer')).toBeNull();
+  });
+
+  it('description を渡さなければ、題は裸の <h2> のまま（既存艦の DOM を変えない）', () => {
+    const { container } = render(
+      <Modal open header closeLabel="閉じる" title="T" onClose={() => {}}>
+        body
+      </Modal>,
+    );
+    const h2 = container.querySelector('h2');
+    // 包む <div> が挟まっていないこと＝親が <header> であること。
+    expect(h2?.parentElement?.tagName).toBe('HEADER');
+    expect(container.querySelector('header p')).toBeNull();
+  });
+
+  it('footer は本文のスクロール領域の外に出る（構造の要求・意匠ではない）', () => {
+    const { container } = render(
+      <Modal open scrollable title="T" onClose={() => {}} footer={<button>OK</button>}>
+        body
+      </Modal>,
+    );
+    const scroller = container.querySelector('.overflow-y-auto');
+    const foot = container.querySelector('footer');
+    expect(scroller).not.toBeNull();
+    expect(foot).not.toBeNull();
+    // 🔴 これが本体。footer がスクローラの子孫だと、tall な本文で画面外へ流れる。
+    expect(scroller?.contains(foot!)).toBe(false);
+    expect(foot?.parentElement?.tagName).toBe('DIALOG');
+    expect(classesOf(foot).split(/\s+/)).toContain('shrink-0');
+  });
+
+  it('description は題の下に段落として出る', () => {
+    const { container } = render(
+      <Modal open header closeLabel="閉じる" title="T" description="説明" onClose={() => {}}>
+        body
+      </Modal>,
+    );
+    const p = container.querySelector('header p');
+    expect(p?.textContent).toBe('説明');
+    // 題と同じ入れ物に入る（見出しの隣ではなく下）。
+    expect(p?.previousElementSibling?.tagName).toBe('H2');
+  });
+
+  it('陽性対照: 既定の検査は、付いていれば実際に気づく', () => {
+    // 上の2件は「無い」を主張している。検査器が壊れて常に null を返すなら、
+    // どちらも通ってしまう。同じ問い合わせが、渡した時には実際に当たることを示す。
+    const { container } = render(
+      <Modal
+        open
+        header
+        closeLabel="閉じる"
+        title="T"
+        description="説明"
+        onClose={() => {}}
+        footer={<button>OK</button>}
+      >
+        body
+      </Modal>,
+    );
+    expect(container.querySelector('footer')).not.toBeNull();
+    expect(container.querySelector('header p')).not.toBeNull();
+    expect(container.querySelector('h2')?.parentElement?.tagName).toBe('DIV');
+  });
+});
