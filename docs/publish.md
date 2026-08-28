@@ -15,7 +15,7 @@ publish の実行は施主（hide）。担当リナは準備と検証まで。
 | `@hideyukimori/nene2-tokens`    | Core Token Contract v1（color 28＋shadow 4）・`validate:themes`・themegen・codemod 写像表。契約凍結済み（2026-07-14 hide 承認）で、契約キー集合の変更は stop-the-line ADR のみ |
 | `@hideyukimori/nene2-standards` | ESLint / Stylelint 配布 config・`nene2-check`（conformance・fail-closed）・registries                                                                                          |
 | `@hideyukimori/nene2-i18n`      | 型付き i18n（ja 権威カタログ・parity・`./format` / `./react` / `./testing` subpath）。`private` 解除済み（#44・2026-07-16 hide 裁定）                                          |
-| `@hideyukimori/nene2-ui`        | フリート共有 React UI キット（token 駆動の部品）。**初回 publish 未実施**                                                                                                      |
+| `@hideyukimori/nene2-ui`        | フリート共有 React UI キット（token 駆動の部品）。**publish 済み**（#483 で訂正 — この欄は 0.1.0 の初回 publish から 20版のあいだ「未実施」のままだった）                       |
 
 ### 🔴 この表に版を書かない（#313）
 
@@ -46,7 +46,7 @@ publish の実行は施主（hide）。担当リナは準備と検証まで。
 nene2-standards  1.0.0 1.0.1 1.1.0 1.2.0 2.0.0 2.0.1 2.1.0 2.1.1 2.2.0
 nene2-tokens     1.0.0 1.0.1 1.1.0 1.2.0
 nene2-i18n       0.1.0 0.2.0 0.3.0
-nene2-ui         （未公開）
+nene2-ui         0.1.0 … 0.20.0 → 0.21.0（本節・publish 済み。#483 で「（未公開）」を訂正）
 ```
 
 🔴 **この一覧も測定時点つきの参考**であって、正本はコマンドの方。**引用するときは日付ごと引くこと。**
@@ -64,6 +64,65 @@ nene2-ui         （未公開）
 > standards **2.0.0** は **2026-07-21 publish 済み**（BREAKING・per-repo registries／npm view 実測 latest=2.0.0・shasum 20e4f3e0）。
 > #84/#85 束（standards 1.2.0＋tokens 1.1.0）は **2026-07-18 publish 済み**（npm view 実測で latest 一致）。
 > 監査根拠: 未 publish 範囲は git tag / npm view の実測突き合わせ。数字・挙動は全て実測かテスト現物で裏取りし、未実装は未実装と明記する。
+
+### `@hideyukimori/nene2-ui` 0.21.0（**minor — feat 2 ＋ fix 1**・#486 / #493 / #501）
+
+🔴 **急いで上げる必要はありません。** 0.x の caret は minor を固定するので、
+**`^0.20.0` のままなら 0.21.0 は入ってきません。** **BREAKING はありません。**
+
+| | 内容 | 既定描画 |
+| --- | --- | --- |
+| **#486** | `InlineAlert` に `success` tone（**clear 執筆**） | 🟢 **不変** |
+| **#493** | `Modal` に `footer` と `description`（**clear 執筆**） | 🟢 **不変** |
+| 🔴 **#501** | `Button` に `whitespace-nowrap` | 🔴 **変わりうる** |
+
+#### 🔴 #501 — ボタンのラベルが折り返さなくなります（唯一の要注意）
+
+**上げると、いま折り返しているボタンは横に伸びます。**
+
+clear の実測（**168ボタンを before/after で突合**）: SP で **15ボタン**が折り返しており、
+「督促を送信 / 消込を確定 / 停止」が **26px → 70px（4行）**、**「消込を / 確定」と語の途中で割れて**いました。
+**PC 1440×900 は 0個。**
+
+⇒ **狭い行にボタンを並べている画面は、上げたあと実ブラウザで見てください。**
+**折り返しが消えるぶん、横があふれる方向に効きます。**
+
+⚠️ **CJK は任意位置で折れ、英字は単語境界で折れます**——**片方で確認しても他方の確認にはなりません**
+（vault の指摘・#477）。**多言語を出す画面は、いちばん長いロケールで見てください。**
+
+🟢 **nene-clear へ**: `kit-slots.css` に隔離してある暫定（`@layer components` の1規則）は、
+**この版へ上げたら剥がしてください。** 剥がすまでキットと二重に効きます。
+🟢 **nene-deal / nene-vault へ**: **上げれば黙って直ります**（deal は「露出あり・発現ゼロ」を本番 `f6b1a7a` で再確認済み）。
+
+#### #486 — `InlineAlert` の `success`
+
+`tone="success"` が使えます。**`role="status"`（polite）**です——
+**良い知らせは割り込みに値しない**ので、`danger` だけが `role="alert"` のまま。
+`ToastProvider` の `POLITE_TONES = ['info','success']` に揃えました。
+
+スロット3本が増えます（既定は `danger` と同じ形＝**地は頁のまま・意味は枠と文字が運ぶ**）:
+`--color-x-slot-alert-success-{bg,fg,border}`。
+
+#### #493 — `Modal` の `footer` と `description`
+
+**`footer` は意匠ではなく構造です。** `children` に押し込むとアクション行が本文のスクロール領域に入り、
+**`scrollable` の背の高いダイアログで「確定」が画面外へ流れて手が届かなくなります。**
+
+**`description` は `header` を描くときだけ**渡せます（ヘッダが無いと題は `aria-label` になるので、
+副題は置き場所を失って黙って落ちるため）。**名前は `PageHeader` / `EmptyState` と同じ `description`。**
+
+🟢 **どちらも省略時の DOM は 0.20.0 と1文字も変わりません**〔fleet が `outerHTML` で実測・
+既存4形（plain / header / scrollable / sheet+size）とも一致〕。**渡していない prop のために DOM は変わりません。**
+
+スロット3本が増えます: `--spacing-x-slot-modal-footer-gap` / `--spacing-x-slot-modal-description-gap` /
+`--color-x-slot-modal-description-fg`（**値は `PageHeader` / `EmptyState` と同一**）。
+
+#### 各艦でやること
+
+1. **宣言を `^0.21.0` へ書き換える** → **`npm update @hideyukimori/nene2-ui`**
+   （`npm ci` / `npm install` は lock を尊重するので、宣言だけでは入りません）
+2. **`npm ls @hideyukimori/nene2-ui`** で**実インストール版**を見る（宣言ではなく）
+3. 🔴 **実ブラウザで見る。** #501 は**描画が変わる**ので、**クラス文字列の一致では確認になりません。**
 
 ### `@hideyukimori/nene2-ui` 0.20.0（**minor — 🔴 BREAKING を含む**・#487 / #488 / #492）
 
