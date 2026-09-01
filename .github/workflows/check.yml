@@ -57,7 +57,13 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      # 🔴 `id:` は下の `Audit` が `steps.install.outcome` を引くために要る（#523）。
+      #    消すと `Audit` の条件が常に false 側へ倒れ、**監査が黙って skip になる**。
+      #    `name:` は必須ではないが、陽性対照のステップ一覧を読むとき
+      #    `Install dependencies = skipped` のほうが `Run npm ci = skipped` より意図が読める。
+      - name: Install dependencies
+        id: install
+        run: npm ci
       - run: npm run type-check
       - run: npm run lint
       - run: npm run format:check
@@ -83,8 +89,25 @@ jobs:
       # 「無視してよい赤」として定着する。ゲートは CI に置く。
       # ※ 正本として配るときはここが2ケースに割れる:
       #   Stop hook を持つ艦 = CI に置く／持たない艦 = `check` に入れてよい。
+      #
+      # 🔴 ただし `!cancelled()` **だけでは足りない**。`steps.install.outcome == 'success'` も要る。
+      # `!cancelled()` は「前段が赤なら skip」という既定を打ち消すので、**依存のインストールが
+      # skip された run でもこの行が走る**。`node_modules` の無い作業ツリーで `npm run audit` を
+      # 叩くことになり、`audit-ci: not found`（exit 127）で落ちる。
+      # ⇒ 陽性対照（`simulate_failure=true`）で**赤が2つ**出る——意図した `Simulate failure` と、
+      #   意図しない `Audit`。**本番の赤では無害**（実コードの failure は install の後に起きるので
+      #   `Audit` は意味のある状態で走る）。壊れるのは陽性対照の可読性であってカバレッジではない。
+      # 🔑 上の Simulate の位置決め（「意図した exit 1 ではない別の失敗をリハーサルしてしまう」）が
+      #   避けたのと**同じ形**を、この行が9ステップ後ろで作り直していた。
+      #
+      # 🔴 「Simulate を install の後ろへ移す」で直さないこと。上で明示的に却下した形で、
+      # 後ろへ置くと前段のどれかが落ちて意図した exit 1 に到達しない。
+      # 🔴 逆に**条件を足しすぎて `Audit` が常に skip に化ける**のが、この形のいちばん危険な壊れ方。
+      # 陽性対照では skip が正解なので、**陽性対照だけ見ていても気づけない**。
+      # ⇒ 直したら**通常実行で `Audit = success` を見る**こと。片方だけでは受け入れない。
+      # 出所: nene-corpus #386 / PR #387（`frontend-ci.yml`）→ nene2-fleet-tooling #523（配布元）。
       - name: Audit (fail on high/critical)
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run audit
 
   notify-failure:
