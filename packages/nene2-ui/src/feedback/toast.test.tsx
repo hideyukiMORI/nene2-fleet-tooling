@@ -56,17 +56,29 @@ describe('live regions', () => {
   it('exist before there is anything to announce', () => {
     // 🔴 これが本命。中身と同時に生まれた region は読み上げられない。
     const { container } = mount(<Trigger />);
-    const regions = [...container.querySelectorAll('[role="region"]')];
-    expect(regions).toHaveLength(2);
-    expect(regions.map((r) => r.getAttribute('aria-live')).sort()).toEqual(['assertive', 'polite']);
-    expect(regions.every((r) => r.getAttribute('aria-label') === 'Notifications')).toBe(true);
+    const lives = [...container.querySelectorAll('[aria-live]')];
+    expect(lives.map((r) => r.getAttribute('aria-live')).sort()).toEqual(['assertive', 'polite']);
+  });
+
+  it('are named by one landmark, not two with the same name (#532)', () => {
+    // 2つの live region がどちらも role="region" と同じ regionLabel を持っていた —
+    // axe landmark-unique がトースト 0 件でも出て、ランドマーク一覧に同じ名前が2つ並んだ。
+    const { container } = mount(<Trigger />);
+    const landmarks = container.querySelectorAll('[role="region"]');
+    expect(landmarks).toHaveLength(1);
+    expect(screen.getByRole('region', { name: 'Notifications' })).toBe(landmarks[0]);
+    for (const live of container.querySelectorAll('[aria-live]')) {
+      expect(live.parentElement).toBe(landmarks[0]);
+      expect(live.hasAttribute('role')).toBe(false);
+      expect(live.hasAttribute('aria-label')).toBe(false);
+    }
   });
 
   it('are still there after the last toast goes away', () => {
     const { container } = mount(<Trigger />);
     fireEvent.click(screen.getByText('go'));
     act(() => void vi.advanceTimersByTime(5000));
-    expect(container.querySelectorAll('[role="region"]')).toHaveLength(2);
+    expect(container.querySelectorAll('[aria-live]')).toHaveLength(2);
   });
 
   it('announces politely by default and assertively for danger', () => {
