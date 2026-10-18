@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, fireEvent } from '@testing-library/react';
+import { render, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Modal } from './Modal.js';
 
@@ -159,12 +159,28 @@ describe('Modal — size / sheet / scrollable（#392②③④）', () => {
       </Modal>,
     );
     const el = dialogOf(container);
-    expect(classesOf(el)).toContain('flex-col');
+    expect(classesOf(el)).toContain('open:flex-col');
     const wrapper = el?.firstElementChild;
     expect(wrapper?.tagName).toBe('DIV');
     expect(classesOf(wrapper ?? null)).toContain('overflow-y-auto');
     // min-h-0 が無いと flex の子は縮まず、スクロールが起きない
     expect(classesOf(wrapper ?? null)).toContain('min-h-0');
+  });
+
+  it('scrollable の flex は開いているときだけ効く — 閉じた dialog に素の display:flex を付けない（#533）', () => {
+    // 素の `flex` は作者側の display:flex で、UA の「閉じた dialog は display:none」に勝つ。
+    // open={false} でも画面に見えたままになった。jsdom はスタイルを計算しないので、
+    // ここで守れるのはクラスまで。実際に消えることは実ブラウザで確かめる。
+    const { container } = render(
+      <Modal open={false} title="t" scrollable onClose={() => {}}>
+        <p>b</p>
+      </Modal>,
+    );
+    const classes = classesOf(dialogOf(container)).split(/\s+/);
+    for (const c of classes) expect(c === 'flex' || c === 'flex-col' || c === 'block').toBe(false);
+    expect(classes).toContain('open:flex');
+    // README の「閉じたことの確かめ方」がこのキットで本当に効くことも押さえる
+    expect(screen.queryByRole('dialog', { name: 't' })).toBeNull();
   });
 
   it('陽性対照: 既定の検査は、付いていれば実際に気づく', () => {
