@@ -167,7 +167,10 @@ export function Modal(props: ModalProps) {
         // The column is what keeps the footer out of the scroll region: the body flexes and
         // scrolls, the footer keeps its height. Without `scrollable` there is nothing to
         // scroll, so the dialog keeps the block layout every caller has had until now.
-        scrollable === true && 'flex flex-col',
+        // 🔴 Only while open. A bare `flex` is author-origin `display: flex`, which beats the
+        // UA's `dialog:not([open]) { display: none }` — a closed scrollable Modal stayed on
+        // screen (#533, found from a screenshot; jsdom computes no styles, so no test saw it).
+        scrollable === true && 'open:flex open:flex-col',
       )}
     >
       {props.header === true && (

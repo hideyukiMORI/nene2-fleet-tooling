@@ -418,6 +418,20 @@ a component list that lags the code is how a product ends up writing a part that
 `react-hook-form`'s `register`, and pick up their `id` / `aria-describedby` from the
 `FormField` around them.
 
+### 🔴 Testing that a Modal closed
+
+A closed `Modal` is still in the DOM: it is a native `<dialog>` closed with `close()`, not
+unmounted. Testing Library's `getByLabelText` and `getByText` find hidden elements too, so they
+pass whether the dialog is open or not. Assert on the role instead — `getByRole` skips what is
+not in the accessibility tree:
+
+```tsx
+expect(screen.queryByRole('dialog', { name: 'Edit' })).toBeNull();
+```
+
+jsdom computes no styles, so it cannot tell you a closed dialog is _visible_ either (#533 was
+found from a screenshot). That check needs a real browser.
+
 ### Not yet here
 
 `BrandMark` — measured as recurring
