@@ -47,6 +47,7 @@ nene2-standards  1.0.0 1.0.1 1.1.0 1.2.0 2.0.0 2.0.1 2.1.0 2.1.1 2.2.0
 nene2-tokens     1.0.0 1.0.1 1.1.0 1.2.0
 nene2-i18n       0.1.0 0.2.0 0.3.0
 nene2-ui         0.1.0 … 0.20.0 → 0.21.0（本節・publish 済み。#483 で「（未公開）」を訂正）
+                 0.21.1 は 2026-10-18 の release PR（#537）で追加
 ```
 
 🔴 **この一覧も測定時点つきの参考**であって、正本はコマンドの方。**引用するときは日付ごと引くこと。**
@@ -64,6 +65,47 @@ nene2-ui         0.1.0 … 0.20.0 → 0.21.0（本節・publish 済み。#483 �
 > standards **2.0.0** は **2026-07-21 publish 済み**（BREAKING・per-repo registries／npm view 実測 latest=2.0.0・shasum 20e4f3e0）。
 > #84/#85 束（standards 1.2.0＋tokens 1.1.0）は **2026-07-18 publish 済み**（npm view 実測で latest 一致）。
 > 監査根拠: 未 publish 範囲は git tag / npm view の実測突き合わせ。数字・挙動は全て実測かテスト現物で裏取りし、未実装は未実装と明記する。
+
+### `@hideyukimori/nene2-ui` 0.21.1（**patch — fix 2**・#532 / #533）
+
+**BREAKING はありません。** `^0.21.0` の艦は `npm update @hideyukimori/nene2-ui` で入ります。
+2件とも、施主が 0.21.0 の公開版をフリート外の案件で使って見つけたもの。
+
+| | 内容 | 既定描画 |
+| --- | --- | --- |
+| **#532** | `ToastProvider` のランドマークを1つにする | 🟢 **見た目は不変**・🔴 **DOM が1段増える** |
+| **#533** | `Modal` の `scrollable` が閉じても見えていた | 🟢 開いているときは不変・閉じると消える |
+
+#### #532 — `ToastProvider` のランドマークが2つあった
+
+polite と assertive の live region が、**どちらも `role="region"` と同じ `regionLabel`** を持っていた。
+同じ名前のランドマークが2つになり、**axe の `landmark-unique` がトースト 0 件でも出て**、
+スクリーンリーダーのランドマーク一覧に同じ名前が2つ並んでいた。
+
+0.21.1 では、名前付きの `region` **1つ**が2つの live region を包む。内側の live region は名前を持たない。
+
+- 🟢 公開 API は不変（`regionLabel` のまま・新しい prop なし）
+- 🔴 **DOM が変わる**: 包みの `div` が1段増える（クラスなし）。
+  **`[role="region"]` を2件と数えているテストは1件になる。** 内側は `[aria-live]` で引くこと
+- live region を中身より先に置くこと（#311）と、danger だけ assertive に入れること（#457）は変えていない
+
+#### #533 — `Modal` の `scrollable` が閉じても見えていた
+
+`scrollable` のとき dialog 自体に付けていた素の `flex`（作者側の `display:flex`）が、
+UA の「閉じた dialog は `display:none`」に勝っていた。**`open={false}` でも画面に見えていた。**
+0.21.1 では `open:flex open:flex-col` にして、閉じているときは UA の既定に戻す。
+
+〔2026-10-18 実測・Chromium〕旧クラスは閉じても `display:flex`／新クラスは閉じると `display:none`・開くと flex の縦並び。
+
+- jsdom はスタイルを計算しないので、**この不具合はテストでは見えない**（スクリーンショットで見つかった）
+- 🟢 **回避で「開いているときだけ Modal を描く」にしている艦は、そのままでも壊れない。** 外すかどうかは艦の判断
+- README に「Modal が閉じたことの確かめ方」の節を足した（`getByLabelText` は非表示も拾うので `getByRole('dialog', { name })` を使う）
+
+#### 各艦でやること
+
+1. `npm update @hideyukimori/nene2-ui` → `npm ls @hideyukimori/nene2-ui` で**実インストール版**が 0.21.1 か見る
+2. `[role="region"]` でトーストの領域を数えているテストがあれば直す
+3. axe の検査で `[role="region"][aria-live]` を除外している艦は、その除外を外せる
 
 ### `@hideyukimori/nene2-ui` 0.21.0（**minor — feat 2 ＋ fix 1**・#486 / #493 / #501）
 
