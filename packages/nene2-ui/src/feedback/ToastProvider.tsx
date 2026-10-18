@@ -49,8 +49,13 @@ const ASSERTIVE_TONES: ToastTone[] = ['danger'];
  * assistive technology has nothing to have been watching. The toast is on screen, looks
  * right, and is silent — which is why this survived four independent implementations.
  *
- * 🔴 Two regions, not one. `polite` waits for a pause; `danger` needs `assertive`, which
+ * 🔴 Two live regions, not one. `polite` waits for a pause; `danger` needs `assertive`, which
  * interrupts. Both must pre-exist for the same reason, so both are rendered empty.
+ *
+ * 🔴 One landmark, not two (#532). Both live regions used to carry `role="region"` and the
+ * same `regionLabel`, which is two landmarks with one name: axe `landmark-unique` fired even
+ * with no toast on screen, and a screen reader's landmark list showed "Notifications" twice.
+ * The label lives on a single wrapping region; the live regions inside are unnamed.
  */
 export function ToastProvider({
   regionLabel,
@@ -107,12 +112,7 @@ export function ToastProvider({
   const api = useMemo<ToastApi>(() => ({ show, dismiss }), [show, dismiss]);
 
   const region = (tones: ToastTone[], live: 'polite' | 'assertive') => (
-    <div
-      aria-live={live}
-      aria-label={regionLabel}
-      role="region"
-      className="flex flex-col gap-x-slot-toast-gap"
-    >
+    <div aria-live={live} className="flex flex-col gap-x-slot-toast-gap">
       {toasts
         // 複数トーンを1つのリージョンへ。元の配列を filter するので、同じリージョンに
         // 入るトースト同士の**表示順は push された順のまま**になる。
@@ -151,8 +151,10 @@ export function ToastProvider({
   return (
     <ToastContext.Provider value={api}>
       {children}
-      {region(POLITE_TONES, 'polite')}
-      {region(ASSERTIVE_TONES, 'assertive')}
+      <div role="region" aria-label={regionLabel}>
+        {region(POLITE_TONES, 'polite')}
+        {region(ASSERTIVE_TONES, 'assertive')}
+      </div>
     </ToastContext.Provider>
   );
 }
