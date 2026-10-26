@@ -28,26 +28,8 @@
   // 当時の5件（high 4 / moderate 1）が全て閉じ、例外を1件も必要としなかった〔実測〕。
   // 逃げ道ゼロで始まっている状態を、そのまま維持したい。
   // 2026-10-18 に初めて1件を載せた（#529）。下のエントリが失効したら、空に戻せるかを先に測る。
-  "allowlist": [
-    // (1) GHSA-vfj7-8cjw-p6xm — braces <= 3.0.3: 深く入れ子のパターンでスタックを使い切る DoS（high・2026-09-18 公開）。
-    //     **修正版が存在しない**（最新の 3.0.3 も範囲内・first_patched_version = null〔2026-10-18 実測〕）。
-    // (2) 当てはまらない理由〔2026-10-18 実測〕:
-    //     経路は3本。`stylelint > micromatch > braces`、`stylelint > globby > fast-glob > micromatch > braces`、
-    //     `jscodeshift > micromatch > braces`。
-    //     🔴 jscodeshift は nene2-tokens と nene2-standards の **runtime dependencies** なので、
-    //     **この依存は艦の install 経路に乗る**（dev 専用ではない）。ただし jscodeshift が micromatch を
-    //     読むのは `src/Runner.js`（CLI の --ignore-pattern）だけで、両パッケージが import するのは
-    //     core（`index.js` → `src/core.js`・micromatch を読まない）。stylelint 側に渡るパターンは
-    //     設定ファイルに書いた glob で、外部から入力が来る経路は無い。
-    // (3) 失効日: 2027-01-18（3か月）
-    // (4) 不要になる条件: braces に修正版が出て、`npm audit fix --package-lock-only` で上がること。
-    //     または micromatch / stylelint / jscodeshift が braces を使わなくなること。
-    {
-      "GHSA-vfj7-8cjw-p6xm": {
-        "active": true,
-        "notes": "braces: 修正版なし・到達する入力は自分たちの glob だけ（#529）",
-        "expiry": "2027-01-18",
-      },
-    },
-  ],
+  // 2026-10-26: 空に戻した。#529 で載せた GHSA-vfj7-8cjw-p6xm（braces）は、GitHub が 2026-10-23 に
+  // advisory 自体を取り下げた（`gh api /advisories/GHSA-vfj7-8cjw-p6xm` → withdrawn_at 2026-10-23T12:53:02Z）。
+  // npm audit も braces を報告しなくなったので、失効日（2027-01-18）を待たずに外す〔2026-10-26 実測〕。
+  "allowlist": [],
 }
