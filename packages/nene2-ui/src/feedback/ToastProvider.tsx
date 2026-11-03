@@ -24,6 +24,18 @@ export interface ToastProviderProps {
    * shorten it per toast if they have a reason.
    */
   defaultDurationMs?: number;
+  /**
+   * Classes for the landmark that wraps both live regions — the one element a product
+   * must place (fixed to the bottom centre, a width, a z-index). The kit puts no class of
+   * its own there, so this lands as-is; it never reaches a toast or a live region.
+   *
+   * 🔴 Without it a product has no hand on the region at all: product CSS cannot target
+   * it (the standards allow element selectors only outside the allowlist), so
+   * sakura-exhibition moved its whole page through `createPortal` to leave the provider
+   * inside a fixed box — the "wrap every choice in a `<div>`" symptom the README names.
+   * `Modal` still takes no class for the reason given there; this is not a `<dialog>`.
+   */
+  regionClassName?: string;
   children: ReactNode;
 }
 
@@ -61,6 +73,7 @@ export function ToastProvider({
   regionLabel,
   dismissLabel,
   defaultDurationMs = 5000,
+  regionClassName,
   children,
 }: ToastProviderProps) {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -151,7 +164,7 @@ export function ToastProvider({
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <div role="region" aria-label={regionLabel}>
+      <div role="region" aria-label={regionLabel} className={regionClassName}>
         {region(POLITE_TONES, 'polite')}
         {region(ASSERTIVE_TONES, 'assertive')}
       </div>

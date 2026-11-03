@@ -74,6 +74,32 @@ describe('live regions', () => {
     }
   });
 
+  it('take the placement class on the landmark only, and none by default', () => {
+    // 置き場（下中央に固定・幅・z-index）は製品の責任だが、その包みに届く手が無かった。
+    // クラスはランドマークに素のまま載り、トースト本体や live region には届かない。
+    const { container } = mount(<Trigger />);
+    expect(container.querySelector('[role="region"]')?.hasAttribute('class')).toBe(false);
+    document.body.innerHTML = '';
+    const placed = render(
+      <ToastProvider
+        regionLabel="Notifications"
+        dismissLabel="Dismiss"
+        regionClassName="fixed bottom-0"
+      >
+        <Trigger />
+      </ToastProvider>,
+    );
+    const landmark = placed.container.querySelector('[role="region"]');
+    expect(landmark?.getAttribute('class')).toBe('fixed bottom-0');
+    fireEvent.click(screen.getByText('go'));
+    for (const live of placed.container.querySelectorAll('[aria-live]')) {
+      expect(live.getAttribute('class')).not.toContain('fixed');
+    }
+    expect(
+      placed.container.querySelector('[aria-live="polite"] > div')?.getAttribute('class'),
+    ).not.toContain('fixed');
+  });
+
   it('are still there after the last toast goes away', () => {
     const { container } = mount(<Trigger />);
     fireEvent.click(screen.getByText('go'));
