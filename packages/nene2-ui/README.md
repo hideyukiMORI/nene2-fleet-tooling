@@ -37,7 +37,7 @@ bound. Providing the parts scales with the number of screens, which is finite.**
    written inline. Make them unwritable and there is nothing to inspect.
 
    🔴 **But "add a variant" is the wrong move when the axis is wrong** (#487). `Button` carried
-   one closed enum that mixed *shape* with *colour* — `primary | secondary | danger | ghost` —
+   one closed enum that mixed _shape_ with _colour_ — `primary | secondary | danger | ghost` —
    so "the ghost shape in the danger colour" was not sayable. Five ships each invented a
    private name for that one cell and no two agreed (`ghost-danger`, `danger-ghost`,
    `link-danger`, `danger-outline`, and nene-deal reached it through slots). Enumerating four
@@ -45,6 +45,7 @@ bound. Providing the parts scales with the number of screens, which is finite.**
    axis instead: `variant` is the shape, `tone` is the colour. **Before adding a value, check
    whether what is missing is a value or an axis** — a value that ships keep spelling with a
    hyphen in the middle is usually two axes wearing one name.
+
 4. **No strings.** The kit ships no user-visible text. `Spinner` takes `label`, `ErrorState` takes
    `retryLabel`. Localisation stays with the product (`@hideyukimori/nene2-i18n`), so a wording
    change never becomes a kit release.
@@ -165,7 +166,7 @@ component follows.
 🔴 **"From the theme" is the limit of that sentence, and the limit is load-bearing.** The
 **layout components take their spacing from props, not from slots** — `Box` and `Card` (`pad`),
 `Stack` (`gap`), `Section` and `Grid` (both). That is deliberate rather than an omission: layout
-spacing is a decision the *caller* makes per instance, so it is chosen at the call site. Those
+spacing is a decision the _caller_ makes per instance, so it is chosen at the call site. Those
 props still pick a **step from the scale** (`pad="lg"`), so a product cannot invent a value here
 either — but **no slot exists for them**.
 
@@ -289,6 +290,14 @@ Until 0.17.0 seven components accepted no `className` at all. Four of them now d
 without wrapping them. **Three still do not, on purpose**: `Modal`, `ConfirmDialog` and
 `ToastProvider` are overlays and a provider; a class landed on a `<dialog>` from outside can
 undo the margin and top-layer assumptions the kit relies on (0.16.1 is the case in point).
+
+`ToastProvider` does take `regionClassName` — for the landmark that wraps the two live
+regions, not for a toast. That wrapper is the one element a product must place (fixed to
+the bottom centre, a width, a z-index) and the kit puts no class of its own on it, so there
+is nothing a caller's class could undo. Without the hook a product cannot reach it at all:
+the standards keep product CSS to element selectors, so sakura-exhibition moved its whole
+page through `createPortal` to leave the provider inside a fixed box — the "wrap every
+choice in a `<div>`" symptom from above.
 
 ### 🔴 A palette that is missing a meaning
 
